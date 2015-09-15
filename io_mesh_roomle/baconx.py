@@ -188,7 +188,7 @@ def create_object_commands(object, global_matrix, apply_transform=False):
 
     return command
 
-def write_roomle_script(filepath="", object, global_matrix):
+def write_roomle_script(filepath, object, global_matrix):
     """
     Write a roomle script file from faces,
 
@@ -201,19 +201,19 @@ def write_roomle_script(filepath="", object, global_matrix):
     with open(filepath, 'w') as data:
         data.write(create_object_commands( object, global_matrix ))
 
-from mathutils import Matrix, Vector
+# from mathutils import Matrix, Vector
 
-global_scale = 1000
-global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
+# global_scale = 1000
+# global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
 
-command = create_object_commands(bpy.context.active_object, global_matrix)
-command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
+# command = create_object_commands(bpy.context.active_object, global_matrix)
+# command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
 
-if 'Commands' in bpy.data.texts:
-    text = bpy.data.texts['Commands']
-else:
-    bpy.ops.text.new()
-    text = bpy.data.texts[-1]
-    text.name = 'Commands'
+# if 'Commands' in bpy.data.texts:
+#     text = bpy.data.texts['Commands']
+# else:
+#     bpy.ops.text.new()
+#     text = bpy.data.texts[-1]
+#     text.name = 'Commands'
 
-text.from_string(command)
+# text.from_string(command)

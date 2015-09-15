@@ -1,3 +1,21 @@
+bl_info = {
+    "name": "Roomle Configurator Script",
+    "author": "Andreas Atteneder",
+    "version": (0, 1, 0),
+    "blender": (2, 75, 0),
+    "location": "File > Import-Export > Roomle",
+    "description": "Export Roomle Configurator Script",
+    "warning": "",
+    "support": 'COMMUNITY',
+    "category": "Import-Export",
+}
+
+if "bpy" in locals():
+    import importlib
+    if "baconx" in locals():
+        importlib.reload(baconx)
+
+import os
 import bpy
 
 from bpy.props import (
@@ -13,16 +31,17 @@ from bpy_extras.io_utils import (
     axis_conversion
     )
 from bpy.types import (
-    Operator
+    Operator,
+    OperatorFileListElement,
     )
 
-RoomleOrientationHelper = orientation_helper_factory("RoomleOrientationHelper", axis_forward='Y', axis_up='Z')
+RoomleOrientationHelper = orientation_helper_factory("RoomleOrientationHelper", axis_forward='-Y', axis_up='Z')
 
 class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
     """Save a Roomle Script from the active object"""
     bl_idname = "export_mesh.roomle_script"
     bl_label = "Export Roomle Script"
-    
+
     filename_ext = ".txt"
     filter_glob = StringProperty(default="*.txt", options={'HIDDEN'})
     
@@ -38,22 +57,37 @@ class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
             default=False,
             )
             
-    use_mesh_modifiers = BoolProperty(
-            name="Apply Modifiers",
-            description="Apply the modifiers before saving",
-            default=True,
-            )
+    # use_mesh_modifiers = BoolProperty(
+    #         name="Apply Modifiers",
+    #         description="Apply the modifiers before saving",
+    #         default=True,
+    #         )
             
     def execute(self, context):
         from mathutils import Matrix, Vector
         from . import baconx
         
+        keywords = self.as_keywords(ignore=("axis_forward",
+                                            "axis_up",
+                                            "global_scale",
+                                            "check_existing",
+                                            "filter_glob",
+                                            "use_scene_unit",
+                                            "use_mesh_modifiers",
+                                            ))
+
+        global_scale = self.global_scale
+        
         global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
 
-        command = baconx.create_object_commands(bpy.context.active_object, global_matrix)
-        command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
+        # command = baconx.create_object_commands(bpy.context.active_object, global_matrix)
+        # command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
 
-        write_roomle_script(object=bpy.context.active_object, global_matrix=global_matrix, **keywords);
+        try:
+            baconx.write_roomle_script(object=bpy.context.active_object, global_matrix=global_matrix, **keywords);
+        except Exception as e:
+            self.report({'ERROR'}, str(e))
+            return {'CANCELLED'}
 
         return {'FINISHED'}
 
