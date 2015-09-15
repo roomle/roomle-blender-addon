@@ -28,8 +28,8 @@ class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
     
     global_scale = FloatProperty(
             name="Scale",
-            min=0.01, max=1000.0,
-            default=1.0,
+            min=0.01, max=1000000.0,
+            default=1000.0,
             )
 
     use_scene_unit = BoolProperty(
@@ -45,41 +45,17 @@ class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
             )
             
     def execute(self, context):
-        #from . import stl_utils
-        #from . import blender_utils
+        from mathutils import Matrix, Vector
+        from . import baconx
         
-#        import itertools
-#        from mathutils import Matrix
-#        keywords = self.as_keywords(ignore=("axis_forward",
-#                                            "axis_up",
-#                                            "global_scale",
-#                                            "check_existing",
-#                                            "filter_glob",
-#                                            "use_scene_unit",
-#                                            "use_mesh_modifiers",
-#                                            ))
-#
-#        scene = context.scene
-#
-#        global_scale = self.global_scale
-#        if scene.unit_settings.system != 'NONE' and self.use_scene_unit:
-#            global_scale *= scene.unit_settings.scale_length
-#
-#        global_matrix = axis_conversion(to_forward=self.axis_forward,
-#                                        to_up=self.axis_up,
-#                                        ).to_4x4() * Matrix.Scale(global_scale, 4)
-#
-#        faces = itertools.chain.from_iterable(
-#            faces_from_mesh(ob, global_matrix, self.use_mesh_modifiers)
-#            for ob in context.selected_objects)
-#
-#        write_roomle_script(faces=faces, **keywords)
+        global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
+
+        command = baconx.create_object_commands(bpy.context.active_object, global_matrix)
+        command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
+
+        write_roomle_script(object=bpy.context.active_object, global_matrix=global_matrix, **keywords);
 
         return {'FINISHED'}
-
-def menu_import(self, context):
-    self.layout.operator(ImportSTL.bl_idname, text="Stl (.stl)")
-
 
 def menu_export(self, context):
     default_path = os.path.splitext(bpy.data.filepath)[0] + ".txt"
@@ -88,15 +64,11 @@ def menu_export(self, context):
 
 def register():
     bpy.utils.register_module(__name__)
-
-    bpy.types.INFO_MT_file_import.append(menu_import)
     bpy.types.INFO_MT_file_export.append(menu_export)
 
 
 def unregister():
     bpy.utils.unregister_module(__name__)
-
-    bpy.types.INFO_MT_file_import.remove(menu_import)
     bpy.types.INFO_MT_file_export.remove(menu_export)
 
 if __name__ == "__main__":
