@@ -115,7 +115,7 @@ def create_mesh_command( object, global_matrix, triangle_strip = True, use_mesh_
     if triangle_strip:
         command += 'Vector3f['
         command += ','.join(
-            '{{{},{},{}}}'.format(
+            '{{{:.1f},{:.1f},{:.1f}}}'.format(
                 v.x,v.y,v.z
                 ) for v in vertices_from_mesh(object,global_matrix,use_mesh_modifier))
         command += ']'
@@ -124,7 +124,7 @@ def create_mesh_command( object, global_matrix, triangle_strip = True, use_mesh_
         vertices, indices = indices_from_mesh(object,global_matrix,use_mesh_modifier)
         
         command += '['
-        command += ','.join( '{{{},{},{}}}'.format( v.co.x, v.co.y, v.co.z ) for v in vertices)
+        command += ','.join( '{{{:.1f},{:.1f},{:.1f}}}'.format( v.co.x, v.co.y, v.co.z ) for v in vertices)
         command += '],'
         
         command += '['
@@ -154,7 +154,7 @@ def create_transform_commands( object, global_matrix ):
     
     # translation
     if not isZero(pos):
-        command += "MoveMatrixBy(Vector3f{{{},{},{}}});".format(pos.x,pos.y,pos.z)
+        command += "MoveMatrixBy(Vector3f{{{:.3f},{:.3f},{:.3f}}});".format(pos.x,pos.y,pos.z)
     
     #command += "ScaleMatrixBy({},{},{});".format(scale.x,scale.y,scale.z)
     return command
