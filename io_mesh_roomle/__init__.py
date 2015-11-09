@@ -57,6 +57,12 @@ class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
             default=False,
             )
             
+    export_normals = BoolProperty(
+            name="Export Normals",
+            description="Export normals per vertex as well.",
+            default=False,
+            )
+    
     # use_mesh_modifiers = BoolProperty(
     #         name="Apply Modifiers",
     #         description="Apply the modifiers before saving",

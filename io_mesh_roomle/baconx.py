@@ -105,30 +105,32 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
     bpy.data.meshes.remove(mesh)
     return vertices, indices
         
-def create_mesh_command( object, global_matrix, triangle_strip = True, use_mesh_modifier = True ):
+def create_mesh_command( object, global_matrix, use_mesh_modifier = True, export_normals = True ):
     
     faces = faces_from_mesh(object, global_matrix, True)
     
     mesh = object.data
     
-    command = "Mesh({},".format(getValidName(object.name));
-    if triangle_strip:
-        command += 'Vector3f['
-        command += ','.join(
-            '{{{:.1f},{:.1f},{:.1f}}}'.format(
-                v.x,v.y,v.z
-                ) for v in vertices_from_mesh(object,global_matrix,use_mesh_modifier))
-        command += ']'
-    else:
+    command = "AddMesh("
         
-        vertices, indices = indices_from_mesh(object,global_matrix,use_mesh_modifier)
-        
-        command += '['
-        command += ','.join( '{{{:.1f},{:.1f},{:.1f}}}'.format( v.co.x, v.co.y, v.co.z ) for v in vertices)
-        command += '],'
-        
-        command += '['
-        command += ','.join(map(str,indices))
+    vertices, indices = indices_from_mesh(object,global_matrix,use_mesh_modifier)
+    
+    command += 'Vector3f['
+    command += ','.join( '{{{:.1f},{:.1f},{:.1f}}}'.format( v.co.x, v.co.y, v.co.z ) for v in vertices)
+    command += '],'
+    
+    command += '['
+    command += ','.join(map(str,indices))
+    command += ']'
+    
+    if mesh.uv_layers.active:
+        command+=',Vector2f['
+        command += ','.join( '{{{:.8f},{:.8f}}}'.format( p.uv.x, p.uv.y ) for p in mesh.uv_layers.active.data)
+        command+=']'
+
+    if export_normals:
+        command += ',Vector3f['
+        command += ','.join( '{{{:.8f},{:.8f},{:.8f}}}'.format( v.normal.x, v.normal.y, v.normal.z ) for v in vertices)
         command += ']'
         
     command+=');'
@@ -159,11 +161,11 @@ def create_transform_commands( object, global_matrix ):
     #command += "ScaleMatrixBy({},{},{});".format(scale.x,scale.y,scale.z)
     return command
 
-def create_object_commands(object, global_matrix, apply_transform=False):
+def create_object_commands(object, global_matrix, export_normals=False, apply_transform=False):
     command = ''
     
     # Mesh
-    mesh = create_mesh_command(object, global_matrix)
+    mesh = create_mesh_command(object, global_matrix, export_normals=export_normals)
     
     # Material
     material = "SetObjSurface('default');"
@@ -176,7 +178,7 @@ def create_object_commands(object, global_matrix, apply_transform=False):
         command += mesh
         command += material
         for child in object.children:
-            command += create_object_commands(child, global_matrix)
+            command += create_object_commands(child, global_matrix, export_normals)
         command += "EndObjGroup();"
     else:
         command += mesh
@@ -188,7 +190,7 @@ def create_object_commands(object, global_matrix, apply_transform=False):
 
     return command
 
-def write_roomle_script(filepath, object, global_matrix):
+def write_roomle_script(filepath, object, global_matrix, export_normals=False):
     """
     Write a roomle script file from faces,
 
@@ -199,7 +201,7 @@ def write_roomle_script(filepath, object, global_matrix):
        iterable of tuple of 3 vertex, vertex is tuple of 3 coordinates as float
     """
     with open(filepath, 'w') as data:
-        data.write(create_object_commands( object, global_matrix ))
+        data.write(create_object_commands(object, global_matrix, export_normals=export_normals))
 
 # from mathutils import Matrix, Vector
 
