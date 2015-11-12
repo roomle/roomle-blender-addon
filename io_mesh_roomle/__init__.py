@@ -90,7 +90,7 @@ class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
         # command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
 
         try:
-            baconx.write_roomle_script(object=bpy.context.active_object, global_matrix=global_matrix, **keywords);
+            baconx.write_roomle_script(objects=bpy.context.selected_objects, global_matrix=global_matrix, **keywords);
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}

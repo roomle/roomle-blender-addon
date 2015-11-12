@@ -68,7 +68,7 @@ def vertices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=
         for v in f:
             yield v
 
-def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=True):
+def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=True, apply_transform=False):
 
     # get the editmode data
     ob.update_from_editmode()
@@ -79,7 +79,10 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
     except RuntimeError:
         raise StopIteration
 
-    mesh.transform(global_matrix * ob.matrix_world)
+    if apply_transform:
+        mesh.transform(global_matrix * ob.matrix_world)
+    else:
+        mesh.transform(global_matrix)
 
     if triangulate:
         # From a list of faces, return the face triangulated if needed.
@@ -169,8 +172,8 @@ def create_object_commands(object, global_matrix, export_normals=False, apply_tr
     
     # Material
     material = "SetObjSurface('default');"
-    if bpy.context.active_object.material_slots:
-        material = "SetObjSurface('{}');".format(getValidName(bpy.context.active_object.material_slots[0].name))
+    if object.material_slots:
+        material = "SetObjSurface('{}');".format(getValidName(object.material_slots[0].name))
     
     # Children
     if len(object.children)>0:
@@ -190,7 +193,13 @@ def create_object_commands(object, global_matrix, export_normals=False, apply_tr
 
     return command
 
-def write_roomle_script(filepath, object, global_matrix, export_normals=False):
+def create_objects_commands(objects, global_matrix, export_normals=False, apply_transform=False):
+    command = ''
+    for object in objects:
+        command += create_object_commands(object, global_matrix, export_normals)
+    return command
+
+def write_roomle_script(filepath, objects, global_matrix, export_normals=False):
     """
     Write a roomle script file from faces,
 
@@ -201,14 +210,14 @@ def write_roomle_script(filepath, object, global_matrix, export_normals=False):
        iterable of tuple of 3 vertex, vertex is tuple of 3 coordinates as float
     """
     with open(filepath, 'w') as data:
-        data.write(create_object_commands(object, global_matrix, export_normals=export_normals))
+        data.write(create_objects_commands(objects,global_matrix,export_normals))
 
 # from mathutils import Matrix, Vector
 
 # global_scale = 1000
 # global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
 
-# command = create_object_commands(bpy.context.active_object, global_matrix)
+# command = create_objects_commands(bpy.context.selected_objects,global_matrix)
 # command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
 
 # if 'Commands' in bpy.data.texts:
