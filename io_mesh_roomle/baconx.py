@@ -105,7 +105,10 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
     for indexes in iter_face_index():
         indices += indexes
         
-    bpy.data.meshes.remove(mesh)
+    '''
+    TODO: if the temporary mesh is removed here, things (position values) go nuts. fixit!
+    '''
+    # bpy.data.meshes.remove(mesh)
     return vertices, indices
         
 def create_mesh_command( object, global_matrix, use_mesh_modifier = True, export_normals = True ):
