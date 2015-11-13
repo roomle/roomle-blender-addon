@@ -13,6 +13,25 @@ def getValidName(name):
 def isZero(self):
     return not any(f!=0 for f in self)
 
+def is_child(parent, child):
+    for c in parent.children:
+        if c==child:
+            return True
+        if is_child(c,child):
+            return True
+    return False
+
+def remove_nested_objects(objects):
+    for o in objects:
+        for c in objects:
+            if o==c:
+                continue
+            print('check' + c.name + ' in '+o.name)
+            if is_child(o,c):
+                print('remove' + str(c))
+                objects.remove(c)
+    return objects
+
 def faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=True, apply_transform=False):
     """
     From an object, return a generator over a list of faces.
@@ -212,15 +231,19 @@ def write_roomle_script(filepath, objects, global_matrix, export_normals=False):
     faces
        iterable of tuple of 3 vertex, vertex is tuple of 3 coordinates as float
     """
+
+    filterted_objects = remove_nested_objects(objects)
+
     with open(filepath, 'w') as data:
-        data.write(create_objects_commands(objects,global_matrix,export_normals))
+        data.write(create_objects_commands(filterted_objects,global_matrix,export_normals))
 
 # from mathutils import Matrix, Vector
 
 # global_scale = 1000
 # global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
 
-# command = create_objects_commands(bpy.context.selected_objects,global_matrix)
+# objects = remove_nested_objects(bpy.context.selected_objects)
+# command = create_objects_commands(objects,global_matrix)
 # command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
 
 # if 'Commands' in bpy.data.texts:
