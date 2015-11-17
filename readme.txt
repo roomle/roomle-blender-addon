@@ -1,6 +1,6 @@
 How do install?
 
-run build.command
+double click at 'build.command'
 baconx.zip is created
 open Blender
 File > User Preferences
