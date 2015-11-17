@@ -106,29 +106,34 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
     if triangulate:
         # From a list of faces, return the face triangulated if needed.
         def iter_face_index():
-            for face in mesh.tessfaces:
+            for i, face in enumerate(mesh.tessfaces):
                 vertices = face.vertices[:]
+                uvs = mesh.tessface_uv_textures.active.data[i].uv
+
                 if len(vertices) == 4:
-                    yield vertices[0], vertices[2], vertices[1]
-                    yield vertices[2], vertices[0], vertices[3]
+                    yield (vertices[0], vertices[2], vertices[1]), (uvs[0],uvs[2],uvs[1])
+                    yield (vertices[2], vertices[0], vertices[3]), (uvs[2],uvs[0],uvs[3])
                 else:
-                    yield vertices[0], vertices[2], vertices[1]
+                    yield (vertices[0], vertices[2], vertices[1]), (uvs[0],uvs[2],uvs[1])
     else:
         def iter_face_index():
-            for face in mesh.tessfaces:
-                yield face.vertices[:]
+            for i, face in enumerate(mesh.tessfaces):
+                uvs = mesh.tessface_uv_textures.active.data[i].uv
+                yield face.vertices[:], uvs
 
     vertices = mesh.vertices
     indices = []
-    
-    for indexes in iter_face_index():
+    uvs = []
+
+    for indexes, newUvs in iter_face_index():
         indices += indexes
-        
+        uvs += newUvs
+
     '''
     TODO: if the temporary mesh is removed here, things (position values) go nuts. fixit!
     '''
     # bpy.data.meshes.remove(mesh)
-    return vertices, indices
+    return vertices, indices, uvs
         
 def create_mesh_command( object, global_matrix, use_mesh_modifier = True, export_normals = True ):
     
@@ -138,7 +143,7 @@ def create_mesh_command( object, global_matrix, use_mesh_modifier = True, export
     
     command = "AddMesh("
         
-    vertices, indices = indices_from_mesh(object,global_matrix,use_mesh_modifier)
+    vertices, indices, uvs = indices_from_mesh(object,global_matrix,use_mesh_modifier)
     
     command += 'Vector3f['
     command += ','.join( '{{{:.1f},{:.1f},{:.1f}}}'.format( v.co.x, v.co.y, v.co.z ) for v in vertices)
@@ -148,9 +153,9 @@ def create_mesh_command( object, global_matrix, use_mesh_modifier = True, export
     command += ','.join(map(str,indices))
     command += ']'
     
-    if mesh.uv_layers.active:
+    if uvs:
         command+=',Vector2f['
-        command += ','.join( '{{{:.8f},{:.8f}}}'.format( p.uv.x, p.uv.y ) for p in mesh.uv_layers.active.data)
+        command += ','.join( '{{{:.4f},{:.4f}}}'.format( p[0], p[1] ) for p in uvs)
         command+=']'
 
     if export_normals:
@@ -190,7 +195,9 @@ def create_object_commands(object, global_matrix, export_normals=False, apply_tr
     command = ''
     
     # Mesh
-    mesh = create_mesh_command(object, global_matrix, export_normals=export_normals)
+    mesh = ''
+    if object.data:
+        mesh = create_mesh_command(object, global_matrix, export_normals=export_normals)
     
     # Material
     material = "SetObjSurface('default');"
