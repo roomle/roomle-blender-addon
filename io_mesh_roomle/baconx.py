@@ -103,6 +103,10 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
     else:
         mesh.transform(global_matrix)
 
+    #uvsSrc = mesh.tessface_uv_textures
+    uvsSrc = mesh.uv_layers.active.data
+    duplicate_vertices = len(mesh.vertices)!=len(uvsSrc)
+
     if triangulate:
         # From a list of faces, return the face triangulated if needed.
         def iter_face_index():
@@ -111,23 +115,33 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
                 uvs = mesh.tessface_uv_textures.active.data[i].uv
 
                 if len(vertices) == 4:
-                    yield (vertices[0], vertices[2], vertices[1]), (uvs[0],uvs[2],uvs[1])
-                    yield (vertices[2], vertices[0], vertices[3]), (uvs[2],uvs[0],uvs[3])
+                    yield (vertices[0], vertices[2], vertices[1])
+                    yield (vertices[2], vertices[0], vertices[3])
                 else:
-                    yield (vertices[0], vertices[2], vertices[1]), (uvs[0],uvs[2],uvs[1])
+                    yield (vertices[0], vertices[2], vertices[1])
     else:
         def iter_face_index():
             for i, face in enumerate(mesh.tessfaces):
-                uvs = mesh.tessface_uv_textures.active.data[i].uv
-                yield face.vertices[:], uvs
+                yield face.vertices[:]
 
-    vertices = mesh.vertices
+    def iter_uvs():
+        for uv in uvsSrc:
+            yield (uv.uv[0],uv.uv[1])
+
+    if duplicate_vertices:
+        # TODO: duplicate vertices with multiple UV coordinates
+        vertices = mesh.vertices;
+    else:
+        vertices = mesh.vertices
+
     indices = []
     uvs = []
 
-    for indexes, newUvs in iter_face_index():
+    for indexes in iter_face_index():
         indices += indexes
-        uvs += newUvs
+
+    for uv in iter_uvs():
+        uvs.append(uv)
 
     '''
     TODO: if the temporary mesh is removed here, things (position values) go nuts. fixit!
