@@ -1,6 +1,7 @@
 import bpy
 import re
 
+from decimal import Decimal
 from math import degrees
 
 from bpy_extras.io_utils import (
@@ -12,6 +13,14 @@ def getValidName(name):
 
 def isZero(self):
     return not any(f!=0 for f in self)
+
+def floatFormat( value, precision=0 ):
+    """
+    Converts a float to a string. Rounds to a certain precision and removed trailing zeros.
+    """
+    q = Decimal(10) ** -precision      # 2 precision --> '0.01'
+    d = Decimal(value)
+    return '{:f}'.format(d.quantize(q).normalize())
 
 def is_child(parent, child):
     for c in parent.children:
@@ -103,10 +112,8 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
     else:
         mesh.transform(global_matrix)
 
-    #uvsSrc = mesh.tessface_uv_textures
-    uvsSrc = mesh.uv_layers.active.data
-    duplicate_vertices = len(mesh.vertices)!=len(uvsSrc)
-
+    uvsSrc = mesh.tessface_uv_textures.active.data
+    
     if triangulate:
         # From a list of faces, return the face triangulated if needed.
         def iter_face_index():
@@ -119,20 +126,39 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
                     yield (vertices[2], vertices[0], vertices[3])
                 else:
                     yield (vertices[0], vertices[2], vertices[1])
+
+        def iter_uvs():
+            for uvFace in uvsSrc:
+                if(len(uvFace.uv)==4):
+                    yield (uvFace.uv1.x,uvFace.uv1.y),\
+                    (uvFace.uv3.x,uvFace.uv3.y),\
+                    (uvFace.uv2.x,uvFace.uv2.y),\
+                    (uvFace.uv3.x,uvFace.uv3.y),\
+                    (uvFace.uv1.x,uvFace.uv1.y),\
+                    (uvFace.uv4.x,uvFace.uv4.y)
+                else:
+                    yield (uvFace.uv1.x,uvFace.uv1.y),\
+                    (uvFace.uv2.x,uvFace.uv2.y),\
+                    (uvFace.uv3.x,uvFace.uv3.y)
+                    #for uv in uvFace.uv:
+                    #   yield (uv[0],uv[1])
     else:
         def iter_face_index():
             for i, face in enumerate(mesh.tessfaces):
                 yield face.vertices[:]
 
-    def iter_uvs():
-        for uv in uvsSrc:
-            yield (uv.uv[0],uv.uv[1])
+        def iter_uvs():
+            for uvFace in uvsSrc:
+                for uv in uvFace.uv:
+                    yield (uv[0],uv[1])
 
-    if duplicate_vertices:
-        # TODO: duplicate vertices with multiple UV coordinates
-        vertices = mesh.vertices;
-    else:
-        vertices = mesh.vertices
+
+    vertices = []
+    normals = []
+
+    for v in mesh.vertices:
+        vertices.append(v.co)
+        normals.append(v.normal)
 
     indices = []
     uvs = []
@@ -141,13 +167,51 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
         indices += indexes
 
     for uv in iter_uvs():
-        uvs.append(uv)
+        uvs += uv
+
+    tmpIndices = []
+    tmpUvs = {}
+    tmpDict = {}
+
+    split_uvs = False
+
+    for i, vuv in enumerate(zip(indices,uvs)):
+        
+        oldIndex = vuv[0]
+        uv = vuv[1]
+
+        print(i,oldIndex,uv)
+
+        if oldIndex in tmpDict:
+            if uv in tmpDict[oldIndex]:
+                split_uvs = True
+                newIndex = tmpDict[oldIndex][uv]
+            else:
+                # duplicate vertex
+                newIndex = len(vertices)
+                vertices.append( vertices[oldIndex] )
+                normals.append( normals[oldIndex] )
+                tmpDict[oldIndex][uv] = newIndex
+            indices[i] = newIndex
+            tmpUvs[newIndex] = uv
+        else:
+            tmpDict[oldIndex] = { uv : oldIndex }
+            tmpUvs[oldIndex] = uv
+
+    for k,v in tmpUvs.items():
+        print(k,v)
+
+    uvs = list(tmpUvs.values())
+
+    # print('uv len {}'.format(len(uvs)))
+    # print('indices len {}'.format(len(indices)))
+    # print('vertices len {}'.format(len(vertices)))
 
     '''
     TODO: if the temporary mesh is removed here, things (position values) go nuts. fixit!
     '''
     # bpy.data.meshes.remove(mesh)
-    return vertices, indices, uvs
+    return vertices, indices, uvs, normals, split_uvs
         
 def create_mesh_command( object, global_matrix, use_mesh_modifier = True, export_normals = True ):
     
@@ -157,10 +221,12 @@ def create_mesh_command( object, global_matrix, use_mesh_modifier = True, export
     
     command = "AddMesh("
         
-    vertices, indices, uvs = indices_from_mesh(object,global_matrix,use_mesh_modifier)
+    vertices, indices, uvs, normals, split_uvs = indices_from_mesh(object,global_matrix,use_mesh_modifier)
     
+    export_normals |= split_uvs
+
     command += 'Vector3f['
-    command += ','.join( '{{{:.1f},{:.1f},{:.1f}}}'.format( v.co.x, v.co.y, v.co.z ) for v in vertices)
+    command += ','.join( '{{{0},{1},{2}}}'.format( floatFormat(v.x,1), floatFormat(v.y,1), floatFormat(v.z,1) ) for v in vertices)
     command += '],'
     
     command += '['
@@ -169,12 +235,12 @@ def create_mesh_command( object, global_matrix, use_mesh_modifier = True, export
     
     if uvs:
         command+=',Vector2f['
-        command += ','.join( '{{{:.4f},{:.4f}}}'.format( p[0], p[1] ) for p in uvs)
+        command += ','.join( '{{{0},{1}}}'.format( floatFormat(p[0],6), floatFormat(p[1],6) ) for p in uvs)
         command+=']'
 
     if export_normals:
         command += ',Vector3f['
-        command += ','.join( '{{{:.8f},{:.8f},{:.8f}}}'.format( v.normal.x, v.normal.y, v.normal.z ) for v in vertices)
+        command += ','.join( '{{{0},{1},{2}}}'.format( floatFormat(n.x,8), floatFormat(n.y,8), floatFormat(n.z,8) ) for n in normals)
         command += ']'
         
     command+=');'
@@ -192,17 +258,16 @@ def create_transform_commands( object, global_matrix ):
     # rotation
     x,y,z = map(degrees, (-rot.x,rot.y,-rot.z))
     if x!=0:
-        command += "RotateMatrixBy(Vector3f{{1,0,0}},Vector3f{{0,0,0}},{});".format(x)
+        command += "RotateMatrixBy(Vector3f{{1,0,0}},Vector3f{{0,0,0}},{});".format(floatFormat(x,8))
     if y!=0:
-        command += "RotateMatrixBy(Vector3f{{0,1,0}},Vector3f{{0,0,0}},{});".format(y)
+        command += "RotateMatrixBy(Vector3f{{0,1,0}},Vector3f{{0,0,0}},{});".format(floatFormat(y,8))
     if z!=0:
-        command += "RotateMatrixBy(Vector3f{{0,0,1}},Vector3f{{0,0,0}},{});".format(z)
+        command += "RotateMatrixBy(Vector3f{{0,0,1}},Vector3f{{0,0,0}},{});".format(floatFormat(z,8))
     
     # translation
     if not isZero(pos):
-        command += "MoveMatrixBy(Vector3f{{{:.3f},{:.3f},{:.3f}}});".format(pos.x,pos.y,pos.z)
+        command += "MoveMatrixBy(Vector3f{{{0},{1},{2}}});".format(floatFormat(pos.x,1),floatFormat(pos.y,1),floatFormat(pos.z,1))
     
-    #command += "ScaleMatrixBy({},{},{});".format(scale.x,scale.y,scale.z)
     return command
 
 def create_object_commands(object, global_matrix, export_normals=False, apply_transform=False):
@@ -258,20 +323,20 @@ def write_roomle_script(filepath, objects, global_matrix, export_normals=False):
     with open(filepath, 'w') as data:
         data.write(create_objects_commands(filterted_objects,global_matrix,export_normals))
 
-# from mathutils import Matrix, Vector
+from mathutils import Matrix, Vector
 
-# global_scale = 1000
-# global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
+global_scale = 1000
+global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
 
-# objects = remove_nested_objects(bpy.context.selected_objects)
-# command = create_objects_commands(objects,global_matrix)
-# command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
+objects = remove_nested_objects(bpy.context.selected_objects)
+command = create_objects_commands(objects,global_matrix)
+command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
 
-# if 'Commands' in bpy.data.texts:
-#     text = bpy.data.texts['Commands']
-# else:
-#     bpy.ops.text.new()
-#     text = bpy.data.texts[-1]
-#     text.name = 'Commands'
+if 'Commands' in bpy.data.texts:
+    text = bpy.data.texts['Commands']
+else:
+    bpy.ops.text.new()
+    text = bpy.data.texts[-1]
+    text.name = 'Commands'
 
-# text.from_string(command)
+text.from_string(command)
