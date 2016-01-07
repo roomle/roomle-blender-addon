@@ -142,8 +142,8 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
                     (uvFace.uv4.x,uvFace.uv4.y)
                 else:
                     yield (uvFace.uv1.x,uvFace.uv1.y),\
-                    (uvFace.uv2.x,uvFace.uv2.y),\
-                    (uvFace.uv3.x,uvFace.uv3.y)
+                    (uvFace.uv3.x,uvFace.uv3.y),\
+                    (uvFace.uv2.x,uvFace.uv2.y)
                     #for uv in uvFace.uv:
                     #   yield (uv[0],uv[1])
     else:
