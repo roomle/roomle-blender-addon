@@ -69,6 +69,8 @@ def faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=Tru
     else:
         mesh.transform(global_matrix)
 
+    mesh.calc_normals()
+
     if triangulate:
         # From a list of faces, return the face triangulated if needed.
         def iter_face_index():
@@ -111,6 +113,8 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
         mesh.transform(global_matrix * ob.matrix_world)
     else:
         mesh.transform(global_matrix)
+
+    mesh.calc_normals()
 
     uvsSrc = mesh.tessface_uv_textures.active.data
     
@@ -158,7 +162,9 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
 
     for v in mesh.vertices:
         vertices.append(v.co)
-        normals.append(v.normal)
+        # for some weird reason I have to invert the normal here.
+        # dunno why
+        normals.append(v.normal * -1)
 
     indices = []
     uvs = []
@@ -180,8 +186,6 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
         oldIndex = vuv[0]
         uv = vuv[1]
 
-        print(i,oldIndex,uv)
-
         if oldIndex in tmpDict:
             if uv in tmpDict[oldIndex]:
                 split_uvs = True
@@ -198,9 +202,6 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
             tmpDict[oldIndex] = { uv : oldIndex }
             tmpUvs[oldIndex] = uv
 
-    for k,v in tmpUvs.items():
-        print(k,v)
-
     uvs = list(tmpUvs.values())
 
     # print('uv len {}'.format(len(uvs)))
@@ -214,10 +215,6 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
     return vertices, indices, uvs, normals, split_uvs
         
 def create_mesh_command( object, global_matrix, use_mesh_modifier = True, export_normals = True ):
-    
-    faces = faces_from_mesh(object, global_matrix, True)
-    
-    mesh = object.data
     
     command = "AddMesh("
         
@@ -323,20 +320,20 @@ def write_roomle_script(filepath, objects, global_matrix, export_normals=False):
     with open(filepath, 'w') as data:
         data.write(create_objects_commands(filterted_objects,global_matrix,export_normals))
 
-from mathutils import Matrix, Vector
+# from mathutils import Matrix, Vector
 
-global_scale = 1000
-global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
+# global_scale = 1000
+# global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
 
-objects = remove_nested_objects(bpy.context.selected_objects)
-command = create_objects_commands(objects,global_matrix)
-command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
+# objects = remove_nested_objects(bpy.context.selected_objects)
+# command = create_objects_commands(objects,global_matrix)
+# command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
 
-if 'Commands' in bpy.data.texts:
-    text = bpy.data.texts['Commands']
-else:
-    bpy.ops.text.new()
-    text = bpy.data.texts[-1]
-    text.name = 'Commands'
+# if 'Commands' in bpy.data.texts:
+#     text = bpy.data.texts['Commands']
+# else:
+#     bpy.ops.text.new()
+#     text = bpy.data.texts[-1]
+#     text.name = 'Commands'
 
-text.from_string(command)
+# text.from_string(command)
