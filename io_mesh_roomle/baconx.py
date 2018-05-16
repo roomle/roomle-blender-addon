@@ -116,7 +116,9 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
 
     mesh.calc_normals()
 
-    uvsSrc = mesh.tessface_uv_textures.active.data
+    uvsPresent = mesh.tessface_uv_textures.active!=None
+    if uvsPresent:
+        uvsSrc = mesh.tessface_uv_textures.active.data
     
     if triangulate:
         # From a list of faces, return the face triangulated if needed.
@@ -130,32 +132,31 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
                     yield (vertices[2], vertices[0], vertices[3])
                 else:
                     yield (vertices[0], vertices[2], vertices[1])
-
-        def iter_uvs():
-            for uvFace in uvsSrc:
-                if(len(uvFace.uv)==4):
-                    yield (uvFace.uv1.x,uvFace.uv1.y),\
-                    (uvFace.uv3.x,uvFace.uv3.y),\
-                    (uvFace.uv2.x,uvFace.uv2.y),\
-                    (uvFace.uv3.x,uvFace.uv3.y),\
-                    (uvFace.uv1.x,uvFace.uv1.y),\
-                    (uvFace.uv4.x,uvFace.uv4.y)
-                else:
-                    yield (uvFace.uv1.x,uvFace.uv1.y),\
-                    (uvFace.uv3.x,uvFace.uv3.y),\
-                    (uvFace.uv2.x,uvFace.uv2.y)
-                    #for uv in uvFace.uv:
-                    #   yield (uv[0],uv[1])
+        if uvsPresent:
+            def iter_uvs():
+                for uvFace in uvsSrc:
+                    if(len(uvFace.uv)==4):
+                        yield (uvFace.uv1.x,uvFace.uv1.y),\
+                        (uvFace.uv3.x,uvFace.uv3.y),\
+                        (uvFace.uv2.x,uvFace.uv2.y),\
+                        (uvFace.uv3.x,uvFace.uv3.y),\
+                        (uvFace.uv1.x,uvFace.uv1.y),\
+                        (uvFace.uv4.x,uvFace.uv4.y)
+                    else:
+                        yield (uvFace.uv1.x,uvFace.uv1.y),\
+                        (uvFace.uv3.x,uvFace.uv3.y),\
+                        (uvFace.uv2.x,uvFace.uv2.y)
+                        #for uv in uvFace.uv:
+                        #   yield (uv[0],uv[1])
     else:
         def iter_face_index():
             for i, face in enumerate(mesh.tessfaces):
                 yield face.vertices[:]
-
-        def iter_uvs():
-            for uvFace in uvsSrc:
-                for uv in uvFace.uv:
-                    yield (uv[0],uv[1])
-
+        if uvsPresent:
+            def iter_uvs():
+                for uvFace in uvsSrc:
+                    for uv in uvFace.uv:
+                        yield (uv[0],uv[1])
 
     vertices = []
     normals = []
@@ -167,13 +168,17 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
         normals.append(v.normal * -1)
 
     indices = []
-    uvs = []
+    if uvsPresent:
+        uvs = []
+    else:
+        uvs = None
 
     for indexes in iter_face_index():
         indices += indexes
 
-    for uv in iter_uvs():
-        uvs += uv
+    if uvsPresent:
+        for uv in iter_uvs():
+            uvs += uv
 
     tmpIndices = []
     tmpUvs = {}
