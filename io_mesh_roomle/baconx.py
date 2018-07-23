@@ -234,7 +234,7 @@ def create_mesh_command( object, global_matrix, use_mesh_modifier = True, export
     command+=');'
     return command
 
-def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, catalog_id, use_mesh_modifier = True, export_normals = True ):
+def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, catalog_id, use_mesh_modifier = True, export_normals = False ):
 
     mesh = object.data
     name = mesh.name
@@ -271,8 +271,8 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
             os.remove(filepath)
         print(preferences.corto_exe)
     
-    # TODO: get correct bounds
-    bounds = (100,100,100)
+    dim = object.dimensions
+    bounds = ( floatFormat(dim.x,1), floatFormat(dim.z,1), floatFormat(dim.y,1) )
 
     script = 'AddExternalMesh(\'{}:{}\',Vector3f{{{},{},{}}});'.format(catalog_id,name,*bounds)
     
@@ -319,7 +319,7 @@ def create_object_commands(preferences,object, object_list, extern_mesh_dir, glo
             extern = len(object.data.vertices) > 100
 
             if extern:
-                mesh = create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, catalog_id )
+                mesh = create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, catalog_id, export_normals=export_normals )
             else:
                 mesh = create_mesh_command(object, global_matrix, export_normals=export_normals)
 
