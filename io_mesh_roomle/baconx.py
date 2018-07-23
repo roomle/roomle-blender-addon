@@ -332,7 +332,11 @@ def write_roomle_script(filepath, objects, global_matrix, export_normals=False):
     filterted_objects = remove_nested_objects(objects)
 
     with open(filepath, 'w') as data:
-        data.write(create_objects_commands(filterted_objects,global_matrix,export_normals))
+        script = create_objects_commands(filterted_objects,global_matrix,export_normals)
+        if not bool(script):
+            raise Exception('Empty export! Make sure you have meshes selected.')
+        else:
+            data.write(script)
 
 # from mathutils import Matrix, Vector
 
