@@ -305,8 +305,8 @@ def create_object_commands(object, object_list, extern_mesh_dir, global_matrix, 
         if object.data and type(object.data)==bpy.types.Mesh:
             empty = False
 
-            #TODO: smart decision whether extern mesh or scripted mesh
-            extern = True
+            #TODO: smarter decision whether extern mesh or scripted mesh
+            extern = len(object.data.vertices) > 100
 
             if extern:
                 mesh = create_extern_mesh_command( extern_mesh_dir, object, global_matrix, catalog_id )
