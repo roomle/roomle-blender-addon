@@ -35,7 +35,6 @@ def remove_nested_objects(objects):
         for c in objects:
             if o==c:
                 continue
-            print('check' + c.name + ' in '+o.name)
             if is_child(o,c):
                 print('remove' + str(c))
                 objects.remove(c)
@@ -125,7 +124,6 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
         def iter_face_index():
             for i, face in enumerate(mesh.tessfaces):
                 vertices = face.vertices[:]
-                uvs = mesh.tessface_uv_textures.active.data[i].uv
 
                 if len(vertices) == 4:
                     yield (vertices[0], vertices[2], vertices[1])
@@ -168,46 +166,44 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
         normals.append(v.normal * -1)
 
     indices = []
-    if uvsPresent:
-        uvs = []
-    else:
-        uvs = None
 
     for indexes in iter_face_index():
         indices += indexes
 
-    if uvsPresent:
-        for uv in iter_uvs():
-            uvs += uv
-
-    tmpIndices = []
-    tmpUvs = {}
     tmpDict = {}
 
     split_uvs = False
 
-    for i, vuv in enumerate(zip(indices,uvs)):
-        
-        oldIndex = vuv[0]
-        uv = vuv[1]
+    if uvsPresent:
+        uvs = []
+        tmpUvs = {}
+        for uv in iter_uvs():
+            uvs += uv
 
-        if oldIndex in tmpDict:
-            if uv in tmpDict[oldIndex]:
-                split_uvs = True
-                newIndex = tmpDict[oldIndex][uv]
+        for i, vuv in enumerate(zip(indices,uvs)):
+            
+            oldIndex = vuv[0]
+            uv = vuv[1]
+
+            if oldIndex in tmpDict:
+                if uv in tmpDict[oldIndex]:
+                    split_uvs = True
+                    newIndex = tmpDict[oldIndex][uv]
+                else:
+                    # duplicate vertex
+                    newIndex = len(vertices)
+                    vertices.append( vertices[oldIndex] )
+                    normals.append( normals[oldIndex] )
+                    tmpDict[oldIndex][uv] = newIndex
+                indices[i] = newIndex
+                tmpUvs[newIndex] = uv
             else:
-                # duplicate vertex
-                newIndex = len(vertices)
-                vertices.append( vertices[oldIndex] )
-                normals.append( normals[oldIndex] )
-                tmpDict[oldIndex][uv] = newIndex
-            indices[i] = newIndex
-            tmpUvs[newIndex] = uv
-        else:
-            tmpDict[oldIndex] = { uv : oldIndex }
-            tmpUvs[oldIndex] = uv
+                tmpDict[oldIndex] = { uv : oldIndex }
+                tmpUvs[oldIndex] = uv
 
-    uvs = list(tmpUvs.values())
+        uvs = list(tmpUvs.values())
+    else:
+        uvs = None
 
     # print('uv len {}'.format(len(uvs)))
     # print('indices len {}'.format(len(indices)))
@@ -277,25 +273,32 @@ def create_object_commands(object, global_matrix, export_normals=False, apply_tr
     
     # Mesh
     mesh = ''
+    material = ''
     if object.data:
+
         mesh = create_mesh_command(object, global_matrix, export_normals=export_normals)
-    
-    # Material
-    material = "SetObjSurface('default');"
-    if object.material_slots:
-        material = "SetObjSurface('{}');".format(getValidName(object.material_slots[0].name))
-    
+
+        # Material
+        material = "SetObjSurface('default');"
+        if object.material_slots:
+            material = "SetObjSurface('{}');".format(getValidName(object.material_slots[0].name))
+
+    elif object.data != None:
+        # if type is not mesh or empty, return
+        return command
+
     # Children
     if len(object.children)>0:
         command += "BeginObjGroup('{}');".format(getValidName(object.name))
-        command += mesh
-        command += material
+
+    command += mesh
+    command += material
+
+    if len(object.children)>0:
         for child in object.children:
-            command += create_object_commands(child, global_matrix, export_normals)
+            if child:
+                command += create_object_commands(child, global_matrix, export_normals)
         command += "EndObjGroup();"
-    else:
-        command += mesh
-        command += material
         
     # Transform
     if not apply_transform:
@@ -306,7 +309,8 @@ def create_object_commands(object, global_matrix, export_normals=False, apply_tr
 def create_objects_commands(objects, global_matrix, export_normals=False, apply_transform=False):
     command = ''
     for object in objects:
-        command += create_object_commands(object, global_matrix, export_normals)
+        if object:
+            command += create_object_commands(object, global_matrix, export_normals)
     return command
 
 def write_roomle_script(filepath, objects, global_matrix, export_normals=False):
