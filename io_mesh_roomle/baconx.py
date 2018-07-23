@@ -271,11 +271,13 @@ def create_transform_commands( object, global_matrix ):
 def create_object_commands(object, global_matrix, export_normals=False, apply_transform=False):
     command = ''
     
+    empty = True
+
     # Mesh
     mesh = ''
     material = ''
-    if object.data:
-
+    if object.data and type(object.data)==bpy.types.Mesh:
+        empty = False
         mesh = create_mesh_command(object, global_matrix, export_normals=export_normals)
 
         # Material
@@ -283,25 +285,28 @@ def create_object_commands(object, global_matrix, export_normals=False, apply_tr
         if object.material_slots:
             material = "SetObjSurface('{}');".format(getValidName(object.material_slots[0].name))
 
-    elif object.data != None:
-        # if type is not mesh or empty, return
-        return command
-
     # Children
+    childCommands = ''
     if len(object.children)>0:
+        for child in object.children:
+            if child:
+                childCommands += create_object_commands(child, global_matrix, export_normals)
+
+    hasChildren = bool(childCommands)
+    empty = empty and not hasChildren
+
+    if hasChildren:
         command += "BeginObjGroup('{}');".format(getValidName(object.name))
 
     command += mesh
     command += material
 
-    if len(object.children)>0:
-        for child in object.children:
-            if child:
-                command += create_object_commands(child, global_matrix, export_normals)
+    if hasChildren:
+        command += childCommands
         command += "EndObjGroup();"
         
     # Transform
-    if not apply_transform:
+    if not apply_transform and not empty:
         command += create_transform_commands(object, global_matrix)
 
     return command
