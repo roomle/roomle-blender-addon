@@ -35,7 +35,6 @@ from bpy.types import (
     OperatorFileListElement,
     )
 
-RoomleOrientationHelper = orientation_helper_factory("RoomleOrientationHelper", axis_forward='-Y', axis_up='Z')
 
 # find path for executable
 def check_for_exe( name ):
@@ -85,7 +84,7 @@ class ExportRoomleScriptPreferences(bpy.types.AddonPreferences):
       layout.prop(self, 'corto_exe')
       layout.label(text="Pluging will try to auto-find corto, if no path found, or you would like to use a different path, set it here.")
 
-class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
+class ExportRoomleScript( Operator, ExportHelper ):
     """Save a Roomle Script from the active object"""
     bl_idname = "export_mesh.roomle_script"
     bl_label = "Export Roomle Script"
@@ -94,8 +93,8 @@ class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
     filter_glob = StringProperty(default="*.txt", options={'HIDDEN'})
     
     use_selection = BoolProperty(
-            name="Selected Objects",
-            description="Export selected objects on visible layers",
+            name="Only Selected Objects",
+            description="Export only selected objects on visible layers",
             default=False,
             )
 
@@ -105,17 +104,11 @@ class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
         default='catalog_id',
     )
 
-    global_scale = FloatProperty(
-            name="Scale",
-            min=0.01, max=1000000.0,
-            default=1000.0,
-            )
-
-    use_scene_unit = BoolProperty(
-            name="Scene Unit",
-            description="Apply current scene's unit (as defined by unit scale) to exported data",
-            default=False,
-            )
+    # use_scene_unit = BoolProperty(
+    #         name="Scene Unit",
+    #         description="Apply current scene's unit (as defined by unit scale) to exported data",
+    #         default=False,
+    #         )
             
     export_normals = BoolProperty(
             name="Export Normals",
@@ -144,12 +137,9 @@ class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
                                             "use_mesh_modifiers",
                                             ))
 
-        global_scale = self.global_scale
+        global_scale = 1000
         
         global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
-
-        # command = baconx.create_object_commands(bpy.context.active_object, global_matrix)
-        # command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
 
         try:
             baconx.write_roomle_script( self, preferences, bpy.context, global_matrix=global_matrix, **keywords)
