@@ -15,7 +15,7 @@ if "bpy" in locals():
     if "baconx" in locals():
         importlib.reload(baconx)
 
-import os
+import os,sys,subprocess
 import bpy
 
 from bpy.props import (
@@ -36,6 +36,54 @@ from bpy.types import (
     )
 
 RoomleOrientationHelper = orientation_helper_factory("RoomleOrientationHelper", axis_forward='-Y', axis_up='Z')
+
+# find path for executable
+def check_for_exe( name ):
+    #check for executable path with where/whereis
+    exe_path = None
+
+    find_programs = ('which','where','whereis')
+
+    for find_program in find_programs:
+        try:
+            exe_path = subprocess.Popen(
+                [find_program,name],
+                shell=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+        except Exception: 
+            pass
+        else:
+            if exe_path is not None:
+                stdout,stderr = exe_path.communicate()
+                path = str(stdout,'utf-8').rstrip()
+                if os.path.isfile(path):
+                    print('found {} at {}'.format(name,path))
+                    return path
+
+    #check in our path
+    for path in sys.path:
+        if os.path.exists( os.path.join(path,name) ):
+            print('found {} at {}'.format(name,path))
+            return os.path.join(path,name)
+
+    return '{} not found!'.format(name)
+
+# Preferences
+class ExportRoomleScriptPreferences(bpy.types.AddonPreferences):
+   bl_idname = __name__
+
+   corto_exe = bpy.props.StringProperty(
+      name="Location of corto executable",
+      subtype="FILE_PATH",
+      default=check_for_exe('corto')
+   )
+
+   def draw(self, context):
+      layout = self.layout
+      layout.prop(self, 'corto_exe')
+      layout.label(text="Pluging will try to auto-find corto, if no path found, or you would like to use a different path, set it here.")
 
 class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
     """Save a Roomle Script from the active object"""
@@ -85,6 +133,8 @@ class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
         from mathutils import Matrix, Vector
         from . import baconx
         
+        preferences = bpy.context.user_preferences.addons[__name__].preferences
+
         keywords = self.as_keywords(ignore=("axis_forward",
                                             "axis_up",
                                             "global_scale",
@@ -102,7 +152,7 @@ class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
         # command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
 
         try:
-            baconx.write_roomle_script( self, bpy.context, global_matrix=global_matrix, **keywords)
+            baconx.write_roomle_script( self, preferences, bpy.context, global_matrix=global_matrix, **keywords)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
