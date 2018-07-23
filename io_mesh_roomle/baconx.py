@@ -290,11 +290,11 @@ def create_transform_commands( object, global_matrix ):
     # rotation
     x,y,z = map(degrees, (-rot.x,rot.y,-rot.z))
     if x!=0:
-        command += "RotateMatrixBy(Vector3f{{1,0,0}},Vector3f{{0,0,0}},{});".format(floatFormat(x,8))
+        command += "RotateMatrixBy(Vector3f{{1,0,0}},Vector3f{{0,0,0}},{});".format(floatFormat(x,2))
     if y!=0:
-        command += "RotateMatrixBy(Vector3f{{0,1,0}},Vector3f{{0,0,0}},{});".format(floatFormat(y,8))
+        command += "RotateMatrixBy(Vector3f{{0,1,0}},Vector3f{{0,0,0}},{});".format(floatFormat(y,2))
     if z!=0:
-        command += "RotateMatrixBy(Vector3f{{0,0,1}},Vector3f{{0,0,0}},{});".format(floatFormat(z,8))
+        command += "RotateMatrixBy(Vector3f{{0,0,1}},Vector3f{{0,0,0}},{});".format(floatFormat(z,2))
     
     # translation
     if not isZero(pos):
