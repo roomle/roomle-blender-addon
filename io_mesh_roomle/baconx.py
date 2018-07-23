@@ -30,16 +30,6 @@ def is_child(parent, child):
             return True
     return False
 
-def remove_nested_objects(objects):
-    for o in objects:
-        for c in objects:
-            if o==c:
-                continue
-            if is_child(o,c):
-                print('remove' + str(c))
-                objects.remove(c)
-    return objects
-
 def faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=True, apply_transform=False):
     """
     From an object, return a generator over a list of faces.
@@ -268,29 +258,31 @@ def create_transform_commands( object, global_matrix ):
     
     return command
 
-def create_object_commands(object, global_matrix, export_normals=False, apply_transform=False):
+def create_object_commands(object, object_list, global_matrix, export_normals=False, apply_transform=False):
     command = ''
     
     empty = True
 
-    # Mesh
     mesh = ''
     material = ''
-    if object.data and type(object.data)==bpy.types.Mesh:
-        empty = False
-        mesh = create_mesh_command(object, global_matrix, export_normals=export_normals)
 
-        # Material
-        material = "SetObjSurface('default');"
-        if object.material_slots:
-            material = "SetObjSurface('{}');".format(getValidName(object.material_slots[0].name))
+    if object_list==None or (object in object_list):
+        # Mesh
+        if object.data and type(object.data)==bpy.types.Mesh:
+            empty = False
+            mesh = create_mesh_command(object, global_matrix, export_normals=export_normals)
+
+            # Material
+            material = "SetObjSurface('default');"
+            if object.material_slots:
+                material = "SetObjSurface('{}');".format(getValidName(object.material_slots[0].name))
 
     # Children
     childCommands = ''
     if len(object.children)>0:
         for child in object.children:
             if child:
-                childCommands += create_object_commands(child, global_matrix, export_normals)
+                childCommands += create_object_commands(child, object_list, global_matrix, export_normals)
 
     hasChildren = bool(childCommands)
     empty = empty and not hasChildren
@@ -311,14 +303,14 @@ def create_object_commands(object, global_matrix, export_normals=False, apply_tr
 
     return command
 
-def create_objects_commands(objects, global_matrix, export_normals=False, apply_transform=False):
+def create_objects_commands(objects, object_list, global_matrix, export_normals=False, apply_transform=False):
     command = ''
     for object in objects:
         if object:
-            command += create_object_commands(object, global_matrix, export_normals)
+            command += create_object_commands(object, object_list, global_matrix, export_normals)
     return command
 
-def write_roomle_script(filepath, objects, global_matrix, export_normals=False):
+def write_roomle_script( operator, context, filepath, global_matrix, export_normals=False, use_selection=False ):
     """
     Write a roomle script file from faces,
 
@@ -329,29 +321,18 @@ def write_roomle_script(filepath, objects, global_matrix, export_normals=False):
        iterable of tuple of 3 vertex, vertex is tuple of 3 coordinates as float
     """
 
-    filterted_objects = remove_nested_objects(objects)
+    scene = bpy.context.scene
 
-    with open(filepath, 'w') as data:
-        script = create_objects_commands(filterted_objects,global_matrix,export_normals)
-        if not bool(script):
-            raise Exception('Empty export! Make sure you have meshes selected.')
-        else:
+    root_objects = []
+    for obj in scene.objects:
+        if not obj.parent:
+            root_objects.append(obj)
+    
+    object_list = bpy.context.selected_objects if use_selection else None
+
+    script = create_objects_commands(root_objects,object_list,global_matrix,export_normals)
+    if not bool(script):
+        raise Exception('Empty export! Make sure you have meshes selected.')
+    else:
+        with open(filepath, 'w') as data:
             data.write(script)
-
-# from mathutils import Matrix, Vector
-
-# global_scale = 1000
-# global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
-
-# objects = remove_nested_objects(bpy.context.selected_objects)
-# command = create_objects_commands(objects,global_matrix)
-# command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
-
-# if 'Commands' in bpy.data.texts:
-#     text = bpy.data.texts['Commands']
-# else:
-#     bpy.ops.text.new()
-#     text = bpy.data.texts[-1]
-#     text.name = 'Commands'
-
-# text.from_string(command)

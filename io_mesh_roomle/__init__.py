@@ -45,6 +45,12 @@ class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
     filename_ext = ".txt"
     filter_glob = StringProperty(default="*.txt", options={'HIDDEN'})
     
+    use_selection = BoolProperty(
+            name="Selected Objects",
+            description="Export selected objects on visible layers",
+            default=False,
+            )
+
     global_scale = FloatProperty(
             name="Scale",
             min=0.01, max=1000000.0,
@@ -90,7 +96,7 @@ class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
         # command = '{"id":"catalogExtId:component1","geometry":"'+command+'"}'
 
         try:
-            baconx.write_roomle_script(objects=bpy.context.selected_objects, global_matrix=global_matrix, **keywords);
+            baconx.write_roomle_script( self, bpy.context, global_matrix=global_matrix, **keywords)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
