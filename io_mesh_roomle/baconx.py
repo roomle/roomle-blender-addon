@@ -234,7 +234,7 @@ def create_mesh_command( object, global_matrix, use_mesh_modifier = True, export
     command+=');'
     return command
 
-def create_extern_mesh_command( extern_mesh_dir, object, global_matrix, use_mesh_modifier = True, export_normals = True, catalog_ext_id='catalog_ext_id' ):
+def create_extern_mesh_command( extern_mesh_dir, object, global_matrix, catalog_id, use_mesh_modifier = True, export_normals = True ):
 
     mesh = object.data
     name = mesh.name
@@ -264,7 +264,7 @@ def create_extern_mesh_command( extern_mesh_dir, object, global_matrix, use_mesh
     # TODO: get correct bounds
     bounds = (100,100,100)
 
-    script = 'AddExternalMesh(\'{}:{}\',Vector3f{{{},{},{}}});'.format(catalog_ext_id,name,*bounds)
+    script = 'AddExternalMesh(\'{}:{}\',Vector3f{{{},{},{}}});'.format(catalog_id,name,*bounds)
     
     return script
 
@@ -292,7 +292,7 @@ def create_transform_commands( object, global_matrix ):
     
     return command
 
-def create_object_commands(object, object_list, extern_mesh_dir, global_matrix, export_normals=False, apply_transform=False):
+def create_object_commands(object, object_list, extern_mesh_dir, global_matrix, catalog_id, export_normals=False, apply_transform=False):
     command = ''
     
     empty = True
@@ -305,26 +305,26 @@ def create_object_commands(object, object_list, extern_mesh_dir, global_matrix, 
         if object.data and type(object.data)==bpy.types.Mesh:
             empty = False
 
-
             #TODO: smart decision whether extern mesh or scripted mesh
             extern = True
 
             if extern:
-                mesh = create_extern_mesh_command( extern_mesh_dir, object, global_matrix )
+                mesh = create_extern_mesh_command( extern_mesh_dir, object, global_matrix, catalog_id )
             else:
                 mesh = create_mesh_command(object, global_matrix, export_normals=export_normals)
 
             # Material
-            material = "SetObjSurface('default');"
+            material_name = 'default'
             if object.material_slots:
-                material = "SetObjSurface('{}');".format(getValidName(object.material_slots[0].name))
+                material_name = getValidName(object.material_slots[0].name)
+            material = "SetObjSurface('{}:{}');".format(catalog_id,material_name)
 
     # Children
     childCommands = ''
     if len(object.children)>0:
         for child in object.children:
             if child:
-                childCommands += create_object_commands(child, object_list, extern_mesh_dir, global_matrix, export_normals)
+                childCommands += create_object_commands(child, object_list, extern_mesh_dir, global_matrix, catalog_id, export_normals)
 
     hasChildren = bool(childCommands)
     empty = empty and not hasChildren
@@ -345,14 +345,14 @@ def create_object_commands(object, object_list, extern_mesh_dir, global_matrix, 
 
     return command
 
-def create_objects_commands(objects, object_list, extern_mesh_dir, global_matrix, export_normals=False, apply_transform=False):
+def create_objects_commands(objects, object_list, extern_mesh_dir, global_matrix, catalog_id, export_normals=False, apply_transform=False):
     command = ''
     for object in objects:
         if object:
-            command += create_object_commands(object, object_list, extern_mesh_dir, global_matrix, export_normals)
+            command += create_object_commands(object, object_list, extern_mesh_dir, global_matrix, catalog_id, export_normals)
     return command
 
-def write_roomle_script( operator, context, filepath, global_matrix, export_normals=False, use_selection=False ):
+def write_roomle_script( operator, context, filepath, global_matrix, catalog_id='catalog_id', export_normals=False, use_selection=False ):
     """
     Write a roomle script file from faces,
 
@@ -376,7 +376,7 @@ def write_roomle_script( operator, context, filepath, global_matrix, export_norm
     if not os.path.isdir(extern_mesh_dir):
         os.makedirs(extern_mesh_dir)
 
-    script = create_objects_commands(root_objects,object_list,extern_mesh_dir,global_matrix,export_normals)
+    script = create_objects_commands(root_objects,object_list,extern_mesh_dir,global_matrix,catalog_id,export_normals)
     if not bool(script):
         raise Exception('Empty export! Make sure you have meshes selected.')
     else:

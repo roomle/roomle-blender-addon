@@ -51,6 +51,12 @@ class ExportRoomleScript(Operator, ExportHelper, RoomleOrientationHelper):
             default=False,
             )
 
+    catalog_id = StringProperty(
+        name="Catalog ID",
+        description="Catalog name. Used as prefix for mesh and material IDs",
+        default='catalog_id',
+    )
+
     global_scale = FloatProperty(
             name="Scale",
             min=0.01, max=1000000.0,
