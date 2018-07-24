@@ -315,8 +315,9 @@ def create_object_commands(preferences,object, object_list, extern_mesh_dir, glo
         if object.data and type(object.data)==bpy.types.Mesh:
             empty = False
 
-            #TODO: smarter decision whether extern mesh or scripted mesh
-            extern = len(object.data.vertices) > 100
+            method = object.data.roomle_export_method
+
+            extern = (method=='EXTERNAL') or (method=='AUTO' and len(object.data.vertices) > 100)
 
             if extern:
                 mesh = create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, catalog_id, export_normals=export_normals )

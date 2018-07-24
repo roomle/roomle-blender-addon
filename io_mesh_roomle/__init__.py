@@ -155,6 +155,17 @@ def menu_export(self, context):
 
 
 def register():
+    if not hasattr(bpy.types.Mesh,'export_corto'):
+        bpy.types.Mesh.roomle_export_method = bpy.props.EnumProperty(
+            name='Roomle script export method',
+            default='AUTO',
+            items = [
+                ('AUTO', 'automatic', 'automatically make bigger meshes external', '', 0),
+                ('INTERNAL', 'internal', 'include the mesh as text command', '', 1),
+                ('EXTERNAL', 'external', 'load the mesh from external file', '', 2)
+                ]
+            )
+
     bpy.utils.register_module(__name__)
     bpy.types.INFO_MT_file_export.append(menu_export)
 
