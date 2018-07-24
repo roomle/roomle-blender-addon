@@ -9,3 +9,7 @@ Install from File…
 select baconx.zip
 search for roomle
 activate Import-Export: Roomle Configurator Script
+
+TODO:
+* Mesh name prefix from scene property
+* triangulate meshes prior to ply/corto export
