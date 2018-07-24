@@ -243,21 +243,26 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
     
     scene = bpy.context.scene
     
-    scene.objects.active = object  # set as the active object in the scene
-    object.select = True  # select object
+    tmp = bpy.data.objects.new('tmp_'+name, mesh) # create temporary object with same mesh data but without transformation
+    scene.objects.link(tmp)  # put the object into the scene (link)
+
+    scene.objects.active = tmp  # set as the active object in the scene
+    tmp.select = True  # select object
         
     bpy.ops.export_mesh.ply(
         filepath=filepath,
         check_existing=False,
-        axis_forward='-Y',
+        axis_forward='Y',
         axis_up='Z',
         filter_glob="*.ply",
         use_mesh_modifiers=False,
         use_normals=export_normals,
         use_uv_coords=False,
         use_colors=False,
-        global_scale=1
+        global_scale=1000
         )
+
+    bpy.data.objects.remove(tmp,True) # remove temporary object
 
     if preferences.corto_exe and os.path.isfile(preferences.corto_exe):
         try:
