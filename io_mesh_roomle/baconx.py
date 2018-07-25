@@ -239,6 +239,9 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
     mesh = object.data
     name = mesh.name
 
+    if not os.path.isdir(extern_mesh_dir):
+        os.makedirs(extern_mesh_dir)
+
     filepath = os.path.join( extern_mesh_dir, '{}.{}'.format(name,'ply') )
     
     scene = bpy.context.scene
@@ -389,8 +392,6 @@ def write_roomle_script( operator, preferences, context, filepath, global_matrix
     object_list = bpy.context.selected_objects if use_selection else None
 
     extern_mesh_dir = os.path.splitext(filepath)[0]
-    if not os.path.isdir(extern_mesh_dir):
-        os.makedirs(extern_mesh_dir)
 
     script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,catalog_id,export_normals)
     if not bool(script):
