@@ -279,10 +279,11 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
             os.remove(filepath)
         print(preferences.corto_exe)
     
-    dim = object.dimensions
+    dim = object.dimensions * 1000
     bounds = ( floatFormat(dim.x,1), floatFormat(dim.z,1), floatFormat(dim.y,1) )
 
-    script = 'AddExternalMesh(\'{}:{}\',Vector3f{{{},{},{}}});'.format(catalog_id,name,*bounds)
+    script_name = os.path.basename(extern_mesh_dir)
+    script = 'AddExternalMesh(\'{}:{}_{}\',Vector3f{{{},{},{}}});'.format(catalog_id,script_name,name,*bounds)
     
     return script
 
