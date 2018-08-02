@@ -260,7 +260,7 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
         filter_glob="*.ply",
         use_mesh_modifiers=False,
         use_normals=export_normals,
-        use_uv_coords=False,
+        use_uv_coords=True,
         use_colors=False,
         global_scale=1000
         )
