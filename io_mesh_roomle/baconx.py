@@ -1,8 +1,11 @@
 import bpy
+import bmesh
 import re,os,subprocess
 
 from decimal import Decimal
 from math import degrees
+
+from mathutils import Vector
 
 from bpy_extras.io_utils import (
         axis_conversion,
@@ -205,11 +208,11 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
     # bpy.data.meshes.remove(mesh)
     return vertices, indices, uvs, normals, split_uvs
         
-def create_mesh_command( object, global_matrix, use_mesh_modifier = True, export_normals = True ):
+def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, export_normals = True ):
     
     command = "AddMesh("
         
-    vertices, indices, uvs, normals, split_uvs = indices_from_mesh(object,global_matrix,use_mesh_modifier)
+    vertices, indices, uvs, normals, split_uvs = indices_from_mesh(object,global_matrix,use_mesh_modifiers)
     
     export_normals |= split_uvs
 
@@ -234,10 +237,41 @@ def create_mesh_command( object, global_matrix, use_mesh_modifier = True, export
     command+=');'
     return command
 
-def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, catalog_id, use_mesh_modifier = True, export_normals = False ):
+def get_object_bounding_box( object ):
+    corners = object.bound_box
+
+    vals = [c[0] for c in corners]
+    xmin = min(vals)
+    xmax = max(vals)
+
+    vals = [c[1] for c in corners]
+    ymin = min(vals)
+    ymax = max(vals)
+
+    vals = [c[2] for c in corners]
+    zmin = min(vals)
+    zmax = max(vals)
+
+    dim = Vector(( xmax-xmin, ymax-ymin, zmax-zmin ))
+    center = Vector(( xmax+xmin, ymax+ymin, zmax+zmin ))*0.5
+    return dim,center
+
+def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, catalog_id, use_mesh_modifiers = True, export_normals = False ):
 
     mesh = object.data
     name = mesh.name
+
+    # Get a BMesh representation
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+
+    bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method=0, ngon_method=0)
+
+    tri_mesh = bpy.data.meshes.new(name)
+
+    # Finish up, write the bmesh back to the mesh
+    bm.to_mesh(tri_mesh)
+    bm.free()
 
     if not os.path.isdir(extern_mesh_dir):
         os.makedirs(extern_mesh_dir)
@@ -246,7 +280,7 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
     
     scene = bpy.context.scene
     
-    tmp = bpy.data.objects.new('tmp_'+name, mesh) # create temporary object with same mesh data but without transformation
+    tmp = bpy.data.objects.new('tmp_'+name, tri_mesh) # create temporary object with same mesh data but without transformation
     scene.objects.link(tmp)  # put the object into the scene (link)
 
     scene.objects.active = tmp  # set as the active object in the scene
@@ -258,7 +292,7 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
         axis_forward='Y',
         axis_up='Z',
         filter_glob="*.ply",
-        use_mesh_modifiers=False,
+        use_mesh_modifiers=use_mesh_modifiers,
         use_normals=export_normals,
         use_uv_coords=True,
         use_colors=False,
@@ -266,6 +300,7 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
         )
 
     bpy.data.objects.remove(tmp,True) # remove temporary object
+    bpy.data.meshes.remove(tri_mesh,True)
 
     if preferences.corto_exe and os.path.isfile(preferences.corto_exe):
         try:
@@ -279,11 +314,22 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
             os.remove(filepath)
         print(preferences.corto_exe)
     
-    dim = object.dimensions * 1000
-    bounds = ( floatFormat(dim.x,1), floatFormat(dim.z,1), floatFormat(dim.y,1) )
+    dim, center = get_object_bounding_box(object)
+    # Convert to Roomle Script space
+    dim *= 1000
+    center *= 1000
+    center.y *= -1
+    dim_str = ( floatFormat(dim.x,1), floatFormat(dim.y,1), floatFormat(dim.z,1) )
+    center_str = ( floatFormat(center.x,1), floatFormat(center.y,1), floatFormat(center.z,1) )
 
     script_name = os.path.basename(extern_mesh_dir)
-    script = 'AddExternalMesh(\'{}:{}_{}\',Vector3f{{{},{},{}}});'.format(catalog_id,script_name,name,*bounds)
+    script = 'AddExternalMesh(\'{}:{}_{}\',Vector3f{{{},{},{}}},Vector3f{{{},{},{}}});'.format(
+        catalog_id,
+        script_name,
+        name,
+        *dim_str,
+        *center_str
+        )
     
     return script
 
