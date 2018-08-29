@@ -91,18 +91,18 @@ class ExportRoomleScript( Operator, ExportHelper ):
 
     filename_ext = ".txt"
     filter_glob = StringProperty(default="*.txt", options={'HIDDEN'})
-    
-    use_selection = BoolProperty(
-            name="Only Selected Objects",
-            description="Export only selected objects on visible layers",
-            default=False,
-            )
 
     catalog_id = StringProperty(
         name="Catalog ID",
         description="Catalog name. Used as prefix for mesh and material IDs",
         default='catalog_id',
     )
+
+    use_selection = BoolProperty(
+            name="Only Selected Objects",
+            description="Export only selected objects on visible layers",
+            default=False,
+            )
 
     # use_scene_unit = BoolProperty(
     #         name="Scene Unit",
@@ -111,17 +111,47 @@ class ExportRoomleScript( Operator, ExportHelper ):
     #         )
             
     export_normals = BoolProperty(
-            name="Export Normals",
-            description="Export normals per vertex as well.",
+        name="Export Normals",
+        description="Export normals per vertex as well.",
+        default=False,
+        )
+
+    advanced = BoolProperty(
+            name="Advanced Settings",
+            description="Show advanced settings",
             default=False,
             )
-    
+
+    mesh_export_options = [
+        ("AUTO", "Automatic", "Automatically make big meshes efficient, external files", 1),
+        ("EXTERNAL", "Force Extern", "Include meshes as text command", 2),
+        ("INTERNAL", "Force Intern", "Export meshes as external files", 3),
+    ]
+
+    mesh_export_option = EnumProperty(
+        items=mesh_export_options,
+        name="Mesh export method",
+        description="Meshes are converted into external files or script commands",
+        default="AUTO",
+        )
+
     # use_mesh_modifiers = BoolProperty(
     #         name="Apply Modifiers",
     #         description="Apply the modifiers before saving",
     #         default=True,
     #         )
             
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, 'catalog_id')
+        layout.prop(self, 'use_selection')
+        layout.prop(self, 'export_normals')
+        layout.prop(self, 'advanced') 
+        if self.advanced:
+            box=layout.box()
+            box.label('Advanced', icon='RADIO')
+            box.prop(self, 'mesh_export_option')
+
     def execute(self, context):
         from mathutils import Matrix, Vector
         from . import baconx
@@ -135,6 +165,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
                                             "filter_glob",
                                             "use_scene_unit",
                                             "use_mesh_modifiers",
+                                            "advanced"
                                             ))
 
         global_scale = 1000
@@ -155,20 +186,8 @@ def menu_export(self, context):
 
 
 def register():
-    if not hasattr(bpy.types.Mesh,'export_corto'):
-        bpy.types.Mesh.roomle_export_method = bpy.props.EnumProperty(
-            name='Roomle script export method',
-            default='AUTO',
-            items = [
-                ('AUTO', 'automatic', 'automatically make bigger meshes external', '', 0),
-                ('INTERNAL', 'internal', 'include the mesh as text command', '', 1),
-                ('EXTERNAL', 'external', 'load the mesh from external file', '', 2)
-                ]
-            )
-
     bpy.utils.register_module(__name__)
     bpy.types.INFO_MT_file_export.append(menu_export)
-
 
 def unregister():
     bpy.utils.unregister_module(__name__)

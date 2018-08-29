@@ -208,10 +208,11 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
     # bpy.data.meshes.remove(mesh)
     return vertices, indices, uvs, normals, split_uvs
         
-def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, export_normals = True ):
+def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, **args ):
     
     command = "AddMesh("
-        
+    export_normals = args['export_normals']
+
     vertices, indices, uvs, normals, split_uvs = indices_from_mesh(object,global_matrix,use_mesh_modifiers)
     
     export_normals |= split_uvs
@@ -256,7 +257,7 @@ def get_object_bounding_box( object ):
     center = Vector(( xmax+xmin, ymax+ymin, zmax+zmin ))*0.5
     return dim,center
 
-def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, catalog_id, use_mesh_modifiers = True, export_normals = False ):
+def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, use_mesh_modifiers = True, **args ):
 
     mesh = object.data
     name = mesh.name
@@ -293,7 +294,7 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
         axis_up='Z',
         filter_glob="*.ply",
         use_mesh_modifiers=use_mesh_modifiers,
-        use_normals=export_normals,
+        use_normals=args['export_normals'],
         use_uv_coords=True,
         use_colors=False,
         global_scale=1000
@@ -324,7 +325,7 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
 
     script_name = os.path.basename(extern_mesh_dir)
     script = 'AddExternalMesh(\'{}:{}_{}\',Vector3f{{{},{},{}}},Vector3f{{{},{},{}}});'.format(
-        catalog_id,
+        args['catalog_id'],
         script_name,
         name,
         *dim_str,
@@ -357,7 +358,7 @@ def create_transform_commands( object, global_matrix ):
     
     return command
 
-def create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, catalog_id, export_normals=False, apply_transform=False):
+def create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, apply_transform=False, **args):
     command = ''
     
     empty = True
@@ -370,27 +371,27 @@ def create_object_commands(preferences,object, object_list, extern_mesh_dir, glo
         if object.data and type(object.data)==bpy.types.Mesh:
             empty = False
 
-            method = object.data.roomle_export_method
+            method = args['mesh_export_option']
 
             extern = (method=='EXTERNAL') or (method=='AUTO' and len(object.data.vertices) > 100)
 
             if extern:
-                mesh = create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, catalog_id, export_normals=export_normals )
+                mesh = create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, **args )
             else:
-                mesh = create_mesh_command(object, global_matrix, export_normals=export_normals)
+                mesh = create_mesh_command(object, global_matrix, **args)
 
             # Material
             material_name = 'default'
             if object.material_slots:
                 material_name = getValidName(object.material_slots[0].name)
-            material = "SetObjSurface('{}:{}');".format(catalog_id,material_name)
+            material = "SetObjSurface('{}:{}');".format( args['catalog_id'], material_name )
 
     # Children
     childCommands = ''
     if len(object.children)>0:
         for child in object.children:
             if child:
-                childCommands += create_object_commands(preferences,child, object_list, extern_mesh_dir, global_matrix, catalog_id, export_normals)
+                childCommands += create_object_commands(preferences,child, object_list, extern_mesh_dir, global_matrix, **args)
 
     hasChildren = bool(childCommands)
     empty = empty and not hasChildren
@@ -411,14 +412,14 @@ def create_object_commands(preferences,object, object_list, extern_mesh_dir, glo
 
     return command
 
-def create_objects_commands(preferences,objects, object_list, extern_mesh_dir, global_matrix, catalog_id, export_normals=False, apply_transform=False):
+def create_objects_commands(preferences,objects, object_list, extern_mesh_dir, global_matrix, apply_transform=False, **args):
     command = ''
     for object in objects:
         if object:
-            command += create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, catalog_id, export_normals)
+            command += create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, **args)
     return command
 
-def write_roomle_script( operator, preferences, context, filepath, global_matrix, catalog_id='catalog_id', export_normals=False, use_selection=False ):
+def write_roomle_script( operator, preferences, context, filepath, global_matrix, **args ):
     """
     Write a roomle script file from faces,
 
@@ -436,11 +437,11 @@ def write_roomle_script( operator, preferences, context, filepath, global_matrix
         if not obj.parent:
             root_objects.append(obj)
     
-    object_list = bpy.context.selected_objects if use_selection else None
+    object_list = bpy.context.selected_objects if args['use_selection'] else bpy.context.visible_objects
 
     extern_mesh_dir = os.path.splitext(filepath)[0]
 
-    script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,catalog_id,export_normals)
+    script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,**args)
     if not bool(script):
         raise Exception('Empty export! Make sure you have meshes selected.')
     else:
