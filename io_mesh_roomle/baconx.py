@@ -3,7 +3,7 @@ import bmesh
 import re,os,subprocess
 
 from decimal import Decimal
-from math import degrees
+from math import degrees,floor,log10
 
 from mathutils import Vector
 
@@ -23,7 +23,8 @@ def floatFormat( value, precision=0 ):
     """
     q = Decimal(10) ** -precision      # 2 precision --> '0.01'
     d = Decimal(value)
-    return '{:f}'.format(d.quantize(q).normalize())
+    result = '{:f}'.format(d.quantize(q).normalize())
+    return '0' if result == '-0' else result
 
 def is_child(parent, child):
     for c in parent.children:
@@ -226,13 +227,21 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, **arg
     command += ']'
     
     if uvs:
+        maxvalue = 1
+        for p in uvs:
+            maxvalue = max(maxvalue, *[abs(x) for x in p] )
+
+        uv_prec = max( 0, args['uv_float_precision'] - floor(log10(abs(maxvalue))))
+
         command+=',Vector2f['
-        command += ','.join( '{{{0},{1}}}'.format( floatFormat(p[0],6), floatFormat(p[1],6) ) for p in uvs)
+        command += ','.join( '{{{0},{1}}}'.format( floatFormat(p[0],uv_prec), floatFormat(p[1],uv_prec) ) for p in uvs)
         command+=']'
 
     if export_normals:
+        norm_prec = args['normal_float_precision']
+
         command += ',Vector3f['
-        command += ','.join( '{{{0},{1},{2}}}'.format( floatFormat(n.x,8), floatFormat(n.y,8), floatFormat(n.z,8) ) for n in normals)
+        command += ','.join( '{{{0},{1},{2}}}'.format( floatFormat(n.x,norm_prec), floatFormat(n.y,norm_prec), floatFormat(n.z,norm_prec) ) for n in normals)
         command += ']'
         
     command+=');'

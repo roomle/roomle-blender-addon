@@ -24,6 +24,7 @@ from bpy.props import (
         CollectionProperty,
         EnumProperty,
         FloatProperty,
+        IntProperty,
         )
 from bpy_extras.io_utils import (
     ExportHelper,
@@ -134,7 +135,22 @@ class ExportRoomleScript( Operator, ExportHelper ):
         description="Meshes are converted into external files or script commands",
         default="AUTO",
         )
+        
+    uv_float_precision = IntProperty(
+        name="UV Precision",
+        description="Max floating point fraction precision of UVs in decimal digits when creating script commands",
+        default=4,
+        min=0,
+        max=8
+    )
 
+    normal_float_precision = IntProperty(
+        name="Normal Precision",
+        description="Max floating point fraction precision of Normals in decimal digits when creating script commands",
+        default=5,
+        min=2,
+        max=8
+    )
     # use_mesh_modifiers = BoolProperty(
     #         name="Apply Modifiers",
     #         description="Apply the modifiers before saving",
@@ -151,6 +167,8 @@ class ExportRoomleScript( Operator, ExportHelper ):
             box=layout.box()
             box.label('Advanced', icon='RADIO')
             box.prop(self, 'mesh_export_option')
+            box.prop(self, 'uv_float_precision')
+            box.prop(self, 'normal_float_precision')
 
     def execute(self, context):
         from mathutils import Matrix, Vector
