@@ -3,7 +3,7 @@ import bmesh
 import re,os,subprocess
 
 from decimal import Decimal
-from math import degrees
+from math import degrees,floor,log10
 
 from mathutils import Vector
 
@@ -23,7 +23,8 @@ def floatFormat( value, precision=0 ):
     """
     q = Decimal(10) ** -precision      # 2 precision --> '0.01'
     d = Decimal(value)
-    return '{:f}'.format(d.quantize(q).normalize())
+    result = '{:f}'.format(d.quantize(q).normalize())
+    return '0' if result == '-0' else result
 
 def is_child(parent, child):
     for c in parent.children:
@@ -208,10 +209,12 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
     # bpy.data.meshes.remove(mesh)
     return vertices, indices, uvs, normals, split_uvs
         
-def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, export_normals = True ):
+def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, **args ):
     
-    command = "AddMesh("
-        
+    command = '//Mesh:{}\n'.format(object.data.name)
+    command += 'AddMesh('
+    export_normals = args['export_normals']
+
     vertices, indices, uvs, normals, split_uvs = indices_from_mesh(object,global_matrix,use_mesh_modifiers)
     
     export_normals |= split_uvs
@@ -225,16 +228,24 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, expor
     command += ']'
     
     if uvs:
+        maxvalue = 1
+        for p in uvs:
+            maxvalue = max(maxvalue, *[abs(x) for x in p] )
+
+        uv_prec = max( 0, args['uv_float_precision'] - floor(log10(abs(maxvalue))))
+
         command+=',Vector2f['
-        command += ','.join( '{{{0},{1}}}'.format( floatFormat(p[0],6), floatFormat(p[1],6) ) for p in uvs)
+        command += ','.join( '{{{0},{1}}}'.format( floatFormat(p[0],uv_prec), floatFormat(p[1],uv_prec) ) for p in uvs)
         command+=']'
 
     if export_normals:
+        norm_prec = args['normal_float_precision']
+
         command += ',Vector3f['
-        command += ','.join( '{{{0},{1},{2}}}'.format( floatFormat(n.x,8), floatFormat(n.y,8), floatFormat(n.z,8) ) for n in normals)
+        command += ','.join( '{{{0},{1},{2}}}'.format( floatFormat(n.x,norm_prec), floatFormat(n.y,norm_prec), floatFormat(n.z,norm_prec) ) for n in normals)
         command += ']'
         
-    command+=');'
+    command+=');\n'
     return command
 
 def get_object_bounding_box( object ):
@@ -256,7 +267,7 @@ def get_object_bounding_box( object ):
     center = Vector(( xmax+xmin, ymax+ymin, zmax+zmin ))*0.5
     return dim,center
 
-def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, catalog_id, use_mesh_modifiers = True, export_normals = False ):
+def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, use_mesh_modifiers = True, **args ):
 
     mesh = object.data
     name = mesh.name
@@ -276,7 +287,8 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
     if not os.path.isdir(extern_mesh_dir):
         os.makedirs(extern_mesh_dir)
 
-    filepath = os.path.join( extern_mesh_dir, '{}.{}'.format(name,'ply') )
+    script_name = os.path.basename(extern_mesh_dir)
+    filepath = os.path.join( extern_mesh_dir, '{}_{}.{}'.format(script_name,name,'ply') )
     
     scene = bpy.context.scene
     
@@ -293,7 +305,7 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
         axis_up='Z',
         filter_glob="*.ply",
         use_mesh_modifiers=use_mesh_modifiers,
-        use_normals=export_normals,
+        use_normals=args['export_normals'],
         use_uv_coords=True,
         use_colors=False,
         global_scale=1000
@@ -319,12 +331,12 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
     dim *= 1000
     center *= 1000
     center.y *= -1
+    bb_origin = center - (dim*0.5)
     dim_str = ( floatFormat(dim.x,1), floatFormat(dim.y,1), floatFormat(dim.z,1) )
-    center_str = ( floatFormat(center.x,1), floatFormat(center.y,1), floatFormat(center.z,1) )
+    center_str = ( floatFormat(bb_origin.x,1), floatFormat(bb_origin.y,1), floatFormat(bb_origin.z,1) )
 
-    script_name = os.path.basename(extern_mesh_dir)
-    script = 'AddExternalMesh(\'{}:{}_{}\',Vector3f{{{},{},{}}},Vector3f{{{},{},{}}});'.format(
-        catalog_id,
+    script = 'AddExternalMesh(\'{}:{}_{}\',Vector3f{{{},{},{}}},Vector3f{{{},{},{}}});\n'.format(
+        args['catalog_id'],
         script_name,
         name,
         *dim_str,
@@ -345,19 +357,28 @@ def create_transform_commands( object, global_matrix ):
     # rotation
     x,y,z = map(degrees, (-rot.x,rot.y,-rot.z))
     if x!=0:
-        command += "RotateMatrixBy(Vector3f{{1,0,0}},Vector3f{{0,0,0}},{});".format(floatFormat(x,2))
+        command += "RotateMatrixBy(Vector3f{{1,0,0}},Vector3f{{0,0,0}},{});\n".format(floatFormat(x,2))
     if y!=0:
-        command += "RotateMatrixBy(Vector3f{{0,1,0}},Vector3f{{0,0,0}},{});".format(floatFormat(y,2))
+        command += "RotateMatrixBy(Vector3f{{0,1,0}},Vector3f{{0,0,0}},{});\n".format(floatFormat(y,2))
     if z!=0:
-        command += "RotateMatrixBy(Vector3f{{0,0,1}},Vector3f{{0,0,0}},{});".format(floatFormat(z,2))
+        command += "RotateMatrixBy(Vector3f{{0,0,1}},Vector3f{{0,0,0}},{});\n".format(floatFormat(z,2))
     
     # translation
     if not isZero(pos):
-        command += "MoveMatrixBy(Vector3f{{{0},{1},{2}}});".format(floatFormat(pos.x,1),floatFormat(pos.y,1),floatFormat(pos.z,1))
+        command += "MoveMatrixBy(Vector3f{{{0},{1},{2}}});\n".format(floatFormat(pos.x,1),floatFormat(pos.y,1),floatFormat(pos.z,1))
     
     return command
 
-def create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, catalog_id, export_normals=False, apply_transform=False):
+def create_object_commands(
+    preferences,
+    object,
+    object_list,
+    extern_mesh_dir,
+    global_matrix,
+    apply_transform=False,
+    **args
+    ):
+
     command = ''
     
     empty = True
@@ -370,40 +391,40 @@ def create_object_commands(preferences,object, object_list, extern_mesh_dir, glo
         if object.data and type(object.data)==bpy.types.Mesh:
             empty = False
 
-            method = object.data.roomle_export_method
+            method = args['mesh_export_option']
 
             extern = (method=='EXTERNAL') or (method=='AUTO' and len(object.data.vertices) > 100)
 
             if extern:
-                mesh = create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, catalog_id, export_normals=export_normals )
+                mesh = create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, **args )
             else:
-                mesh = create_mesh_command(object, global_matrix, export_normals=export_normals)
+                mesh = create_mesh_command(object, global_matrix, **args)
 
             # Material
             material_name = 'default'
             if object.material_slots:
                 material_name = getValidName(object.material_slots[0].name)
-            material = "SetObjSurface('{}:{}');".format(catalog_id,material_name)
+            material = "SetObjSurface('{}:{}');\n".format( args['catalog_id'], material_name )
 
     # Children
     childCommands = ''
     if len(object.children)>0:
         for child in object.children:
             if child:
-                childCommands += create_object_commands(preferences,child, object_list, extern_mesh_dir, global_matrix, catalog_id, export_normals)
+                childCommands += create_object_commands(preferences,child, object_list, extern_mesh_dir, global_matrix, **args)
 
     hasChildren = bool(childCommands)
     empty = empty and not hasChildren
 
     if hasChildren:
-        command += "BeginObjGroup('{}');".format(getValidName(object.name))
+        command += "BeginObjGroup('{}');\n".format(getValidName(object.name))
 
     command += mesh
     command += material
 
     if hasChildren:
         command += childCommands
-        command += "EndObjGroup();"
+        command += "EndObjGroup();\n"
         
     # Transform
     if not apply_transform and not empty:
@@ -411,14 +432,14 @@ def create_object_commands(preferences,object, object_list, extern_mesh_dir, glo
 
     return command
 
-def create_objects_commands(preferences,objects, object_list, extern_mesh_dir, global_matrix, catalog_id, export_normals=False, apply_transform=False):
+def create_objects_commands(preferences,objects, object_list, extern_mesh_dir, global_matrix, apply_transform=False, **args):
     command = ''
     for object in objects:
         if object:
-            command += create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, catalog_id, export_normals)
-    return command
+            command += create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, **args)
+    return command.rstrip()
 
-def write_roomle_script( operator, preferences, context, filepath, global_matrix, catalog_id='catalog_id', export_normals=False, use_selection=False ):
+def write_roomle_script( operator, preferences, context, filepath, global_matrix, **args ):
     """
     Write a roomle script file from faces,
 
@@ -436,11 +457,11 @@ def write_roomle_script( operator, preferences, context, filepath, global_matrix
         if not obj.parent:
             root_objects.append(obj)
     
-    object_list = bpy.context.selected_objects if use_selection else None
+    object_list = bpy.context.selected_objects if args['use_selection'] else bpy.context.visible_objects
 
     extern_mesh_dir = os.path.splitext(filepath)[0]
 
-    script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,catalog_id,export_normals)
+    script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,**args)
     if not bool(script):
         raise Exception('Empty export! Make sure you have meshes selected.')
     else:
