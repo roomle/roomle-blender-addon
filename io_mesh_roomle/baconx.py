@@ -211,7 +211,8 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
         
 def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, **args ):
     
-    command = "AddMesh("
+    command = '//Mesh:{}\n'.format(object.data.name)
+    command += 'AddMesh('
     export_normals = args['export_normals']
 
     vertices, indices, uvs, normals, split_uvs = indices_from_mesh(object,global_matrix,use_mesh_modifiers)
@@ -244,7 +245,7 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, **arg
         command += ','.join( '{{{0},{1},{2}}}'.format( floatFormat(n.x,norm_prec), floatFormat(n.y,norm_prec), floatFormat(n.z,norm_prec) ) for n in normals)
         command += ']'
         
-    command+=');'
+    command+=');\n'
     return command
 
 def get_object_bounding_box( object ):
@@ -333,7 +334,7 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
     center_str = ( floatFormat(center.x,1), floatFormat(center.y,1), floatFormat(center.z,1) )
 
     script_name = os.path.basename(extern_mesh_dir)
-    script = 'AddExternalMesh(\'{}:{}_{}\',Vector3f{{{},{},{}}},Vector3f{{{},{},{}}});'.format(
+    script = 'AddExternalMesh(\'{}:{}_{}\',Vector3f{{{},{},{}}},Vector3f{{{},{},{}}});\n'.format(
         args['catalog_id'],
         script_name,
         name,
@@ -355,19 +356,28 @@ def create_transform_commands( object, global_matrix ):
     # rotation
     x,y,z = map(degrees, (-rot.x,rot.y,-rot.z))
     if x!=0:
-        command += "RotateMatrixBy(Vector3f{{1,0,0}},Vector3f{{0,0,0}},{});".format(floatFormat(x,2))
+        command += "RotateMatrixBy(Vector3f{{1,0,0}},Vector3f{{0,0,0}},{});\n".format(floatFormat(x,2))
     if y!=0:
-        command += "RotateMatrixBy(Vector3f{{0,1,0}},Vector3f{{0,0,0}},{});".format(floatFormat(y,2))
+        command += "RotateMatrixBy(Vector3f{{0,1,0}},Vector3f{{0,0,0}},{});\n".format(floatFormat(y,2))
     if z!=0:
-        command += "RotateMatrixBy(Vector3f{{0,0,1}},Vector3f{{0,0,0}},{});".format(floatFormat(z,2))
+        command += "RotateMatrixBy(Vector3f{{0,0,1}},Vector3f{{0,0,0}},{});\n".format(floatFormat(z,2))
     
     # translation
     if not isZero(pos):
-        command += "MoveMatrixBy(Vector3f{{{0},{1},{2}}});".format(floatFormat(pos.x,1),floatFormat(pos.y,1),floatFormat(pos.z,1))
+        command += "MoveMatrixBy(Vector3f{{{0},{1},{2}}});\n".format(floatFormat(pos.x,1),floatFormat(pos.y,1),floatFormat(pos.z,1))
     
     return command
 
-def create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, apply_transform=False, **args):
+def create_object_commands(
+    preferences,
+    object,
+    object_list,
+    extern_mesh_dir,
+    global_matrix,
+    apply_transform=False,
+    **args
+    ):
+
     command = ''
     
     empty = True
@@ -393,7 +403,7 @@ def create_object_commands(preferences,object, object_list, extern_mesh_dir, glo
             material_name = 'default'
             if object.material_slots:
                 material_name = getValidName(object.material_slots[0].name)
-            material = "SetObjSurface('{}:{}');".format( args['catalog_id'], material_name )
+            material = "SetObjSurface('{}:{}');\n".format( args['catalog_id'], material_name )
 
     # Children
     childCommands = ''
@@ -406,14 +416,14 @@ def create_object_commands(preferences,object, object_list, extern_mesh_dir, glo
     empty = empty and not hasChildren
 
     if hasChildren:
-        command += "BeginObjGroup('{}');".format(getValidName(object.name))
+        command += "BeginObjGroup('{}');\n".format(getValidName(object.name))
 
     command += mesh
     command += material
 
     if hasChildren:
         command += childCommands
-        command += "EndObjGroup();"
+        command += "EndObjGroup();\n"
         
     # Transform
     if not apply_transform and not empty:
@@ -426,7 +436,7 @@ def create_objects_commands(preferences,objects, object_list, extern_mesh_dir, g
     for object in objects:
         if object:
             command += create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, **args)
-    return command
+    return command.rstrip()
 
 def write_roomle_script( operator, preferences, context, filepath, global_matrix, **args ):
     """
