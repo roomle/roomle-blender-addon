@@ -287,7 +287,8 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
     if not os.path.isdir(extern_mesh_dir):
         os.makedirs(extern_mesh_dir)
 
-    filepath = os.path.join( extern_mesh_dir, '{}.{}'.format(name,'ply') )
+    script_name = os.path.basename(extern_mesh_dir)
+    filepath = os.path.join( extern_mesh_dir, '{}_{}.{}'.format(script_name,name,'ply') )
     
     scene = bpy.context.scene
     
@@ -334,7 +335,6 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
     dim_str = ( floatFormat(dim.x,1), floatFormat(dim.y,1), floatFormat(dim.z,1) )
     center_str = ( floatFormat(bb_origin.x,1), floatFormat(bb_origin.y,1), floatFormat(bb_origin.z,1) )
 
-    script_name = os.path.basename(extern_mesh_dir)
     script = 'AddExternalMesh(\'{}:{}_{}\',Vector3f{{{},{},{}}},Vector3f{{{},{},{}}});\n'.format(
         args['catalog_id'],
         script_name,
