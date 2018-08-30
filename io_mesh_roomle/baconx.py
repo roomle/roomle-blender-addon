@@ -330,8 +330,9 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
     dim *= 1000
     center *= 1000
     center.y *= -1
+    bb_origin = center - (dim*0.5)
     dim_str = ( floatFormat(dim.x,1), floatFormat(dim.y,1), floatFormat(dim.z,1) )
-    center_str = ( floatFormat(center.x,1), floatFormat(center.y,1), floatFormat(center.z,1) )
+    center_str = ( floatFormat(bb_origin.x,1), floatFormat(bb_origin.y,1), floatFormat(bb_origin.z,1) )
 
     script_name = os.path.basename(extern_mesh_dir)
     script = 'AddExternalMesh(\'{}:{}_{}\',Vector3f{{{},{},{}}},Vector3f{{{},{},{}}});\n'.format(
