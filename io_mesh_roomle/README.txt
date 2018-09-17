@@ -1,5 +1,8 @@
 Changelog
 
+# upcoming
+* Added operator for optimizing scene
+
 # 0.3.0
 * Fixed bounding box calculation for AddExternMesh command
 * Extern mesh files now have the exported script name as a prefix

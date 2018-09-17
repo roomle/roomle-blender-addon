@@ -12,8 +12,11 @@ bl_info = {
 
 if "bpy" in locals():
     import importlib
-    if "baconx" in locals():
-        importlib.reload(baconx)
+    importlib.reload(baconx)
+    importlib.reload(optimize_operator)
+else:
+    from . import baconx
+    from . import optimize_operator
 
 import os,sys,subprocess
 import bpy
