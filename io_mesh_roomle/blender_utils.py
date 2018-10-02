@@ -133,7 +133,7 @@ def reset_transform(obj):
 
 	return messages
 
-def optimize_scene():
+def optimize_scene( center_scene=True, reset_transforms=True ):
 	messages = []
 	for obj in bpy.context.scene.objects:
 		if obj.type!='MESH':
@@ -145,14 +145,15 @@ def optimize_scene():
 	delta = -c
 	delta.z += d.z/2
 
-	if not is_zero(delta):
+	if center_scene and not is_zero(delta):
 		messages.append( 'Scene is not centered (delta: {})'.format(delta) )
 		move_all( delta )
 
-	for obj in bpy.context.scene.objects:
-		if obj.type!='MESH':
-			continue
-		messages += reset_transform(obj)
+	if reset_transforms:
+		for obj in bpy.context.scene.objects:
+			if obj.type!='MESH':
+				continue
+			messages += reset_transform(obj)
 
 	for msg in messages:
 		print(msg)

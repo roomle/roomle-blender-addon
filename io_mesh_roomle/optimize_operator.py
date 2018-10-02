@@ -1,4 +1,7 @@
 import bpy
+
+from bpy.props import BoolProperty
+
 from .blender_utils import optimize_scene
 
 class OptimizeSceneOperator(bpy.types.Operator):
@@ -8,12 +11,15 @@ class OptimizeSceneOperator(bpy.types.Operator):
     bl_idname = "scene.roomle_optimize"
     bl_label = "Optimize Roomle static"
 
+    center_scene = BoolProperty(name="Center Scene", description="center scene horicontally and place it on x-y plane vertically.", default=True)
+    reset_transforms = BoolProperty(name="Reset Transforms", description="Remove hierarchy, apply scale/rotation/translation", default=True)
+
     @classmethod
     def poll(cls, context):
         return context.scene is not None
 
     def execute(self, context):
-        optimize_scene()
+        optimize_scene(center_scene=self.center_scene, reset_transforms=self.reset_transforms)
         return {'FINISHED'}
 
 def register():
