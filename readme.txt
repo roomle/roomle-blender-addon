@@ -9,6 +9,7 @@ Install from File…
 select baconx.zip
 search for roomle
 activate Import-Export: Roomle Configurator Script
+File > Export > Roomle Script (txt)
 
 TODO:
 * Mesh name prefix from scene property
