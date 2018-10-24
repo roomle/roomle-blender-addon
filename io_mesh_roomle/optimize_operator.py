@@ -10,6 +10,7 @@ class OptimizeSceneOperator(bpy.types.Operator):
 
     bl_idname = "scene.roomle_optimize"
     bl_label = "Optimize Roomle static"
+    bl_options = {'REGISTER', 'UNDO'} # 'PRESET'
 
     center_scene = BoolProperty(name="Center Scene", description="center scene horicontally and place it on x-y plane vertically.", default=True)
     reset_transforms = BoolProperty(name="Reset Transforms", description="Remove hierarchy, apply scale/rotation/translation", default=True)
@@ -20,6 +21,7 @@ class OptimizeSceneOperator(bpy.types.Operator):
 
     def execute(self, context):
         optimize_scene(center_scene=self.center_scene, reset_transforms=self.reset_transforms)
+        self.report({'INFO'},'Optimized!')
         return {'FINISHED'}
 
 def register():
