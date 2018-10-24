@@ -140,14 +140,15 @@ def optimize_scene( center_scene=True, reset_transforms=True ):
 			continue
 		messages += remove_loose_vertices(obj)
 
-	c,d = get_scene_bounding_box()
+	if center_scene:
+		c,d = get_scene_bounding_box()
 
-	delta = -c
-	delta.z += d.z/2
+		delta = -c
+		delta.z += d.z/2
 
-	if center_scene and not is_zero(delta):
-		messages.append( 'Scene is not centered (delta: {})'.format(delta) )
-		move_all( delta )
+		if not is_zero(delta):
+			messages.append( 'Scene is not centered (delta: {})'.format(delta) )
+			move_all( delta )
 
 	if reset_transforms:
 		for obj in bpy.context.scene.objects:
