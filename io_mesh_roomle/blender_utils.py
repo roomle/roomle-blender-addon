@@ -108,7 +108,7 @@ def reset_transform(obj):
 
 	messages = []
 
-	mat = obj.matrix_basis
+	mat = obj.matrix_basis.copy()
 
 	if mat == Matrix():
 		return messages
@@ -130,6 +130,9 @@ def reset_transform(obj):
 	bm.free()
 
 	obj.matrix_basis = Matrix() # identity
+
+	for child in obj.children:
+		child.matrix_basis = mat*child.matrix_basis
 
 	return messages
 
