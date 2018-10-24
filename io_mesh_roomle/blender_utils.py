@@ -67,7 +67,7 @@ def frame_object( camera, objects ):
 
 	camera.location = pos[0]
 
-def cleanup( obj ):	
+def remove_loose_vertices( obj ):
 	messages = []
 
 	me = obj.data
@@ -138,7 +138,7 @@ def optimize_scene( center_scene=True, reset_transforms=True ):
 	for obj in bpy.context.scene.objects:
 		if obj.type!='MESH':
 			continue
-		messages += cleanup(obj)
+		messages += remove_loose_vertices(obj)
 
 	c,d = get_scene_bounding_box()
 
