@@ -211,7 +211,7 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
         
 def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale=None, **args ):
     
-    command = '//Mesh:{}\n'.format(object.data.name)
+    command = '//Object:{} Mesh:{}\n'.format(object.name,object.data.name)
     command += 'AddMesh('
     export_normals = args['export_normals']
 
