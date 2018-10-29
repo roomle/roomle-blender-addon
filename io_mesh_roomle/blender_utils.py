@@ -67,7 +67,7 @@ def frame_object( camera, objects ):
 
 	camera.location = pos[0]
 
-def cleanup( obj ):	
+def remove_loose_vertices( obj ):
 	messages = []
 
 	me = obj.data
@@ -108,7 +108,7 @@ def reset_transform(obj):
 
 	messages = []
 
-	mat = obj.matrix_basis
+	mat = obj.matrix_basis.copy()
 
 	if mat == Matrix():
 		return messages
@@ -131,28 +131,33 @@ def reset_transform(obj):
 
 	obj.matrix_basis = Matrix() # identity
 
+	for child in obj.children:
+		child.matrix_basis = mat*child.matrix_basis
+
 	return messages
 
-def optimize_scene():
+def optimize_scene( center_scene=True, reset_transforms=True ):
 	messages = []
 	for obj in bpy.context.scene.objects:
 		if obj.type!='MESH':
 			continue
-		messages += cleanup(obj)
+		messages += remove_loose_vertices(obj)
 
-	c,d = get_scene_bounding_box()
+	if center_scene:
+		c,d = get_scene_bounding_box()
 
-	delta = -c
-	delta.z += d.z/2
+		delta = -c
+		delta.z += d.z/2
 
-	if not is_zero(delta):
-		messages.append( 'Scene is not centered (delta: {})'.format(delta) )
-		move_all( delta )
+		if not is_zero(delta):
+			messages.append( 'Scene is not centered (delta: {})'.format(delta) )
+			move_all( delta )
 
-	for obj in bpy.context.scene.objects:
-		if obj.type!='MESH':
-			continue
-		messages += reset_transform(obj)
+	if reset_transforms:
+		for obj in bpy.context.scene.objects:
+			if obj.type!='MESH':
+				continue
+			messages += reset_transform(obj)
 
 	for msg in messages:
 		print(msg)
