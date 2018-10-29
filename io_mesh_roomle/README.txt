@@ -2,6 +2,7 @@ Changelog
 
 # upcoming
 * Added operator for optimizing scene
+* Support for per object scale. It gets applied to mesh data.
 
 # 0.3.0
 * Fixed bounding box calculation for AddExternMesh command
