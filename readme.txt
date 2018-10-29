@@ -13,4 +13,5 @@ File > Export > Roomle Script (txt)
 
 TODO:
 * Mesh name prefix from scene property
-* triangulate meshes prior to ply/corto export
+* Detect/Warn that when per object scale is used, meshes cannot share data anymore.
+

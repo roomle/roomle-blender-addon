@@ -209,7 +209,7 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
     # bpy.data.meshes.remove(mesh)
     return vertices, indices, uvs, normals, split_uvs
         
-def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, **args ):
+def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale=None, **args ):
     
     command = '//Mesh:{}\n'.format(object.data.name)
     command += 'AddMesh('
@@ -220,7 +220,14 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, **arg
     export_normals |= split_uvs
 
     command += 'Vector3f['
-    command += ','.join( '{{{0},{1},{2}}}'.format( floatFormat(v.x,1), floatFormat(v.y,1), floatFormat(v.z,1) ) for v in vertices)
+    for i,v in enumerate(vertices):
+        if i>0:
+            command += ','
+        if scale:
+            v.x *= scale.x
+            v.y *= scale.y
+            v.z *= scale.z
+        command +='{{{0},{1},{2}}}'.format( floatFormat(v.x,1), floatFormat(v.y,1), floatFormat(v.z,1) )
     command += '],'
     
     command += '['
@@ -267,10 +274,11 @@ def get_object_bounding_box( object ):
     center = Vector(( xmax+xmin, ymax+ymin, zmax+zmin ))*0.5
     return dim,center
 
-def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, use_mesh_modifiers = True, **args ):
+def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, use_mesh_modifiers = True, scale=None, **args ):
 
     mesh = object.data
-    name = mesh.name
+
+    name = object.name if scale else mesh.name
 
     # Get a BMesh representation
     bm = bmesh.new()
@@ -294,6 +302,9 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
     
     tmp = bpy.data.objects.new('tmp_'+name, tri_mesh) # create temporary object with same mesh data but without transformation
     scene.objects.link(tmp)  # put the object into the scene (link)
+
+    if scale:
+        tmp.scale = scale
 
     scene.objects.active = tmp  # set as the active object in the scene
     tmp.select = True  # select object
@@ -327,6 +338,15 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
         print(preferences.corto_exe)
     
     dim, center = get_object_bounding_box(object)
+    if scale:
+        dim.x *= scale.x
+        dim.y *= scale.y
+        dim.z *= scale.z
+
+        center.x *= scale.x
+        center.y *= scale.y
+        center.z *= scale.z
+
     # Convert to Roomle Script space
     dim *= 1000
     center *= 1000
@@ -345,14 +365,14 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
     
     return script
 
-def create_transform_commands( object, global_matrix ):
+def create_transform_commands(
+    object,
+    global_matrix,
+    parent_scale=None
+    ):
     command = ''
     pos = object.matrix_local.translation*global_matrix
     rot = object.matrix_local.to_euler()
-    scale = object.scale
-    
-    if scale.x!=1 or scale.y!=1 or scale.z!=1:
-        raise Exception("Object {} has scale on it. Fix it first.".format(object.name))
     
     # rotation
     x,y,z = map(degrees, (-rot.x,rot.y,-rot.z))
@@ -365,6 +385,11 @@ def create_transform_commands( object, global_matrix ):
     
     # translation
     if not isZero(pos):
+        if parent_scale:
+            pos.x = pos.x * parent_scale.x
+            pos.y = pos.y * parent_scale.y
+            pos.z = pos.z * parent_scale.z
+
         command += "MoveMatrixBy(Vector3f{{{0},{1},{2}}});\n".format(floatFormat(pos.x,1),floatFormat(pos.y,1),floatFormat(pos.z,1))
     
     return command
@@ -375,6 +400,7 @@ def create_object_commands(
     object_list,
     extern_mesh_dir,
     global_matrix,
+    parent_scale=None,
     apply_transform=False,
     **args
     ):
@@ -386,9 +412,13 @@ def create_object_commands(
     mesh = ''
     material = ''
 
+    scale = object.matrix_world.to_scale()
+    if scale.x==1 and scale.y==1 and scale.z==1:
+        scale = None
+
     if object_list==None or (object in object_list):
         # Mesh
-        if object.data and type(object.data)==bpy.types.Mesh:
+        if object.data and isinstance(object.data,bpy.types.Mesh):
             empty = False
 
             method = args['mesh_export_option']
@@ -396,9 +426,9 @@ def create_object_commands(
             extern = (method=='EXTERNAL') or (method=='AUTO' and len(object.data.vertices) > 100)
 
             if extern:
-                mesh = create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, **args )
+                mesh = create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, scale=scale, **args )
             else:
-                mesh = create_mesh_command(object, global_matrix, **args)
+                mesh = create_mesh_command(object, global_matrix, scale=scale, **args)
 
             # Material
             material_name = 'default'
@@ -411,7 +441,15 @@ def create_object_commands(
     if len(object.children)>0:
         for child in object.children:
             if child:
-                childCommands += create_object_commands(preferences,child, object_list, extern_mesh_dir, global_matrix, **args)
+                childCommands += create_object_commands (
+                    preferences,
+                    child,
+                    object_list,
+                    extern_mesh_dir,
+                    global_matrix, 
+                    parent_scale=scale,
+                    **args
+                    )
 
     hasChildren = bool(childCommands)
     empty = empty and not hasChildren
@@ -428,7 +466,11 @@ def create_object_commands(
         
     # Transform
     if not apply_transform and not empty:
-        command += create_transform_commands(object, global_matrix)
+        command += create_transform_commands(
+            object,
+            global_matrix,
+            parent_scale=parent_scale
+            )
 
     return command
 
