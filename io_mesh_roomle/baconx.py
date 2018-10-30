@@ -226,9 +226,10 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
     export_normals |= split_uvs
 
     command += 'Vector3f['
-    for i,v in enumerate(vertices):
+    for i,vertex in enumerate(vertices):
         if i>0:
             command += ','
+        v=vertex.copy()
         if scale:
             v.x *= scale.x
             v.y *= scale.y
