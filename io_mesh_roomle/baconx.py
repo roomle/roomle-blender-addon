@@ -276,9 +276,13 @@ def get_object_bounding_box( object ):
 
 def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, use_mesh_modifiers = True, scale=None, **args ):
 
-    mesh = object.data
+    name = object.name if scale else object.data.name
 
-    name = object.name if scale else mesh.name
+    mesh = object.to_mesh(
+        scene=bpy.context.scene,
+        apply_modifiers=True,
+        settings='PREVIEW'
+    )
 
     # Get a BMesh representation
     bm = bmesh.new()
