@@ -14,8 +14,14 @@ from bpy_extras.io_utils import (
 def getValidName(name):
     return re.sub('[^0-9a-zA-Z:_]+', '', name)
 
-def isZero(self):
-    return not any(f!=0 for f in self)
+def isZero(self, precision=0):
+    q = Decimal(10) ** -precision # 2 precision --> '0.01'
+    if isinstance(self, float):
+        return Decimal(self).quantize(q).normalize()==0
+    for f in self:
+        if Decimal(f).quantize(q).normalize()!=0:
+            return False
+    return True
 
 def floatFormat( value, precision=0 ):
     """
@@ -220,9 +226,10 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
     export_normals |= split_uvs
 
     command += 'Vector3f['
-    for i,v in enumerate(vertices):
+    for i,vertex in enumerate(vertices):
         if i>0:
             command += ','
+        v=vertex.copy()
         if scale:
             v.x *= scale.x
             v.y *= scale.y
@@ -276,9 +283,13 @@ def get_object_bounding_box( object ):
 
 def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, use_mesh_modifiers = True, scale=None, **args ):
 
-    mesh = object.data
+    name = object.name if scale else object.data.name
 
-    name = object.name if scale else mesh.name
+    mesh = object.to_mesh(
+        scene=bpy.context.scene,
+        apply_modifiers=True,
+        settings='PREVIEW'
+    )
 
     # Get a BMesh representation
     bm = bmesh.new()
@@ -376,15 +387,16 @@ def create_transform_commands(
     
     # rotation
     x,y,z = map(degrees, (-rot.x,rot.y,-rot.z))
-    if x!=0:
-        command += "RotateMatrixBy(Vector3f{{1,0,0}},Vector3f{{0,0,0}},{});\n".format(floatFormat(x,2))
-    if y!=0:
-        command += "RotateMatrixBy(Vector3f{{0,1,0}},Vector3f{{0,0,0}},{});\n".format(floatFormat(y,2))
-    if z!=0:
-        command += "RotateMatrixBy(Vector3f{{0,0,1}},Vector3f{{0,0,0}},{});\n".format(floatFormat(z,2))
+    rotation_precision = 2
+    if not isZero(x,rotation_precision):
+        command += "RotateMatrixBy(Vector3f{{1,0,0}},Vector3f{{0,0,0}},{});\n".format(floatFormat(x,rotation_precision))
+    if not isZero(y,rotation_precision):
+        command += "RotateMatrixBy(Vector3f{{0,1,0}},Vector3f{{0,0,0}},{});\n".format(floatFormat(y,rotation_precision))
+    if not isZero(z,rotation_precision):
+        command += "RotateMatrixBy(Vector3f{{0,0,1}},Vector3f{{0,0,0}},{});\n".format(floatFormat(z,rotation_precision))
     
     # translation
-    if not isZero(pos):
+    if not isZero(pos,precision=1):
         if parent_scale:
             pos.x = pos.x * parent_scale.x
             pos.y = pos.y * parent_scale.y
