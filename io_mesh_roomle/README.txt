@@ -1,5 +1,10 @@
 Changelog
 
+# known issues
+* Multiple instances of the same Mesh combined with apply rotation or custom scale can create wrong scale/rotations (Assets0/bacon-x#7)
+* Normal export with applied rotations is untested (esp. internal meshes)
+* Normal export in combination with no UVs creates invalid AddMesh commands (Assets0/bacon-x#6)
+
 # 0.4.0-beta
 * Support for per object scale. It gets applied to mesh data
 * Support for applying rotations in mesh data
