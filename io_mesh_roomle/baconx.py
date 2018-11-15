@@ -396,12 +396,12 @@ def create_transform_commands(
         command += "RotateMatrixBy(Vector3f{{0,0,1}},Vector3f{{0,0,0}},{});\n".format(floatFormat(z,rotation_precision))
     
     # translation
-    if not isZero(pos,precision=1):
-        if parent_scale:
-            pos.x = pos.x * parent_scale.x
-            pos.y = pos.y * parent_scale.y
-            pos.z = pos.z * parent_scale.z
+    if parent_scale:
+        pos.x = pos.x * parent_scale.x
+        pos.y = pos.y * parent_scale.y
+        pos.z = pos.z * parent_scale.z
 
+    if not isZero(pos,precision=1):
         command += "MoveMatrixBy(Vector3f{{{0},{1},{2}}});\n".format(floatFormat(pos.x,1),floatFormat(pos.y,1),floatFormat(pos.z,1))
     
     return command
