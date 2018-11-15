@@ -8,6 +8,7 @@ bl_info = {
     "warning": "",
     "support": 'COMMUNITY',
     "category": "Import-Export",
+    "tracker_url": "http://source.roomle.local/Assets0/bacon-x/issues"
 }
 
 if "bpy" in locals():
