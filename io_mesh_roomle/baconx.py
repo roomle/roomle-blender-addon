@@ -97,7 +97,7 @@ def vertices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=
         for v in f:
             yield v
 
-def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=True, apply_transform=False):
+def indices_from_mesh(ob, use_mesh_modifiers=False, triangulate=True):
 
     # get the editmode data
     ob.update_from_editmode()
@@ -107,11 +107,6 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
         mesh = ob.to_mesh(bpy.context.scene, use_mesh_modifiers, "PREVIEW")
     except RuntimeError:
         raise StopIteration
-
-    if apply_transform:
-        mesh.transform(global_matrix * ob.matrix_world)
-    else:
-        mesh.transform(global_matrix)
 
     mesh.calc_normals()
 
@@ -215,13 +210,14 @@ def indices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=T
     # bpy.data.meshes.remove(mesh)
     return vertices, indices, uvs, normals, split_uvs
         
-def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale=None, **args ):
+def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale=None, rotation=None, **args ):
     
     command = '//Object:{} Mesh:{}\n'.format(object.name,object.data.name)
     command += 'AddMesh('
     export_normals = args['export_normals']
+    apply_rotation = args['apply_rotations'] and rotation
 
-    vertices, indices, uvs, normals, split_uvs = indices_from_mesh(object,global_matrix,use_mesh_modifiers)
+    vertices, indices, uvs, normals, split_uvs = indices_from_mesh(object,use_mesh_modifiers)
     
     export_normals |= split_uvs
 
@@ -234,6 +230,11 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
             v.x *= scale.x
             v.y *= scale.y
             v.z *= scale.z
+        if apply_rotation:
+            v = rotation*v
+
+        v = global_matrix*v
+
         command +='{{{0},{1},{2}}}'.format( floatFormat(v.x,1), floatFormat(v.y,1), floatFormat(v.z,1) )
     command += '],'
     
@@ -281,9 +282,19 @@ def get_object_bounding_box( object ):
     center = Vector(( xmax+xmin, ymax+ymin, zmax+zmin ))*0.5
     return dim,center
 
-def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, use_mesh_modifiers = True, scale=None, **args ):
+def create_extern_mesh_command(
+    preferences,
+    extern_mesh_dir,
+    object,
+    global_matrix,
+    use_mesh_modifiers = True,
+    scale=None,
+    rotation=None,
+    **args
+    ):
 
-    name = object.name if scale else object.data.name
+    apply_rotation = args['apply_rotations'] and rotation
+    name = object.name if (scale or apply_rotation) else object.data.name
 
     mesh = object.to_mesh(
         scene=bpy.context.scene,
@@ -311,15 +322,23 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
     
     scene = bpy.context.scene
     
+    bpy.ops.object.select_all(action='DESELECT')
+
     tmp = bpy.data.objects.new('tmp_'+name, tri_mesh) # create temporary object with same mesh data but without transformation
     scene.objects.link(tmp)  # put the object into the scene (link)
 
     if scale:
         tmp.scale = scale
+    if apply_rotation:
+        tmp.rotation_mode = 'QUATERNION'
+        tmp.rotation_quaternion = rotation
 
     scene.objects.active = tmp  # set as the active object in the scene
     tmp.select = True  # select object
         
+    # Apply transform (necessary to have correct boundings box)
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
     bpy.ops.export_mesh.ply(
         filepath=filepath,
         check_existing=False,
@@ -333,22 +352,11 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
         global_scale=1000
         )
 
+    dim, center = get_object_bounding_box(tmp)
+
     bpy.data.objects.remove(tmp,True) # remove temporary object
     bpy.data.meshes.remove(tri_mesh,True)
 
-    if preferences.corto_exe and os.path.isfile(preferences.corto_exe):
-        try:
-            corto_process = subprocess.Popen( [preferences.corto_exe,filepath] )
-            if corto_process.wait()!=0:
-                raise Exception('corto error')
-        except Exception as e:
-            print(e)
-            pass
-        else:
-            os.remove(filepath)
-        print(preferences.corto_exe)
-    
-    dim, center = get_object_bounding_box(object)
     if scale:
         dim.x *= scale.x
         dim.y *= scale.y
@@ -373,33 +381,52 @@ def create_extern_mesh_command( preferences, extern_mesh_dir, object, global_mat
         *dim_str,
         *center_str
         )
+
+    if preferences.corto_exe and os.path.isfile(preferences.corto_exe):
+        try:
+            corto_process = subprocess.Popen( [preferences.corto_exe,filepath] )
+            if corto_process.wait()!=0:
+                raise Exception('corto error')
+        except Exception as e:
+            print(e)
+            pass
+        else:
+            os.remove(filepath)
+        print(preferences.corto_exe)
     
     return script
 
 def create_transform_commands(
     object,
     global_matrix,
-    parent_scale=None
+    parent_scale=None,
+    apply_rotation=True,
+    parent_rotation=None
     ):
     command = ''
-    pos = object.matrix_local.translation*global_matrix
-    rot = object.matrix_local.to_euler()
-    
+    pos = object.matrix_local.translation.copy()
+
     # rotation
-    x,y,z = map(degrees, (-rot.x,rot.y,-rot.z))
-    rotation_precision = 2
-    if not isZero(x,rotation_precision):
-        command += "RotateMatrixBy(Vector3f{{1,0,0}},Vector3f{{0,0,0}},{});\n".format(floatFormat(x,rotation_precision))
-    if not isZero(y,rotation_precision):
-        command += "RotateMatrixBy(Vector3f{{0,1,0}},Vector3f{{0,0,0}},{});\n".format(floatFormat(y,rotation_precision))
-    if not isZero(z,rotation_precision):
-        command += "RotateMatrixBy(Vector3f{{0,0,1}},Vector3f{{0,0,0}},{});\n".format(floatFormat(z,rotation_precision))
+    if not apply_rotation:
+        rot = object.matrix_local.to_euler()
+        x,y,z = map(degrees, (-rot.x,rot.y,-rot.z))
+        rotation_precision = 2
+        if not isZero(x,rotation_precision):
+            command += "RotateMatrixBy(Vector3f{{1,0,0}},Vector3f{{0,0,0}},{});\n".format(floatFormat(x,rotation_precision))
+        if not isZero(y,rotation_precision):
+            command += "RotateMatrixBy(Vector3f{{0,1,0}},Vector3f{{0,0,0}},{});\n".format(floatFormat(y,rotation_precision))
+        if not isZero(z,rotation_precision):
+            command += "RotateMatrixBy(Vector3f{{0,0,1}},Vector3f{{0,0,0}},{});\n".format(floatFormat(z,rotation_precision))
     
     # translation
     if parent_scale:
         pos.x = pos.x * parent_scale.x
         pos.y = pos.y * parent_scale.y
         pos.z = pos.z * parent_scale.z
+
+    if apply_rotation and parent_rotation:
+        pos = parent_rotation*pos
+    pos = pos*global_matrix
 
     if not isZero(pos,precision=1):
         command += "MoveMatrixBy(Vector3f{{{0},{1},{2}}});\n".format(floatFormat(pos.x,1),floatFormat(pos.y,1),floatFormat(pos.z,1))
@@ -413,6 +440,7 @@ def create_object_commands(
     extern_mesh_dir,
     global_matrix,
     parent_scale=None,
+    parent_rotation=None,
     apply_transform=False,
     **args
     ):
@@ -428,6 +456,13 @@ def create_object_commands(
     if scale.x==1 and scale.y==1 and scale.z==1:
         scale = None
 
+    apply_rotation = args['apply_rotations']
+    rotation = None
+    if apply_rotation:
+        rotation = object.matrix_world.to_quaternion()
+        if rotation.x==0 and rotation.y==0 and rotation.z==0 and rotation.w==1:
+            rotation = None
+
     if object_list==None or (object in object_list):
         # Mesh
         if object.data and isinstance(object.data,bpy.types.Mesh):
@@ -438,9 +473,9 @@ def create_object_commands(
             extern = (method=='EXTERNAL') or (method=='AUTO' and len(object.data.vertices) > 100)
 
             if extern:
-                mesh = create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, scale=scale, **args )
+                mesh = create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, scale=scale, rotation=rotation, **args )
             else:
-                mesh = create_mesh_command(object, global_matrix, scale=scale, **args)
+                mesh = create_mesh_command(object, global_matrix, scale=scale, rotation=rotation, **args)
 
             # Material
             material_name = 'default'
@@ -460,6 +495,7 @@ def create_object_commands(
                     extern_mesh_dir,
                     global_matrix, 
                     parent_scale=scale,
+                    parent_rotation=rotation,
                     **args
                     )
 
@@ -481,7 +517,9 @@ def create_object_commands(
         command += create_transform_commands(
             object,
             global_matrix,
-            parent_scale=parent_scale
+            parent_scale=parent_scale,
+            apply_rotation=apply_rotation,
+            parent_rotation=parent_rotation
             )
 
     return command

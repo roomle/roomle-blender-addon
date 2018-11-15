@@ -1,8 +1,9 @@
 Changelog
 
 # 0.4.0-beta
+* Support for per object scale. It gets applied to mesh data
+* Support for applying rotations in mesh data
 * Added operator for optimizing scene
-* Support for per object scale. It gets applied to mesh data.
 * Added Roomle Gitlab as tracker URL
 
 # 0.3.0

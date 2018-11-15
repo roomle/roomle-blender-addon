@@ -121,6 +121,12 @@ class ExportRoomleScript( Operator, ExportHelper ):
         default=False,
         )
 
+    apply_rotations = BoolProperty(
+        name="Apply Rotations",
+        description="Apply all rotations into vertex data",
+        default=True,
+        )
+
     advanced = BoolProperty(
             name="Advanced Settings",
             description="Show advanced settings",
@@ -166,6 +172,10 @@ class ExportRoomleScript( Operator, ExportHelper ):
         layout.prop(self, 'catalog_id')
         layout.prop(self, 'use_selection')
         layout.prop(self, 'export_normals')
+        layout.prop(self, 'apply_rotations')
+        # TODO: remove warning once it's tested and stable
+        if self.apply_rotations:
+            layout.label('Apply rotation is experimental', icon='RADIO')
         layout.prop(self, 'advanced') 
         if self.advanced:
             box=layout.box()
