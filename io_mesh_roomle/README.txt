@@ -1,6 +1,6 @@
 Changelog
 
-# upcoming
+# 0.4.0-beta
 * Added operator for optimizing scene
 * Support for per object scale. It gets applied to mesh data.
 * Added Roomle Gitlab as tracker URL
