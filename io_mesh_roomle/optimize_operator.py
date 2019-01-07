@@ -17,7 +17,7 @@ class OptimizeSceneOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.scene is not None
+        return context.scene is not None and context.mode=='OBJECT'
 
     def execute(self, context):
         optimize_scene(center_scene=self.center_scene, reset_transforms=self.reset_transforms)
