@@ -3,3 +3,5 @@ baconx.zip
 *.blend2
 
 __pycache__/
+
+test/tmp
