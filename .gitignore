@@ -2,6 +2,7 @@ baconx.zip
 *.blend1
 *.blend2
 
+.vscode
 __pycache__/
 
 test/tmp
