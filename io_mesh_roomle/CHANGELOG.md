@@ -5,12 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Added
-- Unit test scripts
 ### Known issues
 - Multiple instances of the same Mesh combined with apply rotation or custom scale can create wrong scale/rotations (Assets0/bacon-x#7)
 - Normal export with applied rotations is untested (esp. internal meshes)
 - Normal export in combination with no UVs creates invalid AddMesh commands (Assets0/bacon-x#6)
+
+## [1.0.0] - 2019-03-19
+### Added
+- Unit test scripts
 
 ## [0.4.0-beta] - 2018-11-18
 ### Added

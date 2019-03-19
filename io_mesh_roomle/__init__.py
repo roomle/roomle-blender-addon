@@ -1,11 +1,10 @@
 bl_info = {
     "name": "Roomle Configurator Script",
     "author": "Andreas Atteneder",
-    "version": (0, 4, 0),
+    "version": (1, 0, 0),
     "blender": (2, 79, 0),
     "location": "File > Import-Export > Roomle",
     "description": "Export Roomle Configurator Script",
-    "warning": "beta",
     "support": 'COMMUNITY',
     "category": "Import-Export",
     "tracker_url": "http://source.roomle.local/Assets0/bacon-x/issues"
