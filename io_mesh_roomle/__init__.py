@@ -32,7 +32,6 @@ from bpy.props import (
         )
 from bpy_extras.io_utils import (
     ExportHelper,
-    orientation_helper_factory,
     axis_conversion
     )
 from bpy.types import (
