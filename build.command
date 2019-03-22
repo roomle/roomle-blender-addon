@@ -2,7 +2,7 @@
 
 cd $(dirname "$0")
 
-NAME="baconx.zip"
+NAME="roomle_blender_addon.zip"
 
 if [ -e "$NAME" ]
 then

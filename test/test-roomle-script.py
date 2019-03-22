@@ -8,7 +8,7 @@ from subprocess import check_call,DEVNULL,CalledProcessError,STDOUT
 
 log = logging.getLogger('test')
 
-class BaconXTests(TestCase):
+class RoomleScriptExportTests(TestCase):
 
     BLENDER = {
         '2.79': '/Applications/blender-2.79.0-x86_64/blender.app/Contents/MacOS/blender',
@@ -89,7 +89,7 @@ class BaconXTests(TestCase):
         script = 'test/blend_fail.py'
         self.assertRaises( CalledProcessError, self.run_tests, blender_exe, script )
 
-    def test_baconx(self):
+    def test_roomle_script_export(self):
         for name,blender_exe in self.BLENDER.items():
             self.run_test_blend(blender_exe=blender_exe,name=name)
 
@@ -97,7 +97,7 @@ if __name__ == '__main__':
 
     ## Running a single test 
     # suite = unittest.TestSuite()
-    # suite.addTest(DapFbxToAllTests("test_baconx"))
+    # suite.addTest(DapFbxToAllTests("test_roomle_script_export"))
     # runner = TextTestRunner( verbosity=2 )
     # runner.run(suite)
 

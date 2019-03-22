@@ -7,15 +7,15 @@ bl_info = {
     "description": "Export Roomle Configurator Script",
     "support": 'COMMUNITY',
     "category": "Import-Export",
-    "tracker_url": "http://source.roomle.local/Assets0/bacon-x/issues"
+    "tracker_url": "https://gitlab.com/roomle/tools/roomle-blender-addon/issues"
 }
 
 if "bpy" in locals():
     import importlib
-    importlib.reload(baconx)
+    importlib.reload(roomle_script)
     importlib.reload(optimize_operator)
 else:
-    from . import baconx
+    from . import roomle_script
     from . import optimize_operator
 
 import os,sys,subprocess
@@ -184,7 +184,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
 
     def execute(self, context):
         from mathutils import Matrix, Vector
-        from . import baconx
+        from . import roomle_script
         
         preferences = bpy.context.user_preferences.addons[__name__].preferences
 
@@ -203,7 +203,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
         global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
 
         try:
-            baconx.write_roomle_script( self, preferences, bpy.context, global_matrix=global_matrix, **keywords)
+            roomle_script.write_roomle_script( self, preferences, bpy.context, global_matrix=global_matrix, **keywords)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}

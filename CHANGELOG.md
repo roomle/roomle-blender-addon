@@ -6,9 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Known issues
-- Multiple instances of the same Mesh combined with apply rotation or custom scale can create wrong scale/rotations (Assets0/bacon-x#7)
+- Multiple instances of the same Mesh combined with apply rotation or custom scale can create wrong scale/rotations
 - Normal export with applied rotations is untested (esp. internal meshes)
-- Normal export in combination with no UVs creates invalid AddMesh commands (Assets0/bacon-x#6)
+- Normal export in combination with no UVs creates invalid AddMesh commands
 
 ## [1.0.0] - 2019-03-19
 ### Added
