@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Normal export with applied rotations is untested (esp. internal meshes)
 - Normal export in combination with no UVs creates invalid AddMesh commands
 
+## [1.0.1] - 2019-03-23
+### Fixed
+- Temporary meshes that are generated during script export are now properly removed.
+- Loose vertices (not assigned to a face) are not exported anymore
+
 ## [1.0.0] - 2019-03-19
 ### Added
 - Unit test scripts
