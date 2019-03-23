@@ -90,11 +90,14 @@ def faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=Tru
         def iter_face_index():
             for face in mesh.tessfaces:
                 vertices = face.vertices[:]
-                if len(vertices) == 4:
+                count = len(vertices)
+                if count == 4:
                     yield vertices[0], vertices[2], vertices[1]
                     yield vertices[2], vertices[0], vertices[3]
-                else:
+                elif count == 3:
                     yield vertices[0], vertices[2], vertices[1]
+                else:
+                    raise Exception("Invalid face edge count {}".format(count))
     else:
         def iter_face_index():
             for face in mesh.tessfaces:
@@ -134,28 +137,34 @@ def indices_from_mesh(ob, use_mesh_modifiers=False, triangulate=True):
         def iter_face_index():
             for i, face in enumerate(mesh.tessfaces):
                 vertices = face.vertices[:]
-
-                if len(vertices) == 4:
+                count = len(vertices)
+                if count == 4:
                     yield (vertices[0], vertices[2], vertices[1])
                     yield (vertices[2], vertices[0], vertices[3])
-                else:
+                elif count == 3:
                     yield (vertices[0], vertices[2], vertices[1])
+                else:
+                    raise Exception("Invalid face edge count {}".format(count))
+
         if uvsPresent:
             def iter_uvs():
                 for uvFace in uvsSrc:
-                    if(len(uvFace.uv)==4):
+                    count = len(uvFace.uv)
+                    if count == 4:
                         yield (uvFace.uv1.x,uvFace.uv1.y),\
                         (uvFace.uv3.x,uvFace.uv3.y),\
                         (uvFace.uv2.x,uvFace.uv2.y),\
                         (uvFace.uv3.x,uvFace.uv3.y),\
                         (uvFace.uv1.x,uvFace.uv1.y),\
                         (uvFace.uv4.x,uvFace.uv4.y)
-                    else:
+                    elif count==3:
                         yield (uvFace.uv1.x,uvFace.uv1.y),\
                         (uvFace.uv3.x,uvFace.uv3.y),\
                         (uvFace.uv2.x,uvFace.uv2.y)
                         #for uv in uvFace.uv:
                         #   yield (uv[0],uv[1])
+                    else:
+                        raise Exception("Invalid face edge count {}".format(count))
     else:
         def iter_face_index():
             for i, face in enumerate(mesh.tessfaces):
@@ -258,6 +267,8 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
     command += ']'
     
     if uvs:
+
+        assert len(vertices) == len(uvs), 'vertex count does not match UV count {}!={}'.format(len(vertices),len(uvs))
         maxvalue = 1
         for p in uvs:
             maxvalue = max(maxvalue, *[abs(x) for x in p] )
