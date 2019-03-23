@@ -130,8 +130,22 @@ def indices_from_mesh(ob, use_mesh_modifiers=False, triangulate=True):
     except RuntimeError:
         raise StopIteration
 
-    mesh.calc_normals()
+    # Get a BMesh representation
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
 
+    # Remove loose vertices (not attached to a face)
+    [len(v.link_faces) for v in bm.verts]
+    loose_verts = list(filter(lambda x: len(x.link_faces) <= 0, bm.verts))
+    bmesh.ops.delete(bm,geom=loose_verts,context=1)
+
+    # Finish up, write the bmesh back to the mesh
+    bm.to_mesh(mesh)
+    bm.free()
+
+    mesh.calc_normals()
+    mesh.calc_tessface()
+    
     uvsPresent = mesh.tessface_uv_textures.active!=None
     if uvsPresent:
         uvsSrc = mesh.tessface_uv_textures.active.data
