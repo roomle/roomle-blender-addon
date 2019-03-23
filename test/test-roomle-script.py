@@ -2,6 +2,7 @@ import os
 import sys
 import unittest
 import logging
+from shutil import rmtree
 
 from unittest import TestCase
 from subprocess import check_call,DEVNULL,CalledProcessError,STDOUT
