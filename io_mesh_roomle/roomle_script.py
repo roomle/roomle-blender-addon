@@ -15,10 +15,14 @@
 
 import bpy
 import bmesh
-import re,os,subprocess
+
+import os
+import re
+import subprocess
 
 from decimal import Decimal
 from math import degrees,floor,log10
+from copy import deepcopy
 
 from mathutils import Vector
 
@@ -228,10 +232,13 @@ def indices_from_mesh(ob, use_mesh_modifiers=False, triangulate=True):
     # print('indices len {}'.format(len(indices)))
     # print('vertices len {}'.format(len(vertices)))
 
-    '''
-    TODO: if the temporary mesh is removed here, things (position values) go nuts. fixit!
-    '''
-    # bpy.data.meshes.remove(mesh)
+    vertices = deepcopy(vertices)
+    indices = deepcopy(indices)
+    uvs = None if uvs is None else deepcopy(uvs)
+    normals = deepcopy(normals)
+
+    bpy.data.meshes.remove(mesh)
+
     return vertices, indices, uvs, normals, split_uvs
         
 def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale=None, rotation=None, **args ):
