@@ -59,58 +59,6 @@ def is_child(parent, child):
             return True
     return False
 
-def faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, apply_transform=False):
-    """
-    From an object, return a generator over a list of faces.
-
-    Each faces is a list of his vertexes. Each vertex is a tuple of
-    his coordinate.
-
-    use_mesh_modifiers
-        Apply the preview modifier to the returned liste
-    """
-
-    # get the editmode data
-    ob.update_from_editmode()
-
-    # get the modifiers
-    try:
-        mesh = ob.to_mesh(bpy.context.scene, use_mesh_modifiers, "PREVIEW")
-    except RuntimeError:
-        raise StopIteration
-
-    if apply_transform:
-        mesh.transform(global_matrix * ob.matrix_world)
-    else:
-        mesh.transform(global_matrix)
-
-    mesh.calc_normals()
-
-    # From a list of faces, return the face triangulated if needed.
-    def iter_face_index():
-        for face in mesh.tessfaces:
-            vertices = face.vertices[:]
-            count = len(vertices)
-            if count == 4:
-                yield vertices[0], vertices[2], vertices[1]
-                yield vertices[2], vertices[0], vertices[3]
-            elif count == 3:
-                yield vertices[0], vertices[2], vertices[1]
-            else:
-                raise Exception("Invalid face edge count {}".format(count))
-
-    vertices = mesh.vertices
-
-    for indexes in iter_face_index():
-        yield [vertices[index].co.copy() for index in indexes]
-
-    bpy.data.meshes.remove(mesh)
-
-def vertices_from_mesh(ob, global_matrix, use_mesh_modifiers=False):
-    for f in faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False):
-        for v in f:
-            yield v
-
 def indices_from_mesh(ob, use_mesh_modifiers=False):
 
     # get the editmode data
