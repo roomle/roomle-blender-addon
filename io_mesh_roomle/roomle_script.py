@@ -59,7 +59,7 @@ def is_child(parent, child):
             return True
     return False
 
-def faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=True, apply_transform=False):
+def faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, apply_transform=False):
     """
     From an object, return a generator over a list of faces.
 
@@ -68,9 +68,6 @@ def faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=Tru
 
     use_mesh_modifiers
         Apply the preview modifier to the returned liste
-
-    triangulate
-        Split the quad into two triangles
     """
 
     # get the editmode data
@@ -89,23 +86,18 @@ def faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=Tru
 
     mesh.calc_normals()
 
-    if triangulate:
-        # From a list of faces, return the face triangulated if needed.
-        def iter_face_index():
-            for face in mesh.tessfaces:
-                vertices = face.vertices[:]
-                count = len(vertices)
-                if count == 4:
-                    yield vertices[0], vertices[2], vertices[1]
-                    yield vertices[2], vertices[0], vertices[3]
-                elif count == 3:
-                    yield vertices[0], vertices[2], vertices[1]
-                else:
-                    raise Exception("Invalid face edge count {}".format(count))
-    else:
-        def iter_face_index():
-            for face in mesh.tessfaces:
-                yield face.vertices[:]
+    # From a list of faces, return the face triangulated if needed.
+    def iter_face_index():
+        for face in mesh.tessfaces:
+            vertices = face.vertices[:]
+            count = len(vertices)
+            if count == 4:
+                yield vertices[0], vertices[2], vertices[1]
+                yield vertices[2], vertices[0], vertices[3]
+            elif count == 3:
+                yield vertices[0], vertices[2], vertices[1]
+            else:
+                raise Exception("Invalid face edge count {}".format(count))
 
     vertices = mesh.vertices
 
@@ -114,12 +106,12 @@ def faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=Tru
 
     bpy.data.meshes.remove(mesh)
 
-def vertices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=True):
-    for f in faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=True):
+def vertices_from_mesh(ob, global_matrix, use_mesh_modifiers=False):
+    for f in faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False):
         for v in f:
             yield v
 
-def indices_from_mesh(ob, use_mesh_modifiers=False, triangulate=True):
+def indices_from_mesh(ob, use_mesh_modifiers=False):
 
     # get the editmode data
     ob.update_from_editmode()
@@ -150,48 +142,38 @@ def indices_from_mesh(ob, use_mesh_modifiers=False, triangulate=True):
     if uvsPresent:
         uvsSrc = mesh.tessface_uv_textures.active.data
     
-    if triangulate:
-        # From a list of faces, return the face triangulated if needed.
-        def iter_face_index():
-            for i, face in enumerate(mesh.tessfaces):
-                vertices = face.vertices[:]
-                count = len(vertices)
+    # From a list of faces, return the face triangulated if needed.
+    def iter_face_index():
+        for i, face in enumerate(mesh.tessfaces):
+            vertices = face.vertices[:]
+            count = len(vertices)
+            if count == 4:
+                yield (vertices[0], vertices[2], vertices[1])
+                yield (vertices[2], vertices[0], vertices[3])
+            elif count == 3:
+                yield (vertices[0], vertices[2], vertices[1])
+            else:
+                raise Exception("Invalid face edge count {}".format(count))
+
+    if uvsPresent:
+        def iter_uvs():
+            for uvFace in uvsSrc:
+                count = len(uvFace.uv)
                 if count == 4:
-                    yield (vertices[0], vertices[2], vertices[1])
-                    yield (vertices[2], vertices[0], vertices[3])
-                elif count == 3:
-                    yield (vertices[0], vertices[2], vertices[1])
+                    yield (uvFace.uv1.x,uvFace.uv1.y),\
+                    (uvFace.uv3.x,uvFace.uv3.y),\
+                    (uvFace.uv2.x,uvFace.uv2.y),\
+                    (uvFace.uv3.x,uvFace.uv3.y),\
+                    (uvFace.uv1.x,uvFace.uv1.y),\
+                    (uvFace.uv4.x,uvFace.uv4.y)
+                elif count==3:
+                    yield (uvFace.uv1.x,uvFace.uv1.y),\
+                    (uvFace.uv3.x,uvFace.uv3.y),\
+                    (uvFace.uv2.x,uvFace.uv2.y)
+                    #for uv in uvFace.uv:
+                    #   yield (uv[0],uv[1])
                 else:
                     raise Exception("Invalid face edge count {}".format(count))
-
-        if uvsPresent:
-            def iter_uvs():
-                for uvFace in uvsSrc:
-                    count = len(uvFace.uv)
-                    if count == 4:
-                        yield (uvFace.uv1.x,uvFace.uv1.y),\
-                        (uvFace.uv3.x,uvFace.uv3.y),\
-                        (uvFace.uv2.x,uvFace.uv2.y),\
-                        (uvFace.uv3.x,uvFace.uv3.y),\
-                        (uvFace.uv1.x,uvFace.uv1.y),\
-                        (uvFace.uv4.x,uvFace.uv4.y)
-                    elif count==3:
-                        yield (uvFace.uv1.x,uvFace.uv1.y),\
-                        (uvFace.uv3.x,uvFace.uv3.y),\
-                        (uvFace.uv2.x,uvFace.uv2.y)
-                        #for uv in uvFace.uv:
-                        #   yield (uv[0],uv[1])
-                    else:
-                        raise Exception("Invalid face edge count {}".format(count))
-    else:
-        def iter_face_index():
-            for i, face in enumerate(mesh.tessfaces):
-                yield face.vertices[:]
-        if uvsPresent:
-            def iter_uvs():
-                for uvFace in uvsSrc:
-                    for uv in uvFace.uv:
-                        yield (uv[0],uv[1])
 
     vertices = []
     normals = []
