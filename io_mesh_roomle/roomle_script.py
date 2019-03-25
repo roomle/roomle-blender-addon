@@ -481,8 +481,6 @@ def create_object_commands(
 
     command = ''
     
-    if args['debug']:
-        command += '// Debug script output\n'
     empty = True
 
     mesh = ''
@@ -562,6 +560,12 @@ def create_object_commands(
 
 def create_objects_commands(preferences,objects, object_list, extern_mesh_dir, global_matrix, apply_transform=False, **args):
     command = ''
+    if args['debug']:
+        command += '// Roomle script DEBUG\n'
+    else:
+        from . import bl_info
+        command += '// Roomle script (Roomle Blender addon version {})\n'.format('.'.join( [str(x) for x in bl_info['version']] ))
+
     for object in objects:
         if object:
             command += create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, **args)
