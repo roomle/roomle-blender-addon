@@ -28,11 +28,10 @@ def prepare_content():
 
     # Create plane
     bpy.ops.mesh.primitive_plane_add(
-        radius=1,
+        size=2,
         calc_uvs=True,
         location=(0,0,0),
-        rotation=(0,0,0),
-        layers= (True,)+(False,)*19
+        rotation=(0,0,0)
     )
 
 try:

@@ -12,8 +12,8 @@ log = logging.getLogger('test')
 class RoomleScriptExportTests(TestCase):
 
     BLENDER = {
-        '2.79': '/Applications/blender-2.79.0-x86_64/blender.app/Contents/MacOS/blender',
-        #'2.80': '/Applications/blender-2.80.0-x86_64/blender.app/Contents/MacOS/blender',
+        # '2.79': '/Applications/blender-2.79.0-x86_64/blender.app/Contents/MacOS/blender',
+        '2.80': '/Applications/blender-2.80.0-x86_64/blender.app/Contents/MacOS/blender',
     }
 
     scenes = [
