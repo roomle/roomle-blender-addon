@@ -59,6 +59,21 @@ def is_child(parent, child):
             return True
     return False
 
+def sort_tri(tri):
+    min_v = None
+    min_i = None
+    for i,v in enumerate(tri):
+        if min_i is None or v<min_v:
+            min_i = i
+            min_v = v
+    return tri[min_i:] + tri[:min_i]
+
+def sort_indices_by_first(inds):
+    tris = [tuple(inds[i:i+3]) for i in range(0, len(inds), 3)]
+    tris = list(map(lambda x: sort_tri(x), tris))
+    tris.sort()
+    return [i for tri in tris for i in tri]
+
 def indices_from_mesh(ob, use_mesh_modifiers=False):
 
     # get the editmode data
@@ -187,6 +202,8 @@ def indices_from_mesh(ob, use_mesh_modifiers=False):
         
 def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale=None, rotation=None, **args ):
     
+    debug = args['debug']
+
     command = '//Object:{} Mesh:{}\n'.format(object.name,object.data.name)
     command += 'AddMesh('
     export_normals = args['export_normals']
@@ -196,10 +213,14 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
     
     export_normals |= split_uvs
 
+    if debug:
+        command += '\n// Vertex positions:\n'
     command += 'Vector3f['
     for i,vertex in enumerate(vertices):
         if i>0:
             command += ','
+        if debug:
+            command += '\n'
         v=vertex.copy()
         if scale:
             v.x *= scale.x
@@ -211,12 +232,25 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
         v = global_matrix*v
 
         command +='{{{0},{1},{2}}}'.format( floatFormat(v.x,1), floatFormat(v.y,1), floatFormat(v.z,1) )
+    if debug:
+        command += '\n'
     command += '],'
     
-    command += '['
-    command += ','.join(map(str,indices))
-    command += ']'
-    
+    if debug:
+        indices= sort_indices_by_first(indices)
+        command += '\n// Indices:\n['
+        for i,index in enumerate(indices):
+            if i%3==0:
+                command += '\n'
+            if i!=0:
+                command += ','
+            command += str(index)
+        command += '\n]'
+    else:
+        command += '['
+        command += ','.join(map(str,indices))
+        command += ']'
+
     if uvs:
 
         assert len(vertices) == len(uvs), 'vertex count does not match UV count {}!={}'.format(len(vertices),len(uvs))
@@ -226,16 +260,38 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
 
         uv_prec = max( 0, args['uv_float_precision'] - floor(log10(abs(maxvalue))))
 
+        if debug:
+            command += '\n// UVs:\n'
         command+=',Vector2f['
-        command += ','.join( '{{{0},{1}}}'.format( floatFormat(p[0],uv_prec), floatFormat(p[1],uv_prec) ) for p in uvs)
-        command+=']'
+        if debug:
+            for i,p in enumerate(uvs):
+                if i!=0:
+                    command += ','
+                if debug:
+                    command += '\n'
+                command += '{{{0},{1}}}'.format( floatFormat(p[0],uv_prec), floatFormat(p[1],uv_prec) )
+        else:
+            command += ','.join( '{{{0},{1}}}'.format( floatFormat(p[0],uv_prec), floatFormat(p[1],uv_prec) ) for p in uvs)
+
+        command+= '\n]' if debug else ']'
 
     if export_normals:
         norm_prec = args['normal_float_precision']
 
-        command += ',Vector3f['
-        command += ','.join( '{{{0},{1},{2}}}'.format( floatFormat(n.x,norm_prec), floatFormat(n.y,norm_prec), floatFormat(n.z,norm_prec) ) for n in normals)
-        command += ']'
+        if debug:
+            command += '\n// Normals:\n'
+            command += ',Vector3f['
+            for i,n in enumerate(normals):
+                if i!=0:
+                    command += ','
+                if debug:
+                    command += '\n'
+                command += '{{{0},{1},{2}}}'.format( floatFormat(n.x,norm_prec), floatFormat(n.y,norm_prec), floatFormat(n.z,norm_prec) )
+            command += '\n]'
+        else:
+            command += ',Vector3f['
+            command += ','.join( '{{{0},{1},{2}}}'.format( floatFormat(n.x,norm_prec), floatFormat(n.y,norm_prec), floatFormat(n.z,norm_prec) ) for n in normals)
+            command += ']'
         
     command+=');\n'
     return command
@@ -424,6 +480,8 @@ def create_object_commands(
 
     command = ''
     
+    if args['debug']:
+        command += '// Debug script output\n'
     empty = True
 
     mesh = ''
