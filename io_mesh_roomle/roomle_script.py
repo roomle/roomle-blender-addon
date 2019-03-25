@@ -90,7 +90,6 @@ def indices_from_mesh(ob, use_mesh_modifiers=False):
     bm.from_mesh(mesh)
 
     # Remove loose vertices (not attached to a face)
-    [len(v.link_faces) for v in bm.verts]
     loose_verts = list(filter(lambda x: len(x.link_faces) <= 0, bm.verts))
     bmesh.ops.delete(bm,geom=loose_verts,context=1)
 
@@ -191,11 +190,13 @@ def indices_from_mesh(ob, use_mesh_modifiers=False):
     # print('indices len {}'.format(len(indices)))
     # print('vertices len {}'.format(len(vertices)))
 
+    # Create deep copies of output so we safely can remove the temporary mesh
     vertices = deepcopy(vertices)
     indices = deepcopy(indices)
     uvs = None if uvs is None else deepcopy(uvs)
     normals = deepcopy(normals)
 
+    # Remove temporary mesh
     bpy.data.meshes.remove(mesh)
 
     return vertices, indices, uvs, normals, split_uvs
@@ -576,21 +577,27 @@ def write_roomle_script( operator, preferences, context, filepath, global_matrix
     faces
        iterable of tuple of 3 vertex, vertex is tuple of 3 coordinates as float
     """
+    try:
 
-    scene = bpy.context.scene
+        scene = bpy.context.scene
 
-    root_objects = []
-    for obj in scene.objects:
-        if not obj.parent:
-            root_objects.append(obj)
-    
-    object_list = bpy.context.selected_objects if args['use_selection'] else bpy.context.visible_objects
+        root_objects = []
+        for obj in scene.objects:
+            if not obj.parent:
+                root_objects.append(obj)
+        
+        object_list = bpy.context.selected_objects if args['use_selection'] else bpy.context.visible_objects
 
-    extern_mesh_dir = os.path.splitext(filepath)[0]
+        extern_mesh_dir = os.path.splitext(filepath)[0]
 
-    script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,**args)
-    if not bool(script):
-        raise Exception('Empty export! Make sure you have meshes selected.')
-    else:
-        with open(filepath, 'w') as data:
-            data.write(script)
+        script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,**args)
+        if not bool(script):
+            raise Exception('Empty export! Make sure you have meshes selected.')
+        else:
+            with open(filepath, 'w') as data:
+                data.write(script)
+    except Exception as e:
+        import traceback
+        print('Exception',e)
+        x = traceback.format_exc()
+        print(x)
