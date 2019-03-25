@@ -1,9 +1,28 @@
+# -----------------------------------------------------------------------
+# 
+#  Copyright 2019 Roomle GmbH. All Rights Reserved.
+# 
+#  This Software is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
+# 
+#  NOTICE: All information contained herein is, and remains
+#  the property of Roomle. The intellectual and technical concepts contained
+#  herein are proprietary to Roomle and are protected by copyright law.
+#  Dissemination of this information or reproduction of this material
+#  is strictly forbidden unless prior written permission is obtained
+#  from Roomle.
+# -----------------------------------------------------------------------
+
 import bpy
 import bmesh
-import re,os,subprocess
+
+import os
+import re
+import subprocess
 
 from decimal import Decimal
 from math import degrees,floor,log10
+from copy import deepcopy
 
 from mathutils import Vector
 
@@ -75,11 +94,14 @@ def faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=Tru
         def iter_face_index():
             for face in mesh.tessfaces:
                 vertices = face.vertices[:]
-                if len(vertices) == 4:
+                count = len(vertices)
+                if count == 4:
                     yield vertices[0], vertices[2], vertices[1]
                     yield vertices[2], vertices[0], vertices[3]
-                else:
+                elif count == 3:
                     yield vertices[0], vertices[2], vertices[1]
+                else:
+                    raise Exception("Invalid face edge count {}".format(count))
     else:
         def iter_face_index():
             for face in mesh.tessfaces:
@@ -108,8 +130,22 @@ def indices_from_mesh(ob, use_mesh_modifiers=False, triangulate=True):
     except RuntimeError:
         raise StopIteration
 
-    mesh.calc_normals()
+    # Get a BMesh representation
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
 
+    # Remove loose vertices (not attached to a face)
+    [len(v.link_faces) for v in bm.verts]
+    loose_verts = list(filter(lambda x: len(x.link_faces) <= 0, bm.verts))
+    bmesh.ops.delete(bm,geom=loose_verts,context=1)
+
+    # Finish up, write the bmesh back to the mesh
+    bm.to_mesh(mesh)
+    bm.free()
+
+    mesh.calc_normals()
+    mesh.calc_tessface()
+    
     uvsPresent = mesh.tessface_uv_textures.active!=None
     if uvsPresent:
         uvsSrc = mesh.tessface_uv_textures.active.data
@@ -119,28 +155,34 @@ def indices_from_mesh(ob, use_mesh_modifiers=False, triangulate=True):
         def iter_face_index():
             for i, face in enumerate(mesh.tessfaces):
                 vertices = face.vertices[:]
-
-                if len(vertices) == 4:
+                count = len(vertices)
+                if count == 4:
                     yield (vertices[0], vertices[2], vertices[1])
                     yield (vertices[2], vertices[0], vertices[3])
-                else:
+                elif count == 3:
                     yield (vertices[0], vertices[2], vertices[1])
+                else:
+                    raise Exception("Invalid face edge count {}".format(count))
+
         if uvsPresent:
             def iter_uvs():
                 for uvFace in uvsSrc:
-                    if(len(uvFace.uv)==4):
+                    count = len(uvFace.uv)
+                    if count == 4:
                         yield (uvFace.uv1.x,uvFace.uv1.y),\
                         (uvFace.uv3.x,uvFace.uv3.y),\
                         (uvFace.uv2.x,uvFace.uv2.y),\
                         (uvFace.uv3.x,uvFace.uv3.y),\
                         (uvFace.uv1.x,uvFace.uv1.y),\
                         (uvFace.uv4.x,uvFace.uv4.y)
-                    else:
+                    elif count==3:
                         yield (uvFace.uv1.x,uvFace.uv1.y),\
                         (uvFace.uv3.x,uvFace.uv3.y),\
                         (uvFace.uv2.x,uvFace.uv2.y)
                         #for uv in uvFace.uv:
                         #   yield (uv[0],uv[1])
+                    else:
+                        raise Exception("Invalid face edge count {}".format(count))
     else:
         def iter_face_index():
             for i, face in enumerate(mesh.tessfaces):
@@ -204,10 +246,13 @@ def indices_from_mesh(ob, use_mesh_modifiers=False, triangulate=True):
     # print('indices len {}'.format(len(indices)))
     # print('vertices len {}'.format(len(vertices)))
 
-    '''
-    TODO: if the temporary mesh is removed here, things (position values) go nuts. fixit!
-    '''
-    # bpy.data.meshes.remove(mesh)
+    vertices = deepcopy(vertices)
+    indices = deepcopy(indices)
+    uvs = None if uvs is None else deepcopy(uvs)
+    normals = deepcopy(normals)
+
+    bpy.data.meshes.remove(mesh)
+
     return vertices, indices, uvs, normals, split_uvs
         
 def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale=None, rotation=None, **args ):
@@ -243,6 +288,8 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
     command += ']'
     
     if uvs:
+
+        assert len(vertices) == len(uvs), 'vertex count does not match UV count {}!={}'.format(len(vertices),len(uvs))
         maxvalue = 1
         for p in uvs:
             maxvalue = max(maxvalue, *[abs(x) for x in p] )

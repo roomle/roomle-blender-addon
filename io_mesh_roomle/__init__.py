@@ -1,22 +1,36 @@
+# -----------------------------------------------------------------------
+# 
+#  Copyright 2019 Roomle GmbH. All Rights Reserved.
+# 
+#  This Software is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
+# 
+#  NOTICE: All information contained herein is, and remains
+#  the property of Roomle. The intellectual and technical concepts contained
+#  herein are proprietary to Roomle and are protected by copyright law.
+#  Dissemination of this information or reproduction of this material
+#  is strictly forbidden unless prior written permission is obtained
+#  from Roomle.
+# -----------------------------------------------------------------------
+
 bl_info = {
     "name": "Roomle Configurator Script",
     "author": "Andreas Atteneder",
-    "version": (0, 4, 0),
+    "version": (1, 0, 1),
     "blender": (2, 79, 0),
     "location": "File > Import-Export > Roomle",
     "description": "Export Roomle Configurator Script",
-    "warning": "beta",
     "support": 'COMMUNITY',
     "category": "Import-Export",
-    "tracker_url": "http://source.roomle.local/Assets0/bacon-x/issues"
+    "tracker_url": "https://gitlab.com/roomle/tools/roomle-blender-addon/issues"
 }
 
 if "bpy" in locals():
     import importlib
-    importlib.reload(baconx)
+    importlib.reload(roomle_script)
     importlib.reload(optimize_operator)
 else:
-    from . import baconx
+    from . import roomle_script
     from . import optimize_operator
 
 import os,sys,subprocess
@@ -32,7 +46,6 @@ from bpy.props import (
         )
 from bpy_extras.io_utils import (
     ExportHelper,
-    orientation_helper_factory,
     axis_conversion
     )
 from bpy.types import (
@@ -186,7 +199,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
 
     def execute(self, context):
         from mathutils import Matrix, Vector
-        from . import baconx
+        from . import roomle_script
         
         preferences = bpy.context.user_preferences.addons[__name__].preferences
 
@@ -205,7 +218,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
         global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
 
         try:
-            baconx.write_roomle_script( self, preferences, bpy.context, global_matrix=global_matrix, **keywords)
+            roomle_script.write_roomle_script( self, preferences, bpy.context, global_matrix=global_matrix, **keywords)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}

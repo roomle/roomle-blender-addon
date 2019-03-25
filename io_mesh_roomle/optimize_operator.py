@@ -1,3 +1,18 @@
+# -----------------------------------------------------------------------
+# 
+#  Copyright 2019 Roomle GmbH. All Rights Reserved.
+# 
+#  This Software is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
+# 
+#  NOTICE: All information contained herein is, and remains
+#  the property of Roomle. The intellectual and technical concepts contained
+#  herein are proprietary to Roomle and are protected by copyright law.
+#  Dissemination of this information or reproduction of this material
+#  is strictly forbidden unless prior written permission is obtained
+#  from Roomle.
+# -----------------------------------------------------------------------
+
 import bpy
 
 from bpy.props import BoolProperty
