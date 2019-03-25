@@ -180,6 +180,12 @@ class ExportRoomleScript( Operator, ExportHelper ):
     #         default=True,
     #         )
             
+    debug = BoolProperty(
+            name="Debug mode",
+            description="Creates a script that is easier to read and debug for changes/errors.",
+            default=False,
+            )
+
     def draw(self, context):
         layout = self.layout
         layout.prop(self, 'catalog_id')

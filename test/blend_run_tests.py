@@ -14,7 +14,8 @@ def export_roomle_script(
         catalog_id="test_id",
         export_normals=export_normals,
         apply_rotations=apply_rotations,
-        mesh_export_option=mesh_export_option
+        mesh_export_option=mesh_export_option,
+        debug=True,
         #use_selection=False,
         #uv_float_precision=4,
         #normal_float_precision=5

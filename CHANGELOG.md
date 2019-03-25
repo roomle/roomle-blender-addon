@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multiple instances of the same Mesh combined with apply rotation or custom scale can create wrong scale/rotations
 - Normal export with applied rotations is untested (esp. internal meshes)
 - Normal export in combination with no UVs creates invalid AddMesh commands
+- Normals are alway smooth shaded. Blender's "Shade Flat" command (flat shading in viewport) has no effect.
 
 ## [1.0.1] - 2019-03-23
 ### Fixed

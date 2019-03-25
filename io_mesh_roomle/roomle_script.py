@@ -59,67 +59,22 @@ def is_child(parent, child):
             return True
     return False
 
-def faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=True, apply_transform=False):
-    """
-    From an object, return a generator over a list of faces.
+def sort_tri(tri):
+    min_v = None
+    min_i = None
+    for i,v in enumerate(tri):
+        if min_i is None or v<min_v:
+            min_i = i
+            min_v = v
+    return tri[min_i:] + tri[:min_i]
 
-    Each faces is a list of his vertexes. Each vertex is a tuple of
-    his coordinate.
+def sort_indices_by_first(inds):
+    tris = [tuple(inds[i:i+3]) for i in range(0, len(inds), 3)]
+    tris = list(map(lambda x: sort_tri(x), tris))
+    tris.sort()
+    return [i for tri in tris for i in tri]
 
-    use_mesh_modifiers
-        Apply the preview modifier to the returned liste
-
-    triangulate
-        Split the quad into two triangles
-    """
-
-    # get the editmode data
-    ob.update_from_editmode()
-
-    # get the modifiers
-    try:
-        mesh = ob.to_mesh(bpy.context.scene, use_mesh_modifiers, "PREVIEW")
-    except RuntimeError:
-        raise StopIteration
-
-    if apply_transform:
-        mesh.transform(global_matrix * ob.matrix_world)
-    else:
-        mesh.transform(global_matrix)
-
-    mesh.calc_normals()
-
-    if triangulate:
-        # From a list of faces, return the face triangulated if needed.
-        def iter_face_index():
-            for face in mesh.tessfaces:
-                vertices = face.vertices[:]
-                count = len(vertices)
-                if count == 4:
-                    yield vertices[0], vertices[2], vertices[1]
-                    yield vertices[2], vertices[0], vertices[3]
-                elif count == 3:
-                    yield vertices[0], vertices[2], vertices[1]
-                else:
-                    raise Exception("Invalid face edge count {}".format(count))
-    else:
-        def iter_face_index():
-            for face in mesh.tessfaces:
-                yield face.vertices[:]
-
-    vertices = mesh.vertices
-
-    for indexes in iter_face_index():
-        yield [vertices[index].co.copy() for index in indexes]
-
-    bpy.data.meshes.remove(mesh)
-
-def vertices_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=True):
-    for f in faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=True):
-        for v in f:
-            yield v
-
-def indices_from_mesh(ob, use_mesh_modifiers=False, triangulate=True):
+def indices_from_mesh(ob, use_mesh_modifiers=False):
 
     # get the editmode data
     ob.update_from_editmode()
@@ -135,7 +90,6 @@ def indices_from_mesh(ob, use_mesh_modifiers=False, triangulate=True):
     bm.from_mesh(mesh)
 
     # Remove loose vertices (not attached to a face)
-    [len(v.link_faces) for v in bm.verts]
     loose_verts = list(filter(lambda x: len(x.link_faces) <= 0, bm.verts))
     bmesh.ops.delete(bm,geom=loose_verts,context=1)
 
@@ -150,48 +104,38 @@ def indices_from_mesh(ob, use_mesh_modifiers=False, triangulate=True):
     if uvsPresent:
         uvsSrc = mesh.tessface_uv_textures.active.data
     
-    if triangulate:
-        # From a list of faces, return the face triangulated if needed.
-        def iter_face_index():
-            for i, face in enumerate(mesh.tessfaces):
-                vertices = face.vertices[:]
-                count = len(vertices)
+    # From a list of faces, return the face triangulated if needed.
+    def iter_face_index():
+        for i, face in enumerate(mesh.tessfaces):
+            vertices = face.vertices[:]
+            count = len(vertices)
+            if count == 4:
+                yield (vertices[0], vertices[2], vertices[1])
+                yield (vertices[2], vertices[0], vertices[3])
+            elif count == 3:
+                yield (vertices[0], vertices[2], vertices[1])
+            else:
+                raise Exception("Invalid face edge count {}".format(count))
+
+    if uvsPresent:
+        def iter_uvs():
+            for uvFace in uvsSrc:
+                count = len(uvFace.uv)
                 if count == 4:
-                    yield (vertices[0], vertices[2], vertices[1])
-                    yield (vertices[2], vertices[0], vertices[3])
-                elif count == 3:
-                    yield (vertices[0], vertices[2], vertices[1])
+                    yield (uvFace.uv1.x,uvFace.uv1.y),\
+                    (uvFace.uv3.x,uvFace.uv3.y),\
+                    (uvFace.uv2.x,uvFace.uv2.y),\
+                    (uvFace.uv3.x,uvFace.uv3.y),\
+                    (uvFace.uv1.x,uvFace.uv1.y),\
+                    (uvFace.uv4.x,uvFace.uv4.y)
+                elif count==3:
+                    yield (uvFace.uv1.x,uvFace.uv1.y),\
+                    (uvFace.uv3.x,uvFace.uv3.y),\
+                    (uvFace.uv2.x,uvFace.uv2.y)
+                    #for uv in uvFace.uv:
+                    #   yield (uv[0],uv[1])
                 else:
                     raise Exception("Invalid face edge count {}".format(count))
-
-        if uvsPresent:
-            def iter_uvs():
-                for uvFace in uvsSrc:
-                    count = len(uvFace.uv)
-                    if count == 4:
-                        yield (uvFace.uv1.x,uvFace.uv1.y),\
-                        (uvFace.uv3.x,uvFace.uv3.y),\
-                        (uvFace.uv2.x,uvFace.uv2.y),\
-                        (uvFace.uv3.x,uvFace.uv3.y),\
-                        (uvFace.uv1.x,uvFace.uv1.y),\
-                        (uvFace.uv4.x,uvFace.uv4.y)
-                    elif count==3:
-                        yield (uvFace.uv1.x,uvFace.uv1.y),\
-                        (uvFace.uv3.x,uvFace.uv3.y),\
-                        (uvFace.uv2.x,uvFace.uv2.y)
-                        #for uv in uvFace.uv:
-                        #   yield (uv[0],uv[1])
-                    else:
-                        raise Exception("Invalid face edge count {}".format(count))
-    else:
-        def iter_face_index():
-            for i, face in enumerate(mesh.tessfaces):
-                yield face.vertices[:]
-        if uvsPresent:
-            def iter_uvs():
-                for uvFace in uvsSrc:
-                    for uv in uvFace.uv:
-                        yield (uv[0],uv[1])
 
     vertices = []
     normals = []
@@ -246,17 +190,21 @@ def indices_from_mesh(ob, use_mesh_modifiers=False, triangulate=True):
     # print('indices len {}'.format(len(indices)))
     # print('vertices len {}'.format(len(vertices)))
 
+    # Create deep copies of output so we safely can remove the temporary mesh
     vertices = deepcopy(vertices)
     indices = deepcopy(indices)
     uvs = None if uvs is None else deepcopy(uvs)
     normals = deepcopy(normals)
 
+    # Remove temporary mesh
     bpy.data.meshes.remove(mesh)
 
     return vertices, indices, uvs, normals, split_uvs
         
 def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale=None, rotation=None, **args ):
     
+    debug = args['debug']
+
     command = '//Object:{} Mesh:{}\n'.format(object.name,object.data.name)
     command += 'AddMesh('
     export_normals = args['export_normals']
@@ -266,10 +214,14 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
     
     export_normals |= split_uvs
 
+    if debug:
+        command += '\n// Vertex positions:\n'
     command += 'Vector3f['
     for i,vertex in enumerate(vertices):
         if i>0:
             command += ','
+        if debug:
+            command += '\n'
         v=vertex.copy()
         if scale:
             v.x *= scale.x
@@ -281,12 +233,25 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
         v = global_matrix*v
 
         command +='{{{0},{1},{2}}}'.format( floatFormat(v.x,1), floatFormat(v.y,1), floatFormat(v.z,1) )
+    if debug:
+        command += '\n'
     command += '],'
     
-    command += '['
-    command += ','.join(map(str,indices))
-    command += ']'
-    
+    if debug:
+        indices= sort_indices_by_first(indices)
+        command += '\n// Indices:\n['
+        for i,index in enumerate(indices):
+            if i%3==0:
+                command += '\n'
+            if i!=0:
+                command += ','
+            command += str(index)
+        command += '\n]'
+    else:
+        command += '['
+        command += ','.join(map(str,indices))
+        command += ']'
+
     if uvs:
 
         assert len(vertices) == len(uvs), 'vertex count does not match UV count {}!={}'.format(len(vertices),len(uvs))
@@ -296,16 +261,38 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
 
         uv_prec = max( 0, args['uv_float_precision'] - floor(log10(abs(maxvalue))))
 
+        if debug:
+            command += '\n// UVs:\n'
         command+=',Vector2f['
-        command += ','.join( '{{{0},{1}}}'.format( floatFormat(p[0],uv_prec), floatFormat(p[1],uv_prec) ) for p in uvs)
-        command+=']'
+        if debug:
+            for i,p in enumerate(uvs):
+                if i!=0:
+                    command += ','
+                if debug:
+                    command += '\n'
+                command += '{{{0},{1}}}'.format( floatFormat(p[0],uv_prec), floatFormat(p[1],uv_prec) )
+        else:
+            command += ','.join( '{{{0},{1}}}'.format( floatFormat(p[0],uv_prec), floatFormat(p[1],uv_prec) ) for p in uvs)
+
+        command+= '\n]' if debug else ']'
 
     if export_normals:
         norm_prec = args['normal_float_precision']
 
-        command += ',Vector3f['
-        command += ','.join( '{{{0},{1},{2}}}'.format( floatFormat(n.x,norm_prec), floatFormat(n.y,norm_prec), floatFormat(n.z,norm_prec) ) for n in normals)
-        command += ']'
+        if debug:
+            command += '\n// Normals:\n'
+            command += ',Vector3f['
+            for i,n in enumerate(normals):
+                if i!=0:
+                    command += ','
+                if debug:
+                    command += '\n'
+                command += '{{{0},{1},{2}}}'.format( floatFormat(n.x,norm_prec), floatFormat(n.y,norm_prec), floatFormat(n.z,norm_prec) )
+            command += '\n]'
+        else:
+            command += ',Vector3f['
+            command += ','.join( '{{{0},{1},{2}}}'.format( floatFormat(n.x,norm_prec), floatFormat(n.y,norm_prec), floatFormat(n.z,norm_prec) ) for n in normals)
+            command += ']'
         
     command+=');\n'
     return command
@@ -573,6 +560,12 @@ def create_object_commands(
 
 def create_objects_commands(preferences,objects, object_list, extern_mesh_dir, global_matrix, apply_transform=False, **args):
     command = ''
+    if args['debug']:
+        command += '// Roomle script DEBUG\n'
+    else:
+        from . import bl_info
+        command += '// Roomle script (Roomle Blender addon version {})\n'.format('.'.join( [str(x) for x in bl_info['version']] ))
+
     for object in objects:
         if object:
             command += create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, **args)
@@ -588,21 +581,27 @@ def write_roomle_script( operator, preferences, context, filepath, global_matrix
     faces
        iterable of tuple of 3 vertex, vertex is tuple of 3 coordinates as float
     """
+    try:
 
-    scene = bpy.context.scene
+        scene = bpy.context.scene
 
-    root_objects = []
-    for obj in scene.objects:
-        if not obj.parent:
-            root_objects.append(obj)
-    
-    object_list = bpy.context.selected_objects if args['use_selection'] else bpy.context.visible_objects
+        root_objects = []
+        for obj in scene.objects:
+            if not obj.parent:
+                root_objects.append(obj)
+        
+        object_list = bpy.context.selected_objects if args['use_selection'] else bpy.context.visible_objects
 
-    extern_mesh_dir = os.path.splitext(filepath)[0]
+        extern_mesh_dir = os.path.splitext(filepath)[0]
 
-    script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,**args)
-    if not bool(script):
-        raise Exception('Empty export! Make sure you have meshes selected.')
-    else:
-        with open(filepath, 'w') as data:
-            data.write(script)
+        script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,**args)
+        if not bool(script):
+            raise Exception('Empty export! Make sure you have meshes selected.')
+        else:
+            with open(filepath, 'w') as data:
+                data.write(script)
+    except Exception as e:
+        import traceback
+        print('Exception',e)
+        x = traceback.format_exc()
+        print(x)

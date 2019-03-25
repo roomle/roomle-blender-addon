@@ -33,8 +33,8 @@ class RoomleScriptExportTests(TestCase):
 
     @classmethod
     def tearDownClass(self):
-        rmtree(self.tmp_dir)
-        # pass
+        # rmtree(self.tmp_dir)
+        pass
 
     def setUp(self):
         test_name = self.id().split('.')[-1]
