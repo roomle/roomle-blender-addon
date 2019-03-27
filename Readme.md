@@ -16,19 +16,19 @@ Advanced users can check out [Build](#build) to build it themselves.
 - Navigate the main menu to "Edit" > "Preferences"
 - On the left side, click the "Add-ons" tab
 - Click the "Install…" button at the top right
-![Preferences Window - Install](docs/images/01_prefs-install.png)
+![Preferences Window - Install](doc/images/01_prefs-install.png)
 - Navigate to the downloaded roomle_blender_addon.zip file and install it
 - Now the addon is installed and needs to be activated. It is called "Import-Export: Roomle Configurator Script" (Blender usually pre-filters the addon list after installing, so it's at right the top)
 - Make sure the addon is activated by checking the checkbox left of its name.
 - If you click "Save User Settings" on the lower left, you make sure the addon is activated the next time you start Blender.
-![Preferences Window - Addon installed](docs/images/03_prefs-enable.png)
+![Preferences Window - Addon installed](doc/images/03_prefs-enable.png)
 
 ## How to export Roomle script
 
 The export now can be found in the main menu at "File" > "Export" > "Roomle Script (txt)". For quicker access, it can also be found in the 
 search menu.
 
-![Export](docs/images/04_export.png)
+![Export](doc/images/04_export.png)
 
 On the lower left side of the file dialog, you can find some parameters for the export.
 - [Catalog ID](#Catalog-ID)
@@ -37,7 +37,7 @@ On the lower left side of the file dialog, you can find some parameters for the 
 - [Apply Rotations](#Apply-Rotations)
 - [Advanced settings](#Advanced-settings)
 
-![Export options](docs/images/05_export-options.png)
+![Export options](doc/images/05_export-options.png)
 
 ### Catalog ID
 
