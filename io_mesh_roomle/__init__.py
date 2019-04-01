@@ -246,8 +246,10 @@ def register():
     bpy.utils.register_class(ExportRoomleScript)
     bpy.utils.register_class(ExportRoomleScriptPreferences)
     bpy.types.TOPBAR_MT_file_export.append(menu_export)
+    optimize_operator.register()
 
 def unregister():
+    optimize_operator.unregister()
     bpy.types.TOPBAR_MT_file_export.remove(menu_export)
     bpy.utils.unregister_class(ExportRoomleScriptPreferences)
     bpy.utils.unregister_class(ExportRoomleScript)
