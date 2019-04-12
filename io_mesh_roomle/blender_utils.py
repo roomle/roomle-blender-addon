@@ -130,12 +130,31 @@ def reset_transform(obj):
 
 	me = obj.data
 
+	# Detect odd negative scales that make flipping normals necessary
+	scale = mat.to_scale()
+	flip_normals = (scale.x<0) ^ (scale.y<0) ^ (scale.z<0)
+
 	# Get a BMesh representation
 	bm = bmesh.new()
 	bm.from_mesh(me)
 
+	# if flip_normals:
+	# 	bmesh.ops.reverse_faces(bm,faces=bm.faces)
+
+	bm.verts.ensure_lookup_table()
 	for v in bm.verts:
 		v.co = mat @ v.co
+		nrm = mat @ v.normal.copy()
+		# if flip_normals:
+		# 	nrm = nrm * -1
+		# nrm.normalize()
+		v.normal = nrm
+
+	bm.faces.ensure_lookup_table()
+	for f in bm.faces:
+		if flip_normals:
+			f.normal_flip()
+		f.normal = mat @ f.normal.copy()
 	
 	messages.append( 'Object {}: applied transform {}'.format(obj.name,mat) )
 
@@ -143,6 +162,8 @@ def reset_transform(obj):
 	# and recalculate n-gon tessellation.
 	bm.to_mesh(me)
 	bm.free()
+
+	me.update()
 
 	obj.matrix_basis = Matrix() # identity
 
