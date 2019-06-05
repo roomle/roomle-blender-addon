@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Normal export in combination with no UVs creates invalid AddMesh commands
 - Normals are alway smooth shaded. Blender's "Shade Flat" command (flat shading in viewport) has no effect.
 
+## [2.0.0] - 2019-06-05
+### Fixed
+- Ported "Optimize Roomle static" operator to Blender 2.80 (wasn't registered at all before).
+
 ## [2.0.0] - beta
 ### Changed
 - Update to Blender 2.80
