@@ -191,9 +191,6 @@ def indices_from_mesh(ob, use_mesh_modifiers=False):
     uvs = None if uvs is None else deepcopy(uvs)
     normals = deepcopy(normals)
 
-    # Remove temporary mesh
-    bpy.data.meshes.remove(mesh)
-
     return vertices, indices, uvs, normals, split_uvs
         
 def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale=None, rotation=None, **args ):
