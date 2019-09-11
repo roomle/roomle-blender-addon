@@ -89,8 +89,7 @@ def indices_from_mesh(ob, use_mesh_modifiers=False):
     # get the modifiers
     try:
         mesh = ob.to_mesh(
-            depsgraph=bpy.context.depsgraph,
-            apply_modifiers=use_mesh_modifiers
+            depsgraph=bpy.context.evaluated_depsgraph_get(),
         )
     except RuntimeError:
         raise StopIteration
@@ -327,8 +326,7 @@ def create_extern_mesh_command(
     name = object.name if (scale or apply_rotation) else object.data.name
 
     mesh = object.to_mesh(
-        depsgraph=bpy.context.depsgraph,
-        apply_modifiers=True
+        depsgraph=bpy.context.evaluated_depsgraph_get(),
     )
 
     # Get a BMesh representation
