@@ -20,6 +20,7 @@ import os
 import re
 import subprocess
 
+from dataclasses import dataclass
 from decimal import Decimal
 from math import degrees,floor,log10
 from copy import deepcopy
@@ -29,6 +30,12 @@ from mathutils import Vector
 from bpy_extras.io_utils import (
         axis_conversion,
         )
+
+@dataclass
+class VertexVariant:
+    index: int
+    loop_index: int
+    #normal: Vector
 
 def getValidName(name):
     return re.sub('[^0-9a-zA-Z:_]+', '', name)
@@ -81,7 +88,9 @@ def indices_from_mesh(ob, use_mesh_modifiers=False):
 
     # get the modifiers
     try:
-        mesh = ob.to_mesh(bpy.context.scene, use_mesh_modifiers, "PREVIEW")
+        mesh = ob.to_mesh(
+            depsgraph=bpy.context.evaluated_depsgraph_get(),
+        )
     except RuntimeError:
         raise StopIteration
 
@@ -91,54 +100,22 @@ def indices_from_mesh(ob, use_mesh_modifiers=False):
 
     # Remove loose vertices (not attached to a face)
     loose_verts = list(filter(lambda x: len(x.link_faces) <= 0, bm.verts))
-    bmesh.ops.delete(bm,geom=loose_verts,context=1)
+    bmesh.ops.delete(bm,geom=loose_verts,context='VERTS')
 
     # Finish up, write the bmesh back to the mesh
     bm.to_mesh(mesh)
     bm.free()
 
     mesh.calc_normals()
-    mesh.calc_tessface()
+    mesh.calc_loop_triangles()
+    #mesh.calc_normals_split()
     
-    uvsPresent = mesh.tessface_uv_textures.active!=None
-    if uvsPresent:
-        uvsSrc = mesh.tessface_uv_textures.active.data
-    
-    # From a list of faces, return the face triangulated if needed.
-    def iter_face_index():
-        for i, face in enumerate(mesh.tessfaces):
-            vertices = face.vertices[:]
-            count = len(vertices)
-            if count == 4:
-                yield (vertices[0], vertices[2], vertices[1])
-                yield (vertices[2], vertices[0], vertices[3])
-            elif count == 3:
-                yield (vertices[0], vertices[2], vertices[1])
-            else:
-                raise Exception("Invalid face edge count {}".format(count))
-
-    if uvsPresent:
-        def iter_uvs():
-            for uvFace in uvsSrc:
-                count = len(uvFace.uv)
-                if count == 4:
-                    yield (uvFace.uv1.x,uvFace.uv1.y),\
-                    (uvFace.uv3.x,uvFace.uv3.y),\
-                    (uvFace.uv2.x,uvFace.uv2.y),\
-                    (uvFace.uv3.x,uvFace.uv3.y),\
-                    (uvFace.uv1.x,uvFace.uv1.y),\
-                    (uvFace.uv4.x,uvFace.uv4.y)
-                elif count==3:
-                    yield (uvFace.uv1.x,uvFace.uv1.y),\
-                    (uvFace.uv3.x,uvFace.uv3.y),\
-                    (uvFace.uv2.x,uvFace.uv2.y)
-                    #for uv in uvFace.uv:
-                    #   yield (uv[0],uv[1])
-                else:
-                    raise Exception("Invalid face edge count {}".format(count))
+    uv_layer_index = mesh.uv_layers.active_index
+    uv_layer = mesh.uv_layers[uv_layer_index] if uv_layer_index>=0 else None
 
     vertices = []
     normals = []
+    indices = []
 
     for v in mesh.vertices:
         vertices.append(v.co)
@@ -146,58 +123,73 @@ def indices_from_mesh(ob, use_mesh_modifiers=False):
         # dunno why
         normals.append(v.normal * -1)
 
-    indices = []
-
-    for indexes in iter_face_index():
-        indices += indexes
-
-    tmpDict = {}
+    # Vertex variants have to be created if points/triangles share a vertex (positional data),
+    # but have different UVs (or normals or color in the future)
+    create_vertex_variants = uv_layer is not None
 
     split_uvs = False
+    uvs = None
 
-    if uvsPresent:
-        uvs = []
-        tmpUvs = {}
-        for uv in iter_uvs():
-            uvs += uv
+    if create_vertex_variants:
+        # key: vertex index
+        vertex_variants = {}
 
-        for i, vuv in enumerate(zip(indices,uvs)):
-            
-            oldIndex = vuv[0]
-            uv = vuv[1]
+        # Init UVs with minimum length (=number of vertices)
+        uvs = [None] * len(mesh.vertices)
 
-            if oldIndex in tmpDict:
-                if uv in tmpDict[oldIndex]:
-                    split_uvs = True
-                    newIndex = tmpDict[oldIndex][uv]
+        for triangle in mesh.loop_triangles:
+            for orig_index,loop_index in zip(triangle.vertices,triangle.loops):
+                if orig_index in vertex_variants:
+                    vv = None
+                    for vertex_variant in vertex_variants[orig_index]:
+                        if (
+                            loop_index == vertex_variant.loop_index
+                            or uv_layer.data[loop_index].uv == uv_layer.data[vertex_variant.loop_index].uv
+                        ):
+                            # Identical: re-use vertex variant
+                            vv = vertex_variant
+                            loop_index = vv.loop_index
+                            indices.append(vv.index)
+                            break
+                    
+                    if not vv:
+                        # New vertex variant: create a copy
+                        split_uvs = True
+
+                        assert len(vertices)==len(uvs), 'vert/uv array out of sync'
+                        
+                        v_index = len(vertices)
+                        vertices.append(mesh.vertices[orig_index].co)
+                        uvs.append(uv_layer.data[loop_index].uv)
+
+                        vv=VertexVariant(v_index,loop_index)
+                        vertex_variants[orig_index].append(vv)
                 else:
-                    # duplicate vertex
-                    newIndex = len(vertices)
-                    vertices.append( vertices[oldIndex] )
-                    normals.append( normals[oldIndex] )
-                    tmpDict[oldIndex][uv] = newIndex
-                indices[i] = newIndex
-                tmpUvs[newIndex] = uv
-            else:
-                tmpDict[oldIndex] = { uv : oldIndex }
-                tmpUvs[oldIndex] = uv
-
-        uvs = list(tmpUvs.values())
+                    indices.append(orig_index)
+                    vv = VertexVariant(orig_index,loop_index)
+                    vertex_variants[orig_index] = [vv]
+                    uvs[orig_index] = uv_layer.data[loop_index].uv
+        
     else:
-        uvs = None
+        # No vertex variants
+        for triangle in mesh.loop_triangles:
+            indices += triangle.vertices[:]
 
-    # print('uv len {}'.format(len(uvs)))
-    # print('indices len {}'.format(len(indices)))
-    # print('vertices len {}'.format(len(vertices)))
-
+    # flipping triangle order
+    sorted_indices=[]
+    for i in range(len(indices)):
+        m=i%3
+        sorted_i = i-1 if m==2 else i+m
+        # i sequence is..........0,1,2,3,4,5,...
+        # sorted_i sequence is ..0,2,1,3,5,4,...
+        sorted_indices.append( indices[sorted_i] )
+    indices = sorted_indices
+    
     # Create deep copies of output so we safely can remove the temporary mesh
     vertices = deepcopy(vertices)
     indices = deepcopy(indices)
     uvs = None if uvs is None else deepcopy(uvs)
     normals = deepcopy(normals)
-
-    # Remove temporary mesh
-    bpy.data.meshes.remove(mesh)
 
     return vertices, indices, uvs, normals, split_uvs
         
@@ -228,9 +220,9 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
             v.y *= scale.y
             v.z *= scale.z
         if apply_rotation:
-            v = rotation*v
+            v = rotation @ v
 
-        v = global_matrix*v
+        v = global_matrix @ v
 
         command +='{{{0},{1},{2}}}'.format( floatFormat(v.x,1), floatFormat(v.y,1), floatFormat(v.z,1) )
     if debug:
@@ -325,22 +317,20 @@ def create_extern_mesh_command(
     scale=None,
     rotation=None,
     **args
-    ):
+):
 
     apply_rotation = args['apply_rotations'] and rotation
     name = object.name if (scale or apply_rotation) else object.data.name
 
     mesh = object.to_mesh(
-        scene=bpy.context.scene,
-        apply_modifiers=True,
-        settings='PREVIEW'
+        depsgraph=bpy.context.evaluated_depsgraph_get(),
     )
 
     # Get a BMesh representation
     bm = bmesh.new()
     bm.from_mesh(mesh)
 
-    bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method=0, ngon_method=0)
+    bmesh.ops.triangulate(bm,faces=bm.faces[:])
 
     tri_mesh = bpy.data.meshes.new(name)
 
@@ -359,7 +349,9 @@ def create_extern_mesh_command(
     bpy.ops.object.select_all(action='DESELECT')
 
     tmp = bpy.data.objects.new('tmp_'+name, tri_mesh) # create temporary object with same mesh data but without transformation
-    scene.objects.link(tmp)  # put the object into the scene (link)
+    
+    # put the object into the scene (link)
+    scene.collection.objects.link(tmp)
 
     if scale:
         tmp.scale = scale
@@ -367,8 +359,8 @@ def create_extern_mesh_command(
         tmp.rotation_mode = 'QUATERNION'
         tmp.rotation_quaternion = rotation
 
-    scene.objects.active = tmp  # set as the active object in the scene
-    tmp.select = True  # select object
+    bpy.context.view_layer.objects.active = tmp  # set as the active object in the scene
+    tmp.select_set(True)  # select object
         
     # Apply transform (necessary to have correct boundings box)
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
@@ -388,8 +380,8 @@ def create_extern_mesh_command(
 
     dim, center = get_object_bounding_box(tmp)
 
-    bpy.data.objects.remove(tmp,True) # remove temporary object
-    bpy.data.meshes.remove(tri_mesh,True)
+    bpy.data.objects.remove(tmp) # remove temporary object
+    bpy.data.meshes.remove(tri_mesh)
 
     if scale:
         dim.x *= scale.x
@@ -459,8 +451,9 @@ def create_transform_commands(
         pos.z = pos.z * parent_scale.z
 
     if apply_rotation and parent_rotation:
-        pos = parent_rotation*pos
-    pos = pos*global_matrix
+        pos = parent_rotation @ pos
+
+    pos = pos @ global_matrix
 
     if not isZero(pos,precision=1):
         command += "MoveMatrixBy(Vector3f{{{0},{1},{2}}});\n".format(floatFormat(pos.x,1),floatFormat(pos.y,1),floatFormat(pos.z,1))

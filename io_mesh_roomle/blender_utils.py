@@ -32,7 +32,7 @@ def get_bounding_box( objects ):
 		if obj.type !='MESH':
 			continue
 		for vert in obj.data.vertices:
-			v = obj.matrix_world * vert.co
+			v = obj.matrix_world @ vert.co
 			for i in range(3):
 				scene_min[i] = min(scene_min[i],v[i])
 				scene_max[i] = max(scene_max[i],v[i])
@@ -75,7 +75,7 @@ def frame_object( camera, objects ):
 		if obj.type !='MESH':
 			continue
 		for vert in obj.data.vertices:
-			points += (obj.matrix_world * vert.co).to_tuple()
+			points += (obj.matrix_world @ vert.co).to_tuple()
 			
 	# print('found {} points'.format(len(points)))
 	pos = camera.camera_fit_coords( bpy.context.scene, points )
@@ -135,7 +135,7 @@ def reset_transform(obj):
 	bm.from_mesh(me)
 
 	for v in bm.verts:
-		v.co = mat*v.co
+		v.co = mat @ v.co
 	
 	messages.append( 'Object {}: applied transform {}'.format(obj.name,mat) )
 
@@ -147,7 +147,7 @@ def reset_transform(obj):
 	obj.matrix_basis = Matrix() # identity
 
 	for child in obj.children:
-		child.matrix_basis = mat*child.matrix_basis
+		child.matrix_basis = mat @ child.matrix_basis
 
 	return messages
 

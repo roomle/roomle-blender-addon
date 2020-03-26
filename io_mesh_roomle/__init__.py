@@ -16,8 +16,8 @@
 bl_info = {
     "name": "Roomle Configurator Script",
     "author": "Andreas Atteneder",
-    "version": (1, 0, 1),
-    "blender": (2, 79, 0),
+    "version": (2, 0, 0),
+    "blender": (2, 80, 0),
     "location": "File > Import-Export > Roomle",
     "description": "Export Roomle Configurator Script",
     "support": 'COMMUNITY',
@@ -91,7 +91,7 @@ def check_for_exe( name ):
 class ExportRoomleScriptPreferences(bpy.types.AddonPreferences):
    bl_idname = __name__
 
-   corto_exe = bpy.props.StringProperty(
+   corto_exe: bpy.props.StringProperty(
       name="Location of corto executable",
       subtype="FILE_PATH",
       default=check_for_exe('corto')
@@ -108,39 +108,39 @@ class ExportRoomleScript( Operator, ExportHelper ):
     bl_label = "Export Roomle Script"
 
     filename_ext = ".txt"
-    filter_glob = StringProperty(default="*.txt", options={'HIDDEN'})
+    filter_glob: StringProperty(default="*.txt", options={'HIDDEN'})
 
-    catalog_id = StringProperty(
+    catalog_id: StringProperty(
         name="Catalog ID",
         description="Catalog name. Used as prefix for mesh and material IDs",
         default='catalog_id',
     )
 
-    use_selection = BoolProperty(
+    use_selection: BoolProperty(
             name="Only Selected Objects",
             description="Export only selected objects on visible layers",
             default=False,
             )
 
-    # use_scene_unit = BoolProperty(
+    # use_scene_unit: BoolProperty(
     #         name="Scene Unit",
     #         description="Apply current scene's unit (as defined by unit scale) to exported data",
     #         default=False,
     #         )
             
-    export_normals = BoolProperty(
+    export_normals: BoolProperty(
         name="Export Normals",
         description="Export normals per vertex as well.",
         default=False,
         )
 
-    apply_rotations = BoolProperty(
+    apply_rotations: BoolProperty(
         name="Apply Rotations",
         description="Apply all rotations into vertex data",
         default=True,
         )
 
-    advanced = BoolProperty(
+    advanced: BoolProperty(
             name="Advanced Settings",
             description="Show advanced settings",
             default=False,
@@ -152,14 +152,14 @@ class ExportRoomleScript( Operator, ExportHelper ):
         ("INTERNAL", "Force Intern", "Export meshes as external files", 3),
     ]
 
-    mesh_export_option = EnumProperty(
+    mesh_export_option: EnumProperty(
         items=mesh_export_options,
         name="Mesh export method",
         description="Meshes are converted into external files or script commands",
         default="AUTO",
         )
         
-    uv_float_precision = IntProperty(
+    uv_float_precision: IntProperty(
         name="UV Precision",
         description="Max floating point fraction precision of UVs in decimal digits when creating script commands",
         default=4,
@@ -167,26 +167,28 @@ class ExportRoomleScript( Operator, ExportHelper ):
         max=8
     )
 
-    normal_float_precision = IntProperty(
+    normal_float_precision: IntProperty(
         name="Normal Precision",
         description="Max floating point fraction precision of Normals in decimal digits when creating script commands",
         default=5,
         min=2,
         max=8
     )
-    # use_mesh_modifiers = BoolProperty(
+    # use_mesh_modifiers: BoolProperty(
     #         name="Apply Modifiers",
     #         description="Apply the modifiers before saving",
     #         default=True,
     #         )
             
-    debug = BoolProperty(
+    debug: BoolProperty(
             name="Debug mode",
             description="Creates a script that is easier to read and debug for changes/errors.",
             default=False,
             )
 
     def draw(self, context):
+        icon_exp = 'EXPERIMENTAL'
+        icon_adv = 'ERROR'
         layout = self.layout
         layout.prop(self, 'catalog_id')
         layout.prop(self, 'use_selection')
@@ -194,11 +196,11 @@ class ExportRoomleScript( Operator, ExportHelper ):
         layout.prop(self, 'apply_rotations')
         # TODO: remove warning once it's tested and stable
         if self.apply_rotations:
-            layout.label('Apply rotation is experimental', icon='RADIO')
+            layout.label(text='Apply rotation is experimental',icon=icon_exp)
         layout.prop(self, 'advanced') 
         if self.advanced:
             box=layout.box()
-            box.label('Advanced', icon='RADIO')
+            box.label(text='Advanced',icon=icon_adv)
             box.prop(self, 'mesh_export_option')
             box.prop(self, 'uv_float_precision')
             box.prop(self, 'normal_float_precision')
@@ -207,7 +209,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
         from mathutils import Matrix, Vector
         from . import roomle_script
         
-        preferences = bpy.context.user_preferences.addons[__name__].preferences
+        preferences = bpy.context.preferences.addons[__name__].preferences
 
         keywords = self.as_keywords(ignore=("axis_forward",
                                             "axis_up",
@@ -221,7 +223,11 @@ class ExportRoomleScript( Operator, ExportHelper ):
 
         global_scale = 1000
         
-        global_matrix = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4() * Matrix.Scale(global_scale, 4) * Matrix.Scale(-1,4,Vector((1,0,0)))
+        mat_axis = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4()
+        mat_global_scale = Matrix.Scale(global_scale, 4)
+        mat_flip = Matrix.Scale(-1,4,Vector((1,0,0)))
+
+        global_matrix = mat_axis @ mat_global_scale @ mat_flip
 
         try:
             roomle_script.write_roomle_script( self, preferences, bpy.context, global_matrix=global_matrix, **keywords)
@@ -237,12 +243,16 @@ def menu_export(self, context):
 
 
 def register():
-    bpy.utils.register_module(__name__)
-    bpy.types.INFO_MT_file_export.append(menu_export)
+    bpy.utils.register_class(ExportRoomleScript)
+    bpy.utils.register_class(ExportRoomleScriptPreferences)
+    bpy.types.TOPBAR_MT_file_export.append(menu_export)
+    optimize_operator.register()
 
 def unregister():
-    bpy.utils.unregister_module(__name__)
-    bpy.types.INFO_MT_file_export.remove(menu_export)
+    optimize_operator.unregister()
+    bpy.types.TOPBAR_MT_file_export.remove(menu_export)
+    bpy.utils.unregister_class(ExportRoomleScriptPreferences)
+    bpy.utils.unregister_class(ExportRoomleScript)
 
 if __name__ == "__main__":
     register()
