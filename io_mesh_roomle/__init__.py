@@ -152,13 +152,25 @@ class ExportRoomleScript( Operator, ExportHelper ):
         ("INTERNAL", "Force Intern", "Export meshes as external files", 3),
     ]
 
+    mesh_format_options = [
+        ('OBJ', 'Wavefront OBJ', 'Slower, but always correct normals', 2),
+        ('PLY', 'Stanford PLY', 'Most efficient. Does not work with custom normals', 1),
+    ]
+
     mesh_export_option: EnumProperty(
         items=mesh_export_options,
         name="Mesh export method",
         description="Meshes are converted into external files or script commands",
         default="AUTO",
         )
-        
+
+    mesh_format_option: EnumProperty(
+        items=mesh_format_options,
+        name='Mesh format',
+        description='External mesh format',
+        default='OBJ',
+    )
+
     uv_float_precision: IntProperty(
         name="UV Precision",
         description="Max floating point fraction precision of UVs in decimal digits when creating script commands",
@@ -202,6 +214,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
             box=layout.box()
             box.label(text='Advanced',icon=icon_adv)
             box.prop(self, 'mesh_export_option')
+            box.prop(self, 'mesh_format_option')
             box.prop(self, 'uv_float_precision')
             box.prop(self, 'normal_float_precision')
 

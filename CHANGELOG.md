@@ -11,9 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Normal export in combination with no UVs creates invalid AddMesh commands
 - Normals are alway smooth shaded. Blender's "Shade Flat" command (flat shading in viewport) has no effect.
 
-## [2.1.0] - 2020-03-26
+## [2.1.0-beta]
 ### Changed
 - Normals are exported by default now
+- External meshes are exported as Wavefront OBJ now
+### Fixed
+- Correct export of custom normals when using external meshes
+- External meshes in PLY format now contain only its object's geometry, not others as well
+
 ## [2.0.0] - 2019-06-05
 ### Fixed
 - Ported "Optimize Roomle static" operator to Blender 2.80 (wasn't registered at all before).

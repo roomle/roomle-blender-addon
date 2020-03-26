@@ -330,9 +330,8 @@ def create_extern_mesh_command(
     bm = bmesh.new()
     bm.from_mesh(mesh)
 
-    bmesh.ops.triangulate(bm,faces=bm.faces[:])
-
     tri_mesh = bpy.data.meshes.new(name)
+    tri_mesh.use_auto_smooth = mesh.use_auto_smooth
 
     # Finish up, write the bmesh back to the mesh
     bm.to_mesh(tri_mesh)
@@ -342,7 +341,6 @@ def create_extern_mesh_command(
         os.makedirs(extern_mesh_dir)
 
     script_name = os.path.basename(extern_mesh_dir)
-    filepath = os.path.join( extern_mesh_dir, '{}_{}.{}'.format(script_name,name,'ply') )
     
     scene = bpy.context.scene
     
@@ -350,6 +348,9 @@ def create_extern_mesh_command(
 
     tmp = bpy.data.objects.new('tmp_'+name, tri_mesh) # create temporary object with same mesh data but without transformation
     
+    triangulate_mod = tmp.modifiers.new('Triangulate','TRIANGULATE')
+    triangulate_mod.keep_custom_normals = mesh.has_custom_normals
+
     # put the object into the scene (link)
     scene.collection.objects.link(tmp)
 
@@ -365,18 +366,35 @@ def create_extern_mesh_command(
     # Apply transform (necessary to have correct boundings box)
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
-    bpy.ops.export_mesh.ply(
-        filepath=filepath,
-        check_existing=False,
-        axis_forward='Y',
-        axis_up='Z',
-        filter_glob="*.ply",
-        use_mesh_modifiers=use_mesh_modifiers,
-        use_normals=args['export_normals'],
-        use_uv_coords=True,
-        use_colors=False,
-        global_scale=1000
+    filepath = os.path.join(extern_mesh_dir,f'{script_name}_{name}')
+
+    if args['mesh_format_option']=='OBJ':
+        bpy.ops.export_scene.obj(
+            filepath=f'{filepath}.obj',
+            check_existing=False,
+            use_selection=True,
+            use_mesh_modifiers=use_mesh_modifiers,
+            use_normals=args['export_normals'],
+            global_scale=1000,
+            use_uvs=True,
+            use_blen_objects=False,
+            use_materials=False,
         )
+    else:
+        # assuming args['mesh_format_option']=='PLY'
+        bpy.ops.export_mesh.ply(
+            filepath=f'{filepath}.ply',
+            check_existing=False,
+            use_selection=True,
+            axis_forward='Y',
+            axis_up='Z',
+            filter_glob="*.ply",
+            use_mesh_modifiers=use_mesh_modifiers,
+            use_normals=args['export_normals'],
+            use_uv_coords=True,
+            use_colors=False,
+            global_scale=1000
+            )
 
     dim, center = get_object_bounding_box(tmp)
 
