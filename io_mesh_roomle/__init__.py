@@ -131,7 +131,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
     export_normals: BoolProperty(
         name="Export Normals",
         description="Export normals per vertex as well.",
-        default=False,
+        default=True,
         )
 
     apply_rotations: BoolProperty(
