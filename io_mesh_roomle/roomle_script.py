@@ -369,8 +369,9 @@ def create_extern_mesh_command(
     filepath = os.path.join(extern_mesh_dir,f'{script_name}_{name}')
 
     if args['mesh_format_option']=='OBJ':
+        filepath += '.obj'
         bpy.ops.export_scene.obj(
-            filepath=f'{filepath}.obj',
+            filepath=filepath,
             check_existing=False,
             use_selection=True,
             use_mesh_modifiers=use_mesh_modifiers,
@@ -382,8 +383,9 @@ def create_extern_mesh_command(
         )
     else:
         # assuming args['mesh_format_option']=='PLY'
+        filepath += '.ply'
         bpy.ops.export_mesh.ply(
-            filepath=f'{filepath}.ply',
+            filepath=filepath,
             check_existing=False,
             use_selection=True,
             axis_forward='Y',
