@@ -16,13 +16,14 @@
 bl_info = {
     "name": "Roomle Configurator Script",
     "author": "Andreas Atteneder",
-    "version": (2, 0, 0),
-    "blender": (2, 80, 0),
+    "version": (2, 1, 0),
+    "blender": (2, 81, 0),
     "location": "File > Import-Export > Roomle",
     "description": "Export Roomle Configurator Script",
     "support": 'COMMUNITY',
     "category": "Import-Export",
-    "tracker_url": "https://gitlab.com/roomle/tools/roomle-blender-addon/issues"
+    "tracker_url": "https://gitlab.com/roomle/tools/roomle-blender-addon/issues",
+    "warning": "Beta version",
 }
 
 if "bpy" in locals():
