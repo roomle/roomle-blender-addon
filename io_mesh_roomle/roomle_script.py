@@ -108,7 +108,7 @@ def indices_from_mesh(ob, use_mesh_modifiers=False):
 
     mesh.calc_normals()
     mesh.calc_loop_triangles()
-    #mesh.calc_normals_split()
+    mesh.calc_normals_split()
     
     uv_layer_index = mesh.uv_layers.active_index
     uv_layer = mesh.uv_layers[uv_layer_index] if uv_layer_index>=0 else None
@@ -160,6 +160,7 @@ def indices_from_mesh(ob, use_mesh_modifiers=False):
                         
                         v_index = len(vertices)
                         vertices.append(mesh.vertices[orig_index].co)
+                        indices.append(v_index)
                         uvs.append(uv_layer.data[loop_index].uv)
 
                         vv=VertexVariant(v_index,loop_index)

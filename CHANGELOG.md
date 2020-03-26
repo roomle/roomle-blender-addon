@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Correct export of custom normals when using external meshes
 - External meshes in PLY format now contain only its object's geometry, not others as well
+- Meshes with n-gons as internal meshes
 
 ## [2.0.0] - 2019-06-05
 ### Fixed
