@@ -381,6 +381,8 @@ def create_extern_mesh_command(
             use_uvs=True,
             use_blen_objects=False,
             use_materials=False,
+            axis_forward='Y',
+            axis_up='Z',
         )
     else:
         # assuming args['mesh_format_option']=='PLY'
