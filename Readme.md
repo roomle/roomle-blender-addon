@@ -12,7 +12,7 @@ Advanced users can check out [Build](#build) to build it themselves.
 
 ## Install
 
-- Open Blender 2.80 (or later)
+- Open Blender 2.81 (or later)
 - Navigate the main menu to "Edit" > "Preferences"
 - On the left side, click the "Add-ons" tab
 - Click the "Install…" button at the top right
@@ -83,7 +83,7 @@ In general external meshes are the preferred way, since they require a fraction 
 
 However, they require an additional network request at run-time. So for very simple objects (meshes with a with low triangles count) it makes more sense to include them in the script. The addon will automatically decide whether to make the mesh internal or external.
 
-External meshes are expored in a subfolder which has the same name as the script file (.txt) itself. These are triangulate meshes in the PLY format. These files have to be uploaded to Roomle before they can be used.
+External meshes are expored in a subfolder which has the same name as the script file (.txt) itself. These are triangulated meshes, by default in Wavefront OBJ format. These files have to be uploaded to Roomle before they can be used.
 
 #### Mesh compression
 

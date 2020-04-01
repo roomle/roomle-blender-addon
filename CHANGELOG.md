@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Normal export in combination with no UVs creates invalid AddMesh commands
 - Normals are alway smooth shaded. Blender's "Shade Flat" command (flat shading in viewport) has no effect.
 
-## [2.1.0-beta]
+## [2.1.0] - 2020-04-01
 ### Changed
 - Normals are exported by default now
 - External meshes are exported as Wavefront OBJ now
