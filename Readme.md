@@ -106,7 +106,7 @@ You can find it only in the search menu, labeled as *Optimize Roomle static*. Th
 
 ## Issues
 
-Please report any issues or bugs you experience in the [issue tracker](https://gitlab.com/roomle/tools/roomle-blender-addon/issues).
+Please report any issues or bugs you experience in the [Roomle Servicedesk](https://servicedesk.roomle.com).
 
 ## Build
 
