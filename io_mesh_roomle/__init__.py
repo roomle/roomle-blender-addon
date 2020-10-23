@@ -22,7 +22,7 @@ bl_info = {
     "description": "Export Roomle Configurator Script",
     "support": 'COMMUNITY',
     "category": "Import-Export",
-    "tracker_url": "https://gitlab.com/roomle/tools/roomle-blender-addon/issues",
+    "tracker_url": "https://servicedesk.roomle.com",
     "warning": "Beta version",
 }
 
