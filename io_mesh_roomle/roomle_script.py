@@ -319,6 +319,10 @@ def create_extern_mesh_command(
     rotation=None,
     **args
 ):
+    '''
+    Save external meshes and convert them to
+    corto if a corto exe is found
+    '''
 
     apply_rotation = args['apply_rotations'] and rotation
     name = object.name if (scale or apply_rotation) else object.data.name
@@ -369,37 +373,20 @@ def create_extern_mesh_command(
 
     filepath = os.path.join(extern_mesh_dir,f'{script_name}_{name}')
 
-    if args['mesh_format_option']=='OBJ':
-        filepath += '.obj'
-        bpy.ops.export_scene.obj(
-            filepath=filepath,
-            check_existing=False,
-            use_selection=True,
-            use_mesh_modifiers=use_mesh_modifiers,
-            use_normals=args['export_normals'],
-            global_scale=1000,
-            use_uvs=True,
-            use_blen_objects=False,
-            use_materials=False,
-            axis_forward='Y',
-            axis_up='Z',
+    filepath += '.obj'
+    bpy.ops.export_scene.obj(
+        filepath=filepath,
+        check_existing=False,
+        use_selection=True,
+        use_mesh_modifiers=use_mesh_modifiers,
+        use_normals=args['export_normals'],
+        global_scale=1000,
+        use_uvs=True,
+        use_blen_objects=False,
+        use_materials=False,
+        axis_forward='Y',
+        axis_up='Z',
         )
-    else:
-        # assuming args['mesh_format_option']=='PLY'
-        filepath += '.ply'
-        bpy.ops.export_mesh.ply(
-            filepath=filepath,
-            check_existing=False,
-            use_selection=True,
-            axis_forward='Y',
-            axis_up='Z',
-            filter_glob="*.ply",
-            use_mesh_modifiers=use_mesh_modifiers,
-            use_normals=args['export_normals'],
-            use_uv_coords=True,
-            use_colors=False,
-            global_scale=1000
-            )
 
     dim, center = get_object_bounding_box(tmp)
 
@@ -433,7 +420,7 @@ def create_extern_mesh_command(
 
     if preferences.corto_exe and os.path.isfile(preferences.corto_exe):
         try:
-            corto_process = subprocess.Popen( [preferences.corto_exe,filepath] )
+            corto_process = subprocess.Popen( [preferences.corto_exe, '-v 12 -n 9 -u 10 -N delta', filepath])
             if corto_process.wait()!=0:
                 raise Exception('corto error')
         except Exception as e:
@@ -495,6 +482,13 @@ def create_object_commands(
     **args
     ):
 
+    '''
+    Create all necessary commands for one object
+    this function gets called by the loop over all objects
+    '''
+
+    # TODO: separate out the mesh creation for better readability
+
     command = ''
     
     empty = True
@@ -523,7 +517,15 @@ def create_object_commands(
             extern = (method=='EXTERNAL') or (method=='AUTO' and len(object.data.vertices) > 100)
 
             if extern:
-                mesh = create_extern_mesh_command( preferences, extern_mesh_dir, object, global_matrix, scale=scale, rotation=rotation, **args )
+                mesh = create_extern_mesh_command(
+                    preferences,
+                     extern_mesh_dir,
+                     object,
+                     global_matrix,
+                     scale=scale,
+                     rotation=rotation,
+                     **args
+                     )
             else:
                 mesh = create_mesh_command(object, global_matrix, scale=scale, rotation=rotation, **args)
 
@@ -575,6 +577,11 @@ def create_object_commands(
     return command
 
 def create_objects_commands(preferences,objects, object_list, extern_mesh_dir, global_matrix, apply_transform=False, **args):
+    '''
+    Create the Roomle Script command
+    iterate over all objects and pass them
+    to the create_object_commands
+    '''
     command = ''
     if args['debug']:
         command += '// Roomle script DEBUG\n'
