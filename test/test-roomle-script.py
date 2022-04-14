@@ -13,7 +13,9 @@ class RoomleScriptExportTests(TestCase):
 
     BLENDER = {
         # '2.79': '/Applications/blender-2.79.0-x86_64/blender.app/Contents/MacOS/blender',
-        '2.80': '/Applications/blender-2.80.0-x86_64/blender.app/Contents/MacOS/blender',
+        # '2.80': '/Applications/blender-2.80.0-x86_64/blender.app/Contents/MacOS/blender',
+        # '3.0': '/Applications/Blender.app/Contents/MacOS/blender',
+        '2.93': '/Applications/Blender-2.93.5.app/Contents/MacOS/blender',
     }
 
     scenes = [

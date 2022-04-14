@@ -16,7 +16,7 @@
 bl_info = {
     "name": "Roomle Configurator Script",
     "author": "Andreas Atteneder",
-    "version": (2, 1, 0),
+    "version": (2, 1, 1),
     "blender": (2, 81, 0),
     "location": "File > Import-Export > Roomle",
     "description": "Export Roomle Configurator Script",
@@ -122,12 +122,6 @@ class ExportRoomleScript( Operator, ExportHelper ):
             description="Export only selected objects on visible layers",
             default=False,
             )
-
-    # use_scene_unit: BoolProperty(
-    #         name="Scene Unit",
-    #         description="Apply current scene's unit (as defined by unit scale) to exported data",
-    #         default=False,
-    #         )
             
     export_normals: BoolProperty(
         name="Export Normals",
@@ -153,24 +147,12 @@ class ExportRoomleScript( Operator, ExportHelper ):
         ("INTERNAL", "Force Intern", "Export meshes as external files", 3),
     ]
 
-    mesh_format_options = [
-        ('OBJ', 'Wavefront OBJ', 'Slower, but always correct normals', 2),
-        ('PLY', 'Stanford PLY', 'Most efficient. Does not work with custom normals', 1),
-    ]
-
     mesh_export_option: EnumProperty(
         items=mesh_export_options,
         name="Mesh export method",
         description="Meshes are converted into external files or script commands",
         default="AUTO",
         )
-
-    mesh_format_option: EnumProperty(
-        items=mesh_format_options,
-        name='Mesh format',
-        description='External mesh format',
-        default='OBJ',
-    )
 
     uv_float_precision: IntProperty(
         name="UV Precision",
@@ -187,11 +169,6 @@ class ExportRoomleScript( Operator, ExportHelper ):
         min=2,
         max=8
     )
-    # use_mesh_modifiers: BoolProperty(
-    #         name="Apply Modifiers",
-    #         description="Apply the modifiers before saving",
-    #         default=True,
-    #         )
             
     debug: BoolProperty(
             name="Debug mode",
@@ -215,7 +192,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
             box=layout.box()
             box.label(text='Advanced',icon=icon_adv)
             box.prop(self, 'mesh_export_option')
-            box.prop(self, 'mesh_format_option')
+            # box.prop(self, 'mesh_format_option')
             box.prop(self, 'uv_float_precision')
             box.prop(self, 'normal_float_precision')
 
