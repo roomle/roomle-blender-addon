@@ -27,9 +27,12 @@ from copy import deepcopy
 
 from mathutils import Vector
 
+from .shape_keys import KEYS, ShapeKeyDeltas, does_have_shape_key
+
 from bpy_extras.io_utils import (
         axis_conversion,
         )
+
 
 @dataclass
 class VertexVariant:
@@ -198,6 +201,15 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
     
     debug = args['debug']
 
+    use_shape_keys=True
+    shape_keys_data = None
+    # import bpy
+    # print(bpy.context.evaluated_depsgraph_get)
+    if does_have_shape_key(object):
+        shape_keys_data = ShapeKeyDeltas(object,bpy.context)
+        shape_keys_data._all_deltas()
+
+
     command = '//Object:{} Mesh:{}\n'.format(object.name,object.data.name)
     command += 'AddMesh('
     export_normals = args['export_normals']
@@ -207,15 +219,15 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
     
     export_normals |= split_uvs
 
-    if debug:
-        command += '\n// Vertex positions:\n'
-    command += 'Vector3f['
-    for i,vertex in enumerate(vertices):
-        if i>0:
-            command += ','
-        if debug:
-            command += '\n'
-        v=vertex.copy()
+    def mod_vertex(v:Vector) -> Vector:
+        """utility to apply modifications to vertices
+
+        Args:
+            v (Vector): Vector to modify
+
+        Returns:
+            Vector: modified Vector
+        """
         if scale:
             v.x *= scale.x
             v.y *= scale.y
@@ -224,8 +236,57 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
             v = rotation @ v
 
         v = global_matrix @ v
+        return v
 
-        command +='{{{0},{1},{2}}}'.format( floatFormat(v.x,1), floatFormat(v.y,1), floatFormat(v.z,1) )
+
+    if debug:
+        command += '\n// Vertex positions:\n'
+    command += 'Vector3f['
+    for i,vertex in enumerate(vertices):
+        if i>0:
+            command += ','
+        if debug:
+            command += '\n'
+        v=mod_vertex(vertex.copy())
+        
+        if use_shape_keys and shape_keys_data != None:
+
+            # delta values
+            dx:float = 0.0
+            dy:float = 0.0
+            dz:float = 0.0
+
+            # delta command strings
+            delta_x:str = ""
+            delta_y:str = ""
+            delta_z:str = ""
+
+            if i in shape_keys_data.deltas:
+                # current vertex has shape key data
+
+                for delta in shape_keys_data.deltas[i]:
+                    (dx,dy,dz) = mod_vertex(delta[KEYS.delta])
+                    del_name = delta[KEYS.key_name]
+                    print('☎️', del_name)
+                    # slider_id = shape_keys_data.slider_ids[del_name]
+                    slider_id = shape_keys_data.slider_ids[del_name]
+
+                    delta_x += f'+{dx}*{slider_id}'
+                    delta_y += f'+{dy}*{slider_id}'
+                    delta_z += f'+{dz}*{slider_id}'
+            
+            base_x = floatFormat(v.x,1)
+            base_y = floatFormat(v.y,1)
+            base_z = floatFormat(v.z,1)
+
+            command += '{'
+            command += f'{base_x}{delta_x},'
+            command += f'{base_y}{delta_y},'
+            command += f'{base_z}{delta_z}'
+            command += '}'
+
+        else:
+            command +='{{{0},{1},{2}}}'.format( floatFormat(v.x,1), floatFormat(v.y,1), floatFormat(v.z,1) )
     if debug:
         command += '\n'
     command += '],'
