@@ -11,13 +11,35 @@ import bmesh
 import bpy_types
 from mathutils import Vector
 from uuid import uuid4 as id
+from hashlib import md5
+
+_SLIDER_TEMPLATE = (Path(__file__).parent / 'parameter.json').read_text()
+
+
+class SliderTemplate:
+    src: str
+
+    def __init__(self, id, name) -> None:
+        self.src = _SLIDER_TEMPLATE
+        self.id = id
+        self.name = name
+
+    def get(self):
+        return self.src.replace(
+            '{id}',
+            self.id
+        ).replace(
+            '{name}',
+            self.name
+        )
 
 
 @dataclass
 class KEYS:
-    key_name="key_name"
-    delta="delta"
-    slider="slider_id"
+    key_name = "key_name"
+    delta = "delta"
+    slider = "slider_id"
+
 
 def find_all_objs_with_shape_keys() -> List[bpy_types.Object]:
     results = []
@@ -35,12 +57,12 @@ def find_all_objs_with_shape_keys() -> List[bpy_types.Object]:
 class ShapeKeyDeltas:
     obj: bpy_types.Object
     shape_keys: List[bpy.types.ShapeKey]
-    slider_ids:dict = {}
+    slider_ids: dict = {}
 
     key_values: List[float] = []
 
     deltas: dict = {}
-    context=None
+    context = None
 
     def __init__(self, obj: bpy_types.Object, context) -> None:
         print(context.area)
@@ -50,8 +72,9 @@ class ShapeKeyDeltas:
             key_block for key_block in obj.data.shape_keys.key_blocks]
         for key in self.shape_keys:
             print('⚙️', key.name)
-            self.slider_ids[key.name] = f'id-{str(id())[:8]}'
-        print('🐵',self.slider_ids)
+            h = md5(str(key.name).encode('utf-8')).hexdigest()
+            self.slider_ids[key.name] = f'id_{h}'
+        print('🐵', self.slider_ids)
         self._store_reset_values()
 
     def _store_reset_values(self) -> None:
@@ -112,15 +135,15 @@ class ShapeKeyDeltas:
         return ob
 
     def print(self):
-        for i,v in enumerate(self.obj.data.vertices):
-            x,y,z = v.co
+        for i, v in enumerate(self.obj.data.vertices):
+            x, y, z = v.co
             s_x = f'{x}'
             s_y = f'{y}'
             s_z = f'{z}'
             if i in self.deltas:
                 for e in self.deltas[i]:
                     name = e[KEYS.key_name]
-                    dx,dy,dz = e[KEYS.delta]
+                    dx, dy, dz = e[KEYS.delta]
                     s_x += f'+{dx}*{name}'
                     s_y += f'+{dy}*{name}'
                     s_z += f'+{dz}*{name}'

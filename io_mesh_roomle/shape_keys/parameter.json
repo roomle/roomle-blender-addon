@@ -1,0 +1,18 @@
+{
+    "key": "{id}",
+    "group": "dimensions",
+    "defaultValue": 0,
+    "type": "Decimal",
+    "labels": {
+        "en": "{name}"
+    },
+    "unitType": "length",
+    "validRange": {
+        "valueFrom": "0",
+        "valueTo": "1",
+        "step": "0.001"
+    },
+    "enabled": true,
+    "visible": true,
+    "visibleInPartList": true
+}

@@ -27,7 +27,7 @@ from copy import deepcopy
 
 from mathutils import Vector
 
-from .shape_keys import KEYS, ShapeKeyDeltas, does_have_shape_key
+from .shape_keys import KEYS, SliderTemplate, ShapeKeyDeltas, does_have_shape_key
 
 from bpy_extras.io_utils import (
         axis_conversion,
@@ -267,13 +267,19 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
                 for delta in shape_keys_data.deltas[i]:
                     (dx,dy,dz) = mod_vertex(delta[KEYS.delta])
                     del_name = delta[KEYS.key_name]
-                    print('☎️', del_name)
                     # slider_id = shape_keys_data.slider_ids[del_name]
                     slider_id = shape_keys_data.slider_ids[del_name]
 
-                    delta_x += f'+{dx}*{slider_id}'
-                    delta_y += f'+{dy}*{slider_id}'
-                    delta_z += f'+{dz}*{slider_id}'
+                    dx = floatFormat(dx,1)
+                    dy = floatFormat(dy,1)
+                    dz = floatFormat(dz,1)
+                    
+                    if dx != floatFormat(0.0,1):
+                        delta_x += f'+{dx}*{slider_id}'
+                    if dy != floatFormat(0.0,1):
+                        delta_y += f'+{dy}*{slider_id}'
+                    if dz != floatFormat(0.0,1):
+                        delta_z += f'+{dz}*{slider_id}'
             
             base_x = floatFormat(v.x,1)
             base_y = floatFormat(v.y,1)
@@ -284,6 +290,7 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
             command += f'{base_y}{delta_y},'
             command += f'{base_z}{delta_z}'
             command += '}'
+
 
         else:
             command +='{{{0},{1},{2}}}'.format( floatFormat(v.x,1), floatFormat(v.y,1), floatFormat(v.z,1) )
@@ -349,6 +356,15 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
             command += ']'
         
     command+=');\n'
+
+
+    if shape_keys_data != None:
+        for slider in shape_keys_data.shape_keys[1:]:
+            name = slider.name
+            id = shape_keys_data.slider_ids[name]
+            t = SliderTemplate(id,name)
+            command += t.get()
+
     return command
 
 def get_object_bounding_box( object ):
