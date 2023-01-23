@@ -198,7 +198,7 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
     
     debug = args['debug']
 
-    command = '//Object:{} Mesh:{}\n'.format(object.name,object.data.name)
+    command = '/* Object:{} Mesh:{} */\n'.format(object.name,object.data.name)
     command += 'AddMesh('
     export_normals = args['export_normals']
     apply_rotation = args['apply_rotations'] and rotation
@@ -584,10 +584,10 @@ def create_objects_commands(preferences,objects, object_list, extern_mesh_dir, g
     '''
     command = ''
     if args['debug']:
-        command += '// Roomle script DEBUG\n'
+        command += '/* Roomle script DEBUG */\n'
     else:
         from . import bl_info
-        command += '// Roomle script (Roomle Blender addon version {})\n'.format('.'.join( [str(x) for x in bl_info['version']] ))
+        command += '/* Roomle script (Roomle Blender addon version {}) */\n'.format('.'.join( [str(x) for x in bl_info['version']] ))
 
     for object in objects:
         if object:
