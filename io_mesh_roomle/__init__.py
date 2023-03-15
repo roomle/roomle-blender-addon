@@ -13,6 +13,8 @@
 #  from Roomle.
 # -----------------------------------------------------------------------
 
+from .material_exporter import export_materials
+
 bl_info = {
     "name": "Roomle Configurator Script",
     "author": "Andreas Atteneder",
@@ -129,6 +131,12 @@ class ExportRoomleScript( Operator, ExportHelper ):
         default=True,
         )
 
+    export_materials: BoolProperty(
+        name="Export Materials",
+        description="Export roomle material definitions",
+        default=False,
+        )
+
     apply_rotations: BoolProperty(
         name="Apply Rotations",
         description="Apply all rotations into vertex data",
@@ -183,6 +191,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
         layout.prop(self, 'catalog_id')
         layout.prop(self, 'use_selection')
         layout.prop(self, 'export_normals')
+        layout.prop(self, 'export_materials')
         layout.prop(self, 'apply_rotations')
         # TODO: remove warning once it's tested and stable
         if self.apply_rotations:
@@ -199,9 +208,13 @@ class ExportRoomleScript( Operator, ExportHelper ):
     def execute(self, context):
         from mathutils import Matrix, Vector
         from . import roomle_script
+
         
         preferences = bpy.context.preferences.addons[__name__].preferences
 
+        if self.filepath == '':
+            raise Exception('no filepath provided')
+        
         keywords = self.as_keywords(ignore=("axis_forward",
                                             "axis_up",
                                             "global_scale",
@@ -211,6 +224,9 @@ class ExportRoomleScript( Operator, ExportHelper ):
                                             "use_mesh_modifiers",
                                             "advanced"
                                             ))
+        if keywords['export_materials']:
+            export_materials(**keywords)
+
 
         global_scale = 1000
         
@@ -227,6 +243,27 @@ class ExportRoomleScript( Operator, ExportHelper ):
             return {'CANCELLED'}
 
         return {'FINISHED'}
+
+def delete_scene_objects(scene=None):
+    """Delete a scene and all its objects."""
+    #
+    # Sort out the scene object.
+    if scene is None:
+        # Not specified: it's the current scene.
+        scene = bpy.context.screen.scene
+    else:
+        if isinstance(scene, str):
+            # Specified by name: get the scene object.
+            scene = bpy.data.scenes[scene]
+        # Otherwise, assume it's a scene object already.
+    #
+    # Remove objects.
+    for object_ in scene.objects:
+        bpy.data.objects.remove(object_, True)
+    #
+    # Remove scene.
+    bpy.data.scenes.remove(scene, True)
+
 
 def menu_export(self, context):
     default_path = os.path.splitext(bpy.data.filepath)[0] + ".txt"

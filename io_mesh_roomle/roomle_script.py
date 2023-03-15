@@ -533,6 +533,7 @@ def create_object_commands(
             material_name = 'default'
             if object.material_slots:
                 material_name = getValidName(object.material_slots[0].name)
+                # TODO: 5959 create materilal definition
             material = "SetObjSurface('{}:{}');\n".format( args['catalog_id'], material_name )
 
     # Children
