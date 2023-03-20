@@ -13,12 +13,12 @@
 #  from Roomle.
 # -----------------------------------------------------------------------
 
-from .material_exporter import export_materials
+from .material_exporter import remove_export_scene, export_materials
 
 bl_info = {
     "name": "Roomle Configurator Script",
     "author": "Andreas Atteneder",
-    "version": (2, 1, 2),
+    "version": (2, 2, 0),
     "blender": (2, 81, 0),
     "location": "File > Import-Export > Roomle",
     "description": "Export Roomle Configurator Script",
@@ -242,27 +242,11 @@ class ExportRoomleScript( Operator, ExportHelper ):
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
 
-        return {'FINISHED'}
+        if keywords['export_materials']:
+            remove_export_scene()
+            
 
-def delete_scene_objects(scene=None):
-    """Delete a scene and all its objects."""
-    #
-    # Sort out the scene object.
-    if scene is None:
-        # Not specified: it's the current scene.
-        scene = bpy.context.screen.scene
-    else:
-        if isinstance(scene, str):
-            # Specified by name: get the scene object.
-            scene = bpy.data.scenes[scene]
-        # Otherwise, assume it's a scene object already.
-    #
-    # Remove objects.
-    for object_ in scene.objects:
-        bpy.data.objects.remove(object_, True)
-    #
-    # Remove scene.
-    bpy.data.scenes.remove(scene, True)
+        return {'FINISHED'}
 
 
 def menu_export(self, context):

@@ -1,12 +1,15 @@
 from dataclasses import dataclass
+from email.mime import image
 from pathlib import Path
 import re
+from shutil import copy
 from typing import List, Tuple, Union
 import bpy
 from ._roomle_material_csv import (
     RoomleMaterialsCsv,
     MaterialDefinition,
 )
+from ._file_formats import SUPPORTED_TEXTURE_FILE_FORMATS
 
 
 def get_valid_name(name: str) -> str:
@@ -343,11 +346,12 @@ class BlenderMaterialForExport:
     images: List[str] = []
     pbr: PBR_ShaderData
 
-    def __init__(self, material: bpy.types.Material) -> None:
+    def __init__(self, material: bpy.types.Material, out_path: Path) -> None:
 
         # valid name – this has to be the same as created inside the Blender addon
         self.name = get_valid_name(material.name)
 
+        self.out_path = out_path
         self.material = material
         self.used_nodes = self.find_used_nodes(self.material)
         self.unpack_images()
@@ -391,14 +395,44 @@ class BlenderMaterialForExport:
     def unpack_images(self):
         """unpack the images of all used `ShaderNodeTexImage` and prpend the material name
         """
+
+        # TODO: manage external images with same name. rather use `node.image.name` as file name
+
         for node in [node for node in self.used_nodes if isinstance(node, bpy.types.ShaderNodeTexImage)]:
-            if node.image.filepath != '':
-                continue
+            # if node.image.filepath != '':
+            #     continue
             # node.image.name = f'{self.name}-{node.image.name}'
-            try:
-                node.image.unpack(method='WRITE_LOCAL')
-            except Exception:
-                pass
+            if node.image.packed_file is not None:
+                try:
+                    # write packed data to `materials` folder
+                    file_format = node.image.file_format
+                    if not file_format in SUPPORTED_TEXTURE_FILE_FORMATS:
+                        # TODO: log warning
+                        continue
+
+                    name = node.image.name
+                    suffix = SUPPORTED_TEXTURE_FILE_FORMATS[file_format]
+                    image_data = node.image.packed_file.data
+
+                    img = self.out_path / 'materials' / f'{name}{suffix}'
+                    img.parent.mkdir(exist_ok=True)
+
+                    img.write_bytes(image_data)
+                    
+                    # set the filepath if there is none
+                    if node.image.filepath == '':
+                        node.image.filepath = f'//textures/{img.name}'
+
+                except Exception:
+                    pass
+            else:
+                try:
+                    i = Path(bpy.path.abspath(node.image.filepath)).resolve()
+                    target = self.out_path / 'materials' / i.name
+                    target.parent.mkdir(exist_ok=True)
+                    copy(i,target)
+                except Exception as e:
+                    pass
             self.images.append(node.image.filepath)
 
 
@@ -407,7 +441,7 @@ class RoomleMaterialExporter:
     material_exports: List[BlenderMaterialForExport]
     out_folder: Path
 
-    def __init__(self, out_path: Path) -> None:
+    def __init__(self,objects, out_path: Path) -> None:
         self.out_folder = out_path
         self.csv_exporter = RoomleMaterialsCsv()
         self.material_exports = []
@@ -416,12 +450,12 @@ class RoomleMaterialExporter:
                 continue
             if mat.node_tree == None:
                 continue
-            obs = [o for o in bpy.context.scene.objects
+            obs = [o for o in objects
                     if type(o.data) is bpy.types.Mesh
                     and mat.name in o.data.materials]
             if len(obs) < 1:
                 continue
-            self.material_exports.append(BlenderMaterialForExport(mat))
+            self.material_exports.append(BlenderMaterialForExport(mat, self.out_folder))
 
         for mat in self.material_exports:
             self.move_materials(mat)
@@ -431,6 +465,7 @@ class RoomleMaterialExporter:
         self.csv_exporter.write(out_path / 'materials/materials.csv')
 
     def move_materials(self, data: BlenderMaterialForExport):
+        return # this was used when unpacking
         channels = [c for c in data.pbr.__dict__.values() if isinstance(
             c, PBR_Channel) and c.map is not None]
         mat_folder = self.out_folder/'materials'
@@ -448,8 +483,8 @@ class RoomleMaterialExporter:
         def sinn(value: Union[str, None]):
             if value is None:
                 return ''
-            # return 'zip://' + value.rsplit('/')[-1]
-            return value.replace('//textures/', 'zip://')
+            return 'zip://' + value.rsplit('/')[-1]
+            ##return value.replace('//textures/', 'zip://')
 
         def prec(value: Union[float, None], default: float):
             if value is None:
