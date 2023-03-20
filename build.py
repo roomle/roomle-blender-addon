@@ -1,6 +1,7 @@
 '''
 build the blender plugin in ./dist folder
 '''
+from genericpath import isdir
 import shutil
 import os
 import json
@@ -111,6 +112,9 @@ def hash_contents(src_dir: Path):
     # hash individual file contents
     for file in src_dir.rglob('*'):
         md5_hash = md5()
+        if file.is_dir():
+            file_hashes.append(file.name)
+            continue
         with open(str(file), "rb") as f:
             content = f.read()
             md5_hash.update(content)
