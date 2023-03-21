@@ -24,6 +24,65 @@ def get_valid_name(name: str) -> str:
     return re.sub('[^0-9a-zA-Z:_]+', '', name)
 
 
+class TextureNameManager:
+    """keeps track of image file name used to avoid overwriting of texture files using the same name
+    """
+    def __init__(self) -> None:
+        # imagenode_id : filename
+        self.images_by_id = {}
+
+        # filename : imagenode_id
+        self.names = {}
+
+    def validate_name(self, image: bpy.types.Image) -> str:
+        """returns a valid name by checking the requested name against already used ones.
+        also registers the name in the class dictionaries
+
+        Args:
+            image (bpy.types.Image): the image node to check
+            name_to_use (str): the desired name
+
+        Returns:
+            str: a valid filename without the path
+        """
+    
+        file_format = image.file_format
+        if not file_format in SUPPORTED_TEXTURE_FILE_FORMATS:
+            raise Exception(f'unsupported texture type {file_format}')
+
+        suffix = SUPPORTED_TEXTURE_FILE_FORMATS[image.file_format]
+        if image.name.endswith(suffix):
+            name_to_use = image.name
+        else:
+            name_to_use = f'{image.name}{suffix}'
+        img_id = id(image)
+
+        name_key = name_to_use.lower()
+
+        if img_id in self.images_by_id.keys():
+            return self.images_by_id[img_id]
+
+        if name_key in self.names.keys() and self.names[name_key] != id(image):
+            name_to_use = f'({image.name})-{name_to_use}'
+
+        self.images_by_id[img_id] = name_to_use
+        self.names[name_key] = img_id
+        return name_to_use
+
+    def get_name(self, image: bpy.types.Image) -> str:
+        """get the file name for a given image
+
+        Args:
+            image (bpy.types.Image): the image object to get the name for
+
+        Returns:
+            str: the name to use
+        """
+        img_id = id(image)
+        assert img_id in self.images_by_id.keys()
+        return self.images_by_id[id(image)]
+
+
 @dataclass
 class PBR_Channel:
     """The concept of map and multiplocation
@@ -69,13 +128,14 @@ class PBR_Analyzer:
     material: bpy.types.Material
     pbr_data: PBR_ShaderData
 
-    def __init__(self, material: bpy.types.Material, used_nodes: List[bpy.types.Node]) -> None:
+    def __init__(self, material: bpy.types.Material, used_nodes: List[bpy.types.Node], texture_name_manager: TextureNameManager) -> None:
         self.material = material
+        self.texture_name_manager = texture_name_manager
 
         # find the principledBSDF node
         self.principled_bsdf = [node for node in used_nodes if isinstance(
             node, bpy.types.ShaderNodeBsdfPrincipled)][0]
-        
+
         self.pbr_data = self._run()
 
     def _run(self) -> PBR_ShaderData:
@@ -146,7 +206,7 @@ class PBR_Analyzer:
             if not isinstance(n, bpy.types.ShaderNodeTexImage):
                 return
             return PBR_Channel(
-                map=n.image.filepath,
+                map=self.texture_name_manager.get_name(n.image),
                 default_value=def_val
             )
 
@@ -166,7 +226,7 @@ class PBR_Analyzer:
                 return
 
             return PBR_Channel(
-                map=n.image.filepath,
+                map=self.texture_name_manager.get_name(n.image),
                 default_value=def_val
             )
 
@@ -213,7 +273,7 @@ class PBR_Analyzer:
             if not isinstance(image_texture, bpy.types.ShaderNodeTexImage):
                 pass
             return PBR_Channel(
-                map=image_texture.image.filepath
+                map=self.texture_name_manager.get_name(image_texture.image)
             )
 
         return self.eliminate_none(
@@ -246,7 +306,7 @@ class PBR_Analyzer:
                 return
 
             return PBR_Channel(
-                map=image_node.image.filepath,
+                map=self.texture_name_manager.get_name(image_node.image),
                 default_value=def_value
             )
 
@@ -281,7 +341,7 @@ class PBR_Analyzer:
                 return
 
             return PBR_Channel(
-                map=image_node.image.filepath,
+                map=self.texture_name_manager.get_name(image_node.image),
                 default_value=def_val
             )
 
@@ -346,7 +406,7 @@ class BlenderMaterialForExport:
     images: List[str] = []
     pbr: PBR_ShaderData
 
-    def __init__(self, material: bpy.types.Material, out_path: Path) -> None:
+    def __init__(self, material: bpy.types.Material, out_path: Path, texture_name_manager: TextureNameManager) -> None:
 
         # valid name – this has to be the same as created inside the Blender addon
         self.name = get_valid_name(material.name)
@@ -354,8 +414,9 @@ class BlenderMaterialForExport:
         self.out_path = out_path
         self.material = material
         self.used_nodes = self.find_used_nodes(self.material)
-        self.unpack_images()
-        self.pbr = PBR_Analyzer(self.material, self.used_nodes).pbr_data
+        self.unpack_images(texture_name_manager)
+        self.pbr = PBR_Analyzer(
+            self.material, self.used_nodes, texture_name_manager).pbr_data
         pass
 
     @staticmethod
@@ -367,6 +428,7 @@ class BlenderMaterialForExport:
             material (bpy.types.Material): _description_
         """
         def find_incoming_nodes(base_node, links) -> List:
+            """recursive sub function"""
             connected_nodes = [
                 edge.from_node for edge in links if edge.to_node == base_node]
             for node in connected_nodes:
@@ -392,90 +454,65 @@ class BlenderMaterialForExport:
         ))
         return used_nodes
 
-    def unpack_images(self):
+    def unpack_images(self, texture_name_manager: TextureNameManager):
         """unpack the images of all used `ShaderNodeTexImage` and prpend the material name
         """
 
         # TODO: manage external images with same name. rather use `node.image.name` as file name
 
         for node in [node for node in self.used_nodes if isinstance(node, bpy.types.ShaderNodeTexImage)]:
-            # if node.image.filepath != '':
-            #     continue
-            # node.image.name = f'{self.name}-{node.image.name}'
             if node.image.packed_file is not None:
                 try:
-                    # write packed data to `materials` folder
-                    file_format = node.image.file_format
-                    if not file_format in SUPPORTED_TEXTURE_FILE_FORMATS:
-                        # TODO: log warning
-                        continue
 
-                    name = node.image.name
-                    suffix = SUPPORTED_TEXTURE_FILE_FORMATS[file_format]
+                    name = texture_name_manager.validate_name(node.image)
+                    
                     image_data = node.image.packed_file.data
 
-                    img = self.out_path / 'materials' / f'{name}{suffix}'
+                    img = self.out_path / 'materials' / name
                     img.parent.mkdir(exist_ok=True)
-
                     img.write_bytes(image_data)
-                    
-                    # set the filepath if there is none
-                    if node.image.filepath == '':
-                        node.image.filepath = f'//textures/{img.name}'
 
                 except Exception:
                     pass
             else:
                 try:
-                    i = Path(bpy.path.abspath(node.image.filepath)).resolve()
-                    target = self.out_path / 'materials' / i.name
+                    image_path = Path(bpy.path.abspath(node.image.filepath)).resolve()
+                    
+                    name = texture_name_manager.validate_name(node.image)
+                    target = self.out_path / 'materials' / name
                     target.parent.mkdir(exist_ok=True)
-                    copy(i,target)
+                    copy(image_path, target)
                 except Exception as e:
                     pass
             self.images.append(node.image.filepath)
 
 
 class RoomleMaterialExporter:
-    csv_exporter: RoomleMaterialsCsv
-    material_exports: List[BlenderMaterialForExport]
-    out_folder: Path
 
-    def __init__(self,objects, out_path: Path) -> None:
-        self.out_folder = out_path
+    def __init__(self, objects_to_export, out_path: Path) -> None:
+        self.out_folder: Path = out_path
         self.csv_exporter = RoomleMaterialsCsv()
-        self.material_exports = []
+        self.material_exports: List[BlenderMaterialForExport] = []
+        self.texture_name_manager = TextureNameManager()
+
         for mat in bpy.data.materials:
             if mat.users < 1:
                 continue
             if mat.node_tree == None:
                 continue
-            obs = [o for o in objects
-                    if type(o.data) is bpy.types.Mesh
-                    and mat.name in o.data.materials]
-            if len(obs) < 1:
+            objs_using_mat = [obj for obj in objects_to_export
+                              if obj.type == 'MESH' and
+                              mat.name in obj.data.materials]
+            if len(objs_using_mat) < 1:
                 continue
-            self.material_exports.append(BlenderMaterialForExport(mat, self.out_folder))
+            self.material_exports.append(BlenderMaterialForExport(
+                mat, self.out_folder, self.texture_name_manager))
 
         for mat in self.material_exports:
-            self.move_materials(mat)
             self.csv_exporter.add_material_definition(
                 self.pbr_2_material_definition(mat)
             )
         self.csv_exporter.write(out_path / 'materials/materials.csv')
-
-    def move_materials(self, data: BlenderMaterialForExport):
-        return # this was used when unpacking
-        channels = [c for c in data.pbr.__dict__.values() if isinstance(
-            c, PBR_Channel) and c.map is not None]
-        mat_folder = self.out_folder/'materials'
-        mat_folder.mkdir(exist_ok=True)
-        for c in channels:
-            p = self.out_folder / c.map[2:]
-            if not p.exists():
-                continue
-            p.rename(mat_folder / p.name)
-            # TODO: RESUME copy images to output folder
 
     @staticmethod
     def pbr_2_material_definition(data: BlenderMaterialForExport) -> MaterialDefinition:
@@ -484,7 +521,6 @@ class RoomleMaterialExporter:
             if value is None:
                 return ''
             return 'zip://' + value.rsplit('/')[-1]
-            ##return value.replace('//textures/', 'zip://')
 
         def prec(value: Union[float, None], default: float):
             if value is None:
