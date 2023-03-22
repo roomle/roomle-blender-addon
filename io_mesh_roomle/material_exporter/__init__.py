@@ -3,10 +3,11 @@ from pathlib import Path
 from ._exporter import RoomleMaterialExporter
 
 STARTING_SCENE = None
-
+EXISTING_COLLECTIONS = set()
 
 def remove_export_scene(scene=None):
     global STARTING_SCENE
+    global EXISTING_COLLECTIONS
     """Delete a scene and all its objects."""
     #
     # Sort out the scene object.
@@ -53,6 +54,10 @@ def remove_export_scene(scene=None):
     if world is not None:
         bpy.data.worlds.remove(world)
 
+    # remove collections created by scene duplication
+    for coll in set(bpy.data.collections) - EXISTING_COLLECTIONS:
+        bpy.data.collections.remove(coll)
+        
     # Remove scene.
     bpy.data.scenes.remove(scene, do_unlink=True)
 
@@ -65,7 +70,8 @@ def export_materials(**keywords):
     STARTING_SCENE = bpy.context.scene.name
 
     # store existing collections so we can delete duplicates after export
-    existing_collections = set(bpy.data.collections)
+    global EXISTING_COLLECTIONS
+    EXISTING_COLLECTIONS = set(bpy.data.collections)
 
     # copy the full scene to work on
     bpy.ops.scene.new(type='FULL_COPY')
@@ -94,10 +100,6 @@ def export_materials(**keywords):
 
     RoomleMaterialExporter(mesh_objs_to_export,
                            out_path=Path(keywords['filepath']).parent)
-
-    # remove collections created by scene duplication
-    for coll in set(bpy.data.collections) - existing_collections:
-        bpy.data.collections.remove(coll)
 
     bpy.ops.object.select_all(action='DESELECT')
     for obj in mesh_objs_to_export | selection_to_restore:

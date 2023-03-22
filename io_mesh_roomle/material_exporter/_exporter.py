@@ -461,30 +461,9 @@ class BlenderMaterialForExport:
         # TODO: manage external images with same name. rather use `node.image.name` as file name
 
         for node in [node for node in self.used_nodes if isinstance(node, bpy.types.ShaderNodeTexImage)]:
-            if node.image.packed_file is not None:
-                try:
+            name = texture_name_manager.validate_name(node.image)
+            node.image.save(filepath=str(self.out_path / 'materials' / name))
 
-                    name = texture_name_manager.validate_name(node.image)
-                    
-                    image_data = node.image.packed_file.data
-
-                    img = self.out_path / 'materials' / name
-                    img.parent.mkdir(exist_ok=True)
-                    img.write_bytes(image_data)
-
-                except Exception:
-                    pass
-            else:
-                try:
-                    image_path = Path(bpy.path.abspath(node.image.filepath)).resolve()
-                    
-                    name = texture_name_manager.validate_name(node.image)
-                    target = self.out_path / 'materials' / name
-                    target.parent.mkdir(exist_ok=True)
-                    copy(image_path, target)
-                except Exception as e:
-                    pass
-            self.images.append(node.image.filepath)
 
 
 class RoomleMaterialExporter:
