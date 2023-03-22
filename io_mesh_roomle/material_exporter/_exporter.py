@@ -9,8 +9,23 @@ from ._roomle_material_csv import (
     RoomleMaterialsCsv,
     MaterialDefinition,
 )
+import math
 from ._file_formats import SUPPORTED_TEXTURE_FILE_FORMATS
 
+def linear_to_srgb(c:float) -> float:
+    """convert linear color value to srgb
+
+    Args:
+        c (float): one of the color values (rgb)
+
+    Returns:
+        float: srgb representation
+    """
+    if c < 0.0031308:
+        srgb = 0.0 if c < 0.0 else c * 12.92
+    else:
+        srgb = 1.055 * math.pow(c, 1.0 / 2.4) - 0.055
+    return max(min(int(srgb * 255 + 0.5), 255), 0) / 255
 
 def get_valid_name(name: str) -> str:
     """make a filename valid – the same as inside the roomle blender extension
@@ -190,7 +205,7 @@ class PBR_Analyzer:
 
     def diffuse(self) -> PBR_Channel:
         socket: bpy.types.NodeSocket = self.principled_bsdf.inputs[0]
-        def_val = socket.default_value[0:3]
+        def_val = [linear_to_srgb(c) for c in socket.default_value[0:3]]
         origin = self.socket_origin
 
         def no_texture() -> Union[PBR_Channel, None]:
