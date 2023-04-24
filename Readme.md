@@ -12,7 +12,7 @@ Advanced users can check out [Build](#build) to build it themselves.
 
 ## Install
 
-- Open Blender 2.81 (or later)
+- Open Blender 3.5 (or later)
 - Navigate the main menu to "Edit" > "Preferences"
 - On the left side, click the "Add-ons" tab
 - Click the "Install…" button at the top right

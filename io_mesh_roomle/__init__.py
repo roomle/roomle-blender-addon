@@ -19,7 +19,7 @@ bl_info = {
     "name": "Roomle Configurator Script",
     "author": "Andreas Atteneder",
     "version": (2, 2, 0),
-    "blender": (2, 81, 0),
+    "blender": (3, 5, 0),
     "location": "File > Import-Export > Roomle",
     "description": "Export Roomle Configurator Script",
     "support": 'COMMUNITY',
