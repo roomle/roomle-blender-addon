@@ -6,7 +6,7 @@ Addon, that allows you to export your scene into the Roomle Configurator Script 
 
 Currently the addon is only provided as an installable zip file by Roomle directly for partners, clients and customers.
 
-You can download a ready-to-install package from the [dist](dist/) folder.
+You can download a ready-to-install package from the [dist](dist/index.md) folder.
 
 Advanced users can check out [Build](#build) to build it themselves.
 
