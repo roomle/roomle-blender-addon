@@ -5,10 +5,10 @@ import shutil
 import os
 import json
 import datetime
-from sqlite3 import Timestamp
 from hashlib import md5
 from pathlib import Path
 from io_mesh_roomle import bl_info
+from distutils.version import StrictVersion
 
 PLUGIN_NAME = 'io_mesh_roomle'
 VERSION = '.'.join([str(x) for x in bl_info["version"]])
@@ -32,7 +32,8 @@ def BUILD():
 
     # copy sources to build tree and remove caches
     shutil.copytree(str(SRC_DIR), str(BUILD_DIR/PLUGIN_NAME))
-    shutil.rmtree(str(BUILD_DIR/PLUGIN_NAME/'__pycache__'))
+    for cache_folder in BUILD_DIR.rglob('__pycache__'):
+        shutil.rmtree(str(cache_folder))
 
     # Check if this version has been built already
     with open('hashes.json', 'r') as f:
@@ -91,6 +92,7 @@ def BUILD():
     shutil.move(f'{ZIP_FILENAME}.zip', str(DIST_DIR))
 
     delete_build_dir()
+    update_markdown()
 
 
 def delete_build_dir():
@@ -109,7 +111,7 @@ def hash_contents(src_dir: Path):
     file_hashes = []
 
     # hash individual file contents
-    for file in src_dir.rglob('*'):
+    for file in src_dir.rglob('*.*'):
         md5_hash = md5()
         with open(str(file), "rb") as f:
             content = f.read()
@@ -124,6 +126,33 @@ def hash_contents(src_dir: Path):
     ).hexdigest()
     return combined_hash
 
+
+def update_markdown():
+    """write the verion links to `dist/index.md`"""
+
+    dist_zip_files = Path('./dist').glob('*.zip')
+
+    md_delimiter = '<!-- Versions //-->'
+    markdown = Path('./dist/index.md')
+    text = markdown.read_text()
+    header, _ = text.split(md_delimiter)
+    header += f'{md_delimiter}\n\n'
+
+    version_name_table = {}
+    for zip in dist_zip_files:
+        version_number = zip.stem.split('_')[-1]
+        version_name_table[version_number] = zip.name
+
+    versions_sorted = reversed(sorted(version_name_table.keys(), key=StrictVersion))
+
+    for i, version_number in enumerate(versions_sorted):
+        file = version_name_table[version_number]
+        if i == 0:
+            header += f'- **[{version_number}]({file}) (latest)**\n'
+        else:
+            header += f'- [{version_number}]({file})\n'
+
+    markdown.write_text(header)
 
 if __name__ == '__main__':
     BUILD()
