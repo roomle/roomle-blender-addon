@@ -287,9 +287,12 @@ class PBR_Analyzer:
 
             if not isinstance(image_texture, bpy.types.ShaderNodeTexImage):
                 pass
-            return PBR_Channel(
-                map=self.texture_name_manager.get_name(image_texture.image)
-            )
+            try:
+                return PBR_Channel(
+                    map=self.texture_name_manager.get_name(image_texture.image)
+                )
+            except Exception as e:
+                pass
 
         return self.eliminate_none(
             standard_normal(),
