@@ -418,7 +418,7 @@ def create_extern_mesh_command(
         *center_str
         )
 
-    if preferences.corto_exe and os.path.isfile(preferences.corto_exe):
+    if args["use_corto"] and preferences.corto_exe and os.path.isfile(preferences.corto_exe):
         try:
             corto_process = subprocess.Popen( [preferences.corto_exe, '-v 12 -n 9 -u 10 -N delta', filepath])
             if corto_process.wait()!=0:

@@ -155,6 +155,13 @@ class ExportRoomleScript( Operator, ExportHelper ):
         ("INTERNAL", "Force Intern", "Export meshes as external files", 3),
     ]
 
+
+    use_corto: BoolProperty(
+        name="Use Corto",
+        description="Create corto files if possible",
+        default=True,
+        )
+
     mesh_export_option: EnumProperty(
         items=mesh_export_options,
         name="Mesh export method",
@@ -193,6 +200,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
         layout.prop(self, 'export_normals')
         layout.prop(self, 'export_materials')
         layout.prop(self, 'apply_rotations')
+        layout.prop(self, 'use_corto')
         # TODO: remove warning once it's tested and stable
         if self.apply_rotations:
             layout.label(text='Apply rotation is experimental',icon=icon_exp)
