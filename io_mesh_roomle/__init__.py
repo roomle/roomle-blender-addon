@@ -13,13 +13,13 @@
 #  from Roomle.
 # -----------------------------------------------------------------------
 
-from .material_exporter import remove_export_scene, export_materials
+from .material_exporter import export_materials, SceneHandler
 
 bl_info = {
     "name": "Roomle Configurator Script",
     "author": "Andreas Atteneder",
-    "version": (2, 2, 0),
-    "blender": (3, 5, 0),
+    "version": (3, 0, 0),
+    "blender": (3, 6, 2),
     "location": "File > Import-Export > Roomle",
     "description": "Export Roomle Configurator Script",
     "support": 'COMMUNITY',
@@ -232,7 +232,10 @@ class ExportRoomleScript( Operator, ExportHelper ):
                                             "use_mesh_modifiers",
                                             "advanced"
                                             ))
+
         if keywords['export_materials']:
+            scene_handler = SceneHandler(bpy.context.scene)
+            scene_handler.copy_scene()
             export_materials(**keywords)
 
 
@@ -251,9 +254,9 @@ class ExportRoomleScript( Operator, ExportHelper ):
             return {'CANCELLED'}
 
         if keywords['export_materials']:
-            remove_export_scene()
+            scene_handler.remove_export_scene()
             
-
+        bpy.ops.wm.save_mainfile(filepath='/Users/clemens/Dev/git/roomle-blender-addon/tmp/test_materials0/snapshot.blend')
         return {'FINISHED'}
 
 
