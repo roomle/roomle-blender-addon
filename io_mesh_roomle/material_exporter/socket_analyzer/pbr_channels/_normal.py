@@ -23,7 +23,7 @@ def normal(analyzer: PBR_Analyzer) -> PBR_Channel:
             pass
         try:
             return PBR_Channel(
-                map=analyzer.texture_name_manager.get_name(image_texture.image)
+                map=analyzer.texture_name_manager.validate_name(image_texture.image)
             )
         except Exception as e:
             pass

@@ -32,7 +32,7 @@ def roughness(analyzer: PBR_Analyzer) -> PBR_Channel:
             return
 
         return PBR_Channel(
-            map=analyzer.texture_name_manager.get_name(image_node.image),
+            map=analyzer.texture_name_manager.validate_name(image_node.image),
             default_value=def_value
         )
 

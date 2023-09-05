@@ -8,6 +8,13 @@ from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 from io_mesh_roomle.material_exporter.utils import linear_to_srgb
 
 
+
+class MaterialNodeAnalyzer():
+    def __init__(self) -> None:
+        pass
+    
+
+
 def diffuse(analyzer: PBR_Analyzer) -> PBR_Channel:
     socket: bpy.types.NodeSocket = analyzer.principled_bsdf.inputs[0]
     def_val = [linear_to_srgb(c) for c in socket.default_value[0:3]]
@@ -26,10 +33,28 @@ def diffuse(analyzer: PBR_Analyzer) -> PBR_Channel:
         if not isinstance(n, bpy.types.ShaderNodeTexImage):
             return
         return PBR_Channel(
-            map=analyzer.texture_name_manager.get_name(n.image),
+            map=analyzer.texture_name_manager.validate_name(n.image),
             default_value=def_val
         )
+    def indirectly_attached_image_3_3() -> Union[PBR_Channel, None]:
+        if not socket.is_linked:
+            return
 
+        n = origin(socket)
+
+        if not isinstance(n, bpy.types.ShaderNodeMixRGB):
+            return
+
+        socket_a = n.inputs[1]
+        n = origin(socket_a)
+
+        if not isinstance(n, bpy.types.ShaderNodeTexImage):
+            return
+
+        return PBR_Channel(
+            map=self.texture_name_manager.get_name(n.image),
+            default_value=def_val
+        )
     def indirectly_attached_image() -> Union[PBR_Channel, None]:
         if not socket.is_linked:
             return
@@ -61,8 +86,8 @@ def diffuse(analyzer: PBR_Analyzer) -> PBR_Channel:
             return None
 
         n = tex_node[0]
-        i_name = analyzer.texture_name_manager.get_name(n.image)
-
+        # i_name = analyzer.texture_name_manager.get_name(n.image)
+        i_name = analyzer.texture_name_manager.validate_name(n.image)
         return PBR_Channel(
             map=i_name,
             default_value=def_val
@@ -92,5 +117,7 @@ def diffuse(analyzer: PBR_Analyzer) -> PBR_Channel:
         no_texture(),
         directly_attached_image(),
         indirectly_attached_image(),
-        indirectly_attached_color(),
+        # indirectly_attached_image_3_3(),
+        # TODO: mix shader 
+        # indirectly_attached_color(), 
     )

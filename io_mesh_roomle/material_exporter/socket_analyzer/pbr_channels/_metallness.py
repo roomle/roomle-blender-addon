@@ -21,6 +21,8 @@ def metallness(analyzer: PBR_Analyzer) -> PBR_Channel:
     def orm() -> Union[PBR_Channel, None]:
         if not socket.is_linked:
             return
+        
+        pass
 
         separate_color_node = analyzer.socket_origin(socket)
         if not isinstance(separate_color_node, bpy.types.ShaderNodeSeparateColor):
@@ -32,11 +34,27 @@ def metallness(analyzer: PBR_Analyzer) -> PBR_Channel:
             return
 
         return PBR_Channel(
-            map=analyzer.texture_name_manager.get_name(image_node.image),
+            map=analyzer.texture_name_manager.validate_name(image_node.image),
+            default_value=def_val
+        )
+    
+    def directly_attached_image() -> Union[PBR_Channel, None]:
+        if not socket.is_linked:
+            return
+        pass
+        image_node = analyzer.socket_origin(socket)
+
+        if not isinstance(image_node, bpy.types.ShaderNodeTexImage):
+            return
+
+        return PBR_Channel(
+            #  analyzer.texture_name_manager.validate_name(n.image)
+            map=analyzer.texture_name_manager.validate_name(image_node.image),
             default_value=def_val
         )
 
     return analyzer.eliminate_none(
         no_texture(),
         orm(),
+        directly_attached_image()
     )

@@ -13,7 +13,11 @@
 #  from Roomle.
 # -----------------------------------------------------------------------
 
-from .material_exporter import export_materials, SceneHandler
+import logging
+from pathlib import Path
+from re import DEBUG
+from .scene_handler import SceneHandler
+from .material_exporter import export_materials
 
 bl_info = {
     "name": "Roomle Configurator Script",
