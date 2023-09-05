@@ -1,8 +1,10 @@
 from __future__ import annotations
-from typing import List, Protocol, Tuple, Union, TYPE_CHECKING
+from typing import Iterable, List, Protocol, Tuple, Union, TYPE_CHECKING
+
+from io_mesh_roomle.material_exporter.utils.materials import get_all_used_nodes, get_principled_bsdf_node, get_used_texture_nodes
 if TYPE_CHECKING:
     from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
-    
+
 from dataclasses import dataclass
 from email.mime import image
 from pathlib import Path
@@ -11,7 +13,7 @@ import bpy
 
 
 
-from io_mesh_roomle.material_exporter.utils import get_valid_name
+from io_mesh_roomle.material_exporter.utils.color import get_valid_name
 from ..enums import SUPPORTED_TEXTURE_FILE_FORMATS
 
 
@@ -79,7 +81,6 @@ class TextureNameManager:
         return name_to_use
 
 
-
 @dataclass
 class PBR_Channel:
     """The concept of map and multiplocation
@@ -105,47 +106,15 @@ class BlenderMaterialForExport:
 
 
     @property
-    def used_nodes(self) -> List:
-        """find only the used nodes in material's node tree.
-        staring at the output node and walking all nodes backwards
-        """
-        material = self.material
-        def find_incoming_nodes(base_node, links) -> List:
-            """recursive sub function"""
-            connected_nodes = [
-                edge.from_node for edge in links if edge.to_node == base_node]
-            for node in connected_nodes:
-                connected_nodes += find_incoming_nodes(node, links)
-            return connected_nodes
+    def used_nodes(self) -> Iterable:
+        return get_all_used_nodes(self.material)
 
-        # TODO: find the active material output node if multiple are given
-
-        # Find the output node of the material as the starting point
-        material_output = [node for node in material.node_tree.nodes if isinstance(
-            node, bpy.types.ShaderNodeOutputMaterial)]
-
-        # We only expect one output node for an imported glb
-        assert len(material_output) == 1
-
-        # list of used nodes in the definition, passed through a `set` to avoid duplicates
-        used_nodes = list(set(
-            material_output +
-            find_incoming_nodes(
-                base_node=material_output[0],
-                links=material.node_tree.links
-            )
-        ))
-        return used_nodes
 
     @property
     def used_principled_bsdf_shader(self) -> bpy.types.ShaderNodeBsdfPrincipled:
-        princilpled_nodes = [node for node in self.used_nodes if isinstance(node, bpy.types.ShaderNodeBsdfPrincipled)]
-        assert len(princilpled_nodes) > 0, 'no principled bsdf node found'
-        assert len(princilpled_nodes) < 2, 'multiple principled bsdf nodes found'
-        return princilpled_nodes[0]
+        return get_principled_bsdf_node(self.material)
     
     @property
     def used_tex_nodes(self) -> list[bpy.types.ShaderNodeTexImage]:
-        """all used texture nodes in material's node tree"""
-        return [node for node in self.used_nodes if isinstance(node, bpy.types.ShaderNodeTexImage)]
+        return get_used_texture_nodes(self.material)
 

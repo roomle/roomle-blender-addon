@@ -8,38 +8,37 @@ if TYPE_CHECKING:
 
 from io_mesh_roomle.material_exporter.socket_analyzer import pbr_channels
 
+class ChannelBase:
+    def __init__(self, material) -> None:
+        pass
+
 
 class PBR_ShaderData:
     """
     analyze a given material node network for known PBR node structures
     """
     def __init__(self, material: bpy.types.Material, principled_bsdf: bpy.types.ShaderNodeBsdfPrincipled , texture_name_manager: TextureNameManager) -> None:
+        from io_mesh_roomle.material_exporter._exporter import PBR_Channel
+        
         self.material = material
         self.texture_name_manager = texture_name_manager
         self.principled_bsdf = principled_bsdf
 
 
-        # self.diffuse = PBR_Channel()      # ✅
-        # self.alpha = PBR_Channel()        # ✅ 🕙 texture map handling
-        # self.normal = PBR_Channel()       # ✅
-        # self.roughness = PBR_Channel()    # ✅
-        # self.metallic = PBR_Channel()     # ✅
-        # self.transmission = PBR_Channel() # ✅
-        # self.ior = PBR_Channel()          # ✅
+        self.diffuse: PBR_Channel = pbr_channels.diffuse(self)           # ✅
+        self.alpha: PBR_Channel = pbr_channels.alpha(self)               # ✅ 🕙 texture map handling
+        self.normal: PBR_Channel = pbr_channels.normal(self)             # ✅
+        self.roughness: PBR_Channel = pbr_channels.roughness(self)       # ✅
+        self.metallic: PBR_Channel = pbr_channels.metallness(self)       # ✅
+        self.transmission: PBR_Channel = pbr_channels.transmission(self) # ✅
+        self.ior: PBR_Channel = pbr_channels.ior(self)                   # ✅
 
         # # TODO: roomle support for emission.
         # # TODO: process ao maps (either bake inside the dap or find a way to blend it in threeJS)
 
-        # self.ao = PBR_Channel()
-        # self.emission = PBR_Channel()
+        self.ao = PBR_Channel()
+        self.emission = PBR_Channel()
 
-        self.diffuse: PBR_Channel = pbr_channels.diffuse(self)
-        self.normal: PBR_Channel = pbr_channels.normal(self)
-        self.roughness: PBR_Channel = pbr_channels.roughness(self)
-        self.metallic: PBR_Channel = pbr_channels.metallness(self)
-        self.ior: PBR_Channel = pbr_channels.ior(self)
-        self.transmission: PBR_Channel = pbr_channels.transmission(self)
-        self.alpha: PBR_Channel = pbr_channels.alpha(self)
     
     def socket_origin(self, socket: bpy.types.NodeSocket) -> bpy.types.Node:
         """find the attached node to a given socket
