@@ -33,13 +33,13 @@ class PBR_ShaderData:
         # self.ao = PBR_Channel()
         # self.emission = PBR_Channel()
 
-        self.diffuse = pbr_channels.diffuse(self)
-        self.normal = pbr_channels.normal(self)
-        self.roughness = pbr_channels.roughness(self)
-        self.metallic = pbr_channels.metallness(self)
-        self.ior = pbr_channels.ior(self)
-        self.transmission = pbr_channels.transmission(self)
-        self.alpha = pbr_channels.alpha(self)
+        self.diffuse: PBR_Channel = pbr_channels.diffuse(self)
+        self.normal: PBR_Channel = pbr_channels.normal(self)
+        self.roughness: PBR_Channel = pbr_channels.roughness(self)
+        self.metallic: PBR_Channel = pbr_channels.metallness(self)
+        self.ior: PBR_Channel = pbr_channels.ior(self)
+        self.transmission: PBR_Channel = pbr_channels.transmission(self)
+        self.alpha: PBR_Channel = pbr_channels.alpha(self)
     
     def socket_origin(self, socket: bpy.types.NodeSocket) -> bpy.types.Node:
         """find the attached node to a given socket
