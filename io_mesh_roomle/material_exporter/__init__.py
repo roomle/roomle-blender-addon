@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Iterable, List, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from io_mesh_roomle.material_exporter._exporter import PBR_ShaderData
+    from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
 
 
 from io_mesh_roomle.material_exporter._exporter import BlenderMaterialForExport, TextureNameManager
@@ -99,7 +99,7 @@ def export_materials(**keywords):
     # * delete scene
 
     # get the objects to export
-    from io_mesh_roomle.material_exporter.socket_analyzer import PBR_Analyzer
+    from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
 
     out_path = Path(keywords['filepath']).parent
     use_selection = keywords["use_selection"]
@@ -126,7 +126,7 @@ def export_materials(**keywords):
     ]
 
     for m in material_exports:
-        m.pbr = PBR_Analyzer(m.material, m.used_principled_bsdf_shader, texture_name_manager).pbr_data
+        m.pbr = PBR_ShaderData(m.material, m.used_principled_bsdf_shader, texture_name_manager)
         for tex in m.used_tex_nodes:
             name = texture_name_manager.validate_name(tex.image)
             tex.image.save(filepath=str(out_path / 'materials' / name))

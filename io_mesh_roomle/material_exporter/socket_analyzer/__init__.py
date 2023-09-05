@@ -1,15 +1,15 @@
-from typing import List
+from __future__ import annotations  
+from typing import List, TYPE_CHECKING
 
 import bpy
 
-from io_mesh_roomle.material_exporter._exporter import (PBR_Channel,
-                                                        PBR_ShaderData,
-                                                        TextureNameManager)
+if TYPE_CHECKING:
+    from io_mesh_roomle.material_exporter._exporter import TextureNameManager, PBR_Channel
 
 from io_mesh_roomle.material_exporter.socket_analyzer import pbr_channels
 
 
-class PBR_Analyzer:
+class PBR_ShaderData:
     """
     analyze a given material node network for known PBR node structures
     """
@@ -18,14 +18,28 @@ class PBR_Analyzer:
         self.texture_name_manager = texture_name_manager
         self.principled_bsdf = principled_bsdf
 
-        self.pbr_data = PBR_ShaderData()
-        self.pbr_data.diffuse = pbr_channels.diffuse(self)
-        self.pbr_data.normal = pbr_channels.normal(self)
-        self.pbr_data.roughness = pbr_channels.roughness(self)
-        self.pbr_data.metallic = pbr_channels.metallness(self)
-        self.pbr_data.ior = pbr_channels.ior(self)
-        self.pbr_data.transmission = pbr_channels.transmission(self)
-        self.pbr_data.alpha = pbr_channels.alpha(self)
+
+        # self.diffuse = PBR_Channel()      # ✅
+        # self.alpha = PBR_Channel()        # ✅ 🕙 texture map handling
+        # self.normal = PBR_Channel()       # ✅
+        # self.roughness = PBR_Channel()    # ✅
+        # self.metallic = PBR_Channel()     # ✅
+        # self.transmission = PBR_Channel() # ✅
+        # self.ior = PBR_Channel()          # ✅
+
+        # # TODO: roomle support for emission.
+        # # TODO: process ao maps (either bake inside the dap or find a way to blend it in threeJS)
+
+        # self.ao = PBR_Channel()
+        # self.emission = PBR_Channel()
+
+        self.diffuse = pbr_channels.diffuse(self)
+        self.normal = pbr_channels.normal(self)
+        self.roughness = pbr_channels.roughness(self)
+        self.metallic = pbr_channels.metallness(self)
+        self.ior = pbr_channels.ior(self)
+        self.transmission = pbr_channels.transmission(self)
+        self.alpha = pbr_channels.alpha(self)
     
     def socket_origin(self, socket: bpy.types.NodeSocket) -> bpy.types.Node:
         """find the attached node to a given socket
@@ -50,6 +64,7 @@ class PBR_Analyzer:
 
     @staticmethod
     def eliminate_none(*args) -> PBR_Channel:
+        from io_mesh_roomle.material_exporter._exporter import PBR_Channel
         try:
             res = [i for i in args if i is not None]
             assert len(res) == 1

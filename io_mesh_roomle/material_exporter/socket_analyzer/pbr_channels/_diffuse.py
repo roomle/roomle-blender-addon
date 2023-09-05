@@ -2,7 +2,7 @@ from __future__ import annotations
 import bpy
 from typing import Union, TYPE_CHECKING
 if TYPE_CHECKING:
-    from io_mesh_roomle.material_exporter.socket_analyzer import PBR_Analyzer
+    from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
 
 from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 from io_mesh_roomle.material_exporter.utils import linear_to_srgb
@@ -15,7 +15,7 @@ class MaterialNodeAnalyzer():
     
 
 
-def diffuse(analyzer: PBR_Analyzer) -> PBR_Channel:
+def diffuse(analyzer: PBR_ShaderData) -> PBR_Channel:
     socket: bpy.types.NodeSocket = analyzer.principled_bsdf.inputs[0]
     def_val = [linear_to_srgb(c) for c in socket.default_value[0:3]]
     origin = analyzer.socket_origin

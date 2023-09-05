@@ -1,8 +1,12 @@
+from __future__ import annotations
+from typing import List, Protocol, Tuple, Union, TYPE_CHECKING
+if TYPE_CHECKING:
+    from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
+    
 from dataclasses import dataclass
 from email.mime import image
 from pathlib import Path
 from shutil import copy
-from typing import List, Protocol, Tuple, Union
 import bpy
 
 
@@ -85,31 +89,12 @@ class PBR_Channel:
     default_value: Union[float, Tuple, None] = None
 
 
-class PBR_ShaderData:
-    def __init__(self) -> None:
-        self.diffuse = PBR_Channel()      # ✅
-        self.alpha = PBR_Channel()        # ✅ 🕙 texture map handling
-        self.normal = PBR_Channel()       # ✅
-        self.roughness = PBR_Channel()    # ✅
-        self.metallic = PBR_Channel()     # ✅
-        self.transmission = PBR_Channel() # ✅
-        self.ior = PBR_Channel()          # ✅
-
-        # TODO: roomle support for emission.
-        # TODO: process ao maps (either bake inside the dap or find a way to blend it in threeJS)
-
-        self.ao = PBR_Channel()
-        self.emission = PBR_Channel()
-
-
-
-
 class BlenderMaterialForExport:
 
     def __init__(self,
                  material: bpy.types.Material
                  ) -> None:
-        from io_mesh_roomle.material_exporter.socket_analyzer import PBR_Analyzer
+        from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
     
         # valid name – this has to be the same as created inside the Blender addon
         self.pbr: PBR_ShaderData
