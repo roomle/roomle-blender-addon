@@ -56,7 +56,8 @@ class TextureNameManager:
         Returns:
             str: a valid filename without the path
         """
-
+        if image is None:
+            return None
         file_format = image.file_format
         if not file_format in SUPPORTED_TEXTURE_FILE_FORMATS:
             raise Exception(f'unsupported texture type {file_format}')

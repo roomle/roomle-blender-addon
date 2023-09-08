@@ -1,3 +1,4 @@
+import logging
 import bpy
 from pathlib import Path
 from typing import Iterable, List, Union, TYPE_CHECKING
@@ -8,6 +9,9 @@ if TYPE_CHECKING:
 
 from io_mesh_roomle.material_exporter._exporter import BlenderMaterialForExport, TextureNameManager
 from io_mesh_roomle.material_exporter._roomle_material_csv import MaterialDefinition, RoomleMaterialsCsv
+
+log = logging.getLogger('legacy csv')
+log.setLevel(logging.DEBUG)
 
 
 def split_object_by_materials(obj: bpy.types.Object) -> set[bpy.types.Object]:
@@ -50,11 +54,15 @@ def pbr_2_material_definition(data: BlenderMaterialForExport) -> MaterialDefinit
     md.shading.metallic = prec(
         pbr.metallic.default_value, 0)          # type: ignore
 
-    md.shading.basecolor.set(
-        pbr.diffuse.default_value)               # type: ignore
+    log.debug(f'🍕 {data.material.name}')
+    log.debug(f'diffuse: {pbr.diffuse.default_value}')
+    md.shading.basecolor.set(*pbr.diffuse.default_value)               # type: ignore
+
 
     md.shading.transmission = prec(
         pbr.transmission.default_value, 0)  # type: ignore
+    
+    log.debug(f'ior: {pbr.ior.default_value}')
     md.shading.transmissionIOR = prec(
         pbr.ior.default_value, 1.5)      # type: ignore
 
@@ -88,8 +96,10 @@ def get_materials_used_by_objs(objects: Iterable[bpy.types.Object]) -> set:
     return data
 
 
+
 def export_materials(**keywords):
 
+    log.info(f"\n{'='*80}\n{'STARTING MATERIAL EXPORT':^80}\n{'='*80}")
     # Rough outline
     # * copy scene
     # * separate objects
@@ -107,6 +117,8 @@ def export_materials(**keywords):
     csv_exporter = RoomleMaterialsCsv()
     texture_name_manager = TextureNameManager()
 
+
+    log.info(f"\n{('*'*30):^80}\n{'get mesh objects':^80}\n{('*'*30):^80}")
 
     mesh_objs_to_export = get_mesh_objects_for_export(use_selection)
 
@@ -126,10 +138,14 @@ def export_materials(**keywords):
     ]
 
     for m in material_exports:
-        m.pbr = PBR_ShaderData(m.material, m.used_principled_bsdf_shader, texture_name_manager)
+        m.pbr = PBR_ShaderData(m.material, texture_name_manager)
+        pass
+        for channel in m.pbr.all_pbr_channels:
+            channel.map = texture_name_manager.validate_name(channel.map)
         for tex in m.used_tex_nodes:
             name = texture_name_manager.validate_name(tex.image)
             tex.image.save(filepath=str(out_path / 'materials' / name))
+
 
     for mat in material_exports:
         csv_exporter.add_material_definition(

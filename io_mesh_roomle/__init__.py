@@ -269,7 +269,11 @@ def menu_export(self, context):
     self.layout.operator(ExportRoomleScript.bl_idname, text="Roomle Script (.txt)")
 
 
+
 def register():
+    # Logging
+    # TODO: add logging handler
+    # Blender
     bpy.utils.register_class(ExportRoomleScript)
     bpy.utils.register_class(ExportRoomleScriptPreferences)
     bpy.types.TOPBAR_MT_file_export.append(menu_export)
