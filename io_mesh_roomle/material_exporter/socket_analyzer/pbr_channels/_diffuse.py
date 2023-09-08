@@ -13,8 +13,7 @@ from io_mesh_roomle.material_exporter.utils.color import linear_to_srgb
 
 import logging
 
-# log = logging.getLogger(__name__)
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 
 
