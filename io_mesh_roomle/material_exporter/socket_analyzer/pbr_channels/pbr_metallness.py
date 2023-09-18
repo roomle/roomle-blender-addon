@@ -3,8 +3,6 @@ import bpy
 from typing import Union, TYPE_CHECKING
 
 from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ChannelTester
-if TYPE_CHECKING:
-    from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
 from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 
 # TODO: RML-6682 all texture maps get multiplied with the value provided
@@ -14,7 +12,7 @@ from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 class metallness(PBR_ChannelTester):
     def __init__(self, material: bpy.types.Material) -> None:
         super().__init__(material)
-        self.socket = self.p_bsdf_socket(6)
+        self.socket = self.principled_bsdf_socket(6)
         self.def_val: float = self.socket.default_value #type: ignore
 
     def check_no_texture(self) -> Union[PBR_Channel, None]:

@@ -4,8 +4,6 @@ from typing import Union, TYPE_CHECKING
 
 from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ChannelTester, CkeckError
 from io_mesh_roomle.material_exporter.utils.materials import get_principled_bsdf_node, get_mix_shader_sockets, get_socket_origin
-if TYPE_CHECKING:
-    from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
 
 from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 from io_mesh_roomle.material_exporter.utils.color import linear_to_srgb

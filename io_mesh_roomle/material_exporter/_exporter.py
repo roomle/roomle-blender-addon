@@ -2,8 +2,6 @@ from __future__ import annotations
 from typing import Iterable, List, Protocol, Tuple, Union, TYPE_CHECKING
 
 from io_mesh_roomle.material_exporter.utils.materials import get_all_used_nodes, get_principled_bsdf_node, get_used_texture_nodes
-if TYPE_CHECKING:
-    from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
 
 from dataclasses import dataclass
 from email.mime import image
@@ -87,7 +85,7 @@ class PBR_Channel:
     """The concept of map and multiplocation
     Note that the default_values in Blender get overridden by the map
     """
-    map: Union[str, None] = None
+    map: Union[bpy.types.Image, None] = None
     default_value: Union[float, Tuple, None] = None
 
 

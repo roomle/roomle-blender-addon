@@ -1,8 +1,8 @@
 from __future__ import annotations
 import inspect
 import logging  
-from typing import Any, Iterable, List, TYPE_CHECKING, Union
-from attr import dataclass
+from typing import Iterable, TYPE_CHECKING, Union
+from dataclasses import dataclass
 
 import bpy
 
@@ -46,7 +46,7 @@ class PBR_ChannelTester():
 
     # The diffuse color has to be plain white in order to not tint the texture later in ThreeJS
     pbr_defaults: PBR_DefaultValues
-    plain_white: tuple[float] = (1.0,)*3
+    plain_white: tuple[float,...] = (1.0,)*3
 
     prefix = 'check_'
     def __init__(self, material: bpy.types.Material) -> None:
@@ -56,6 +56,10 @@ class PBR_ChannelTester():
     @property
     def pbr_channel(self) -> PBR_Channel:
         return self._run_checks()
+    
+    @property
+    def principled_bsdf(self) -> bpy.types.ShaderNodeBsdfPrincipled:
+        return get_principled_bsdf_node(self.material)
 
 
     def _run_checks(self):
@@ -73,12 +77,8 @@ class PBR_ChannelTester():
 
         return self.eliminate_none(results)
     
-    @property
-    def principled_bsdf(self) -> bpy.types.ShaderNodeBsdfPrincipled:
-        return get_principled_bsdf_node(self.material)
-    
-    def p_bsdf_socket(self, slot:int) -> bpy.types.NodeSocket:
-        return get_principled_bsdf_node(self.material).inputs[slot]
+    def principled_bsdf_socket(self, slot:int) -> bpy.types.NodeSocket:
+        return self.principled_bsdf.inputs[slot]
     
     def origin(self, socket: bpy.types.NodeSocket) -> Union[bpy.types.Node, None]:
         return get_socket_origin(self.material,socket)
@@ -121,24 +121,22 @@ class PBR_ShaderData:
     """
     analyze a given material node network for known PBR node structures
     """
-    def __init__(self, material: bpy.types.Material, texture_name_manager: TextureNameManager) -> None:
+    def __init__(self, material: bpy.types.Material) -> None:
         from io_mesh_roomle.material_exporter._exporter import PBR_Channel
         from io_mesh_roomle.material_exporter.socket_analyzer import pbr_channels
         
         self.material = material
-        self.texture_name_manager = texture_name_manager
-        self.principled_bsdf: bpy.types.ShaderNodeBsdfPrincipled = get_principled_bsdf_node(material)
 
         log.warning(f'🎨 {material.name_full}')
 
-        self.diffuse: PBR_Channel = pbr_channels.diffuse(self.material).pbr_channel      # ✅
+        self.diffuse: PBR_Channel = pbr_channels.diffuse(self.material).pbr_channel                 # ✅
         log.debug(f'📤 {self.diffuse.default_value}')
-        self.alpha: PBR_Channel = pbr_channels.alpha(self)                               # ✅ 🕙 texture map handling
-        self.normal: PBR_Channel = pbr_channels.normal(self)                             # ✅
-        self.roughness: PBR_Channel = pbr_channels.roughness(self)                       # ✅
-        self.metallic: PBR_Channel = pbr_channels.metallness(self.material).pbr_channel  # ✅
-        self.transmission: PBR_Channel = pbr_channels.transmission(self)                 # ✅
-        self.ior: PBR_Channel = pbr_channels.ior(self.material).pbr_channel              # ✅
+        self.alpha: PBR_Channel = pbr_channels.alpha(self.material).pbr_channel                     # ✅ 🕙 texture map handling
+        self.normal: PBR_Channel = pbr_channels.normal(self.material).pbr_channel                   # ✅
+        self.roughness: PBR_Channel = pbr_channels.roughness(self.material).pbr_channel             # ✅
+        self.metallic: PBR_Channel = pbr_channels.metallness(self.material).pbr_channel             # ✅
+        self.transmission: PBR_Channel = pbr_channels.transmission(self.material).pbr_channel       # ✅
+        self.ior: PBR_Channel = pbr_channels.ior(self.material).pbr_channel                         # ✅
 
         # # TODO: roomle support for emission.
         # # TODO: process ao maps (either bake inside the dap or find a way to blend it in threeJS)
@@ -165,9 +163,8 @@ class PBR_ShaderData:
         ]
 
 
-
     @staticmethod
-    def eliminate_none(*args) -> PBR_Channel:
+    def eliminate_none(*args) -> Union[PBR_Channel, None]:
         from io_mesh_roomle.material_exporter._exporter import PBR_Channel
         res = [i for i in args if i is not None]
 

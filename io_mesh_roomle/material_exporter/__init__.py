@@ -3,10 +3,6 @@ import bpy
 from pathlib import Path
 from typing import Iterable, List, Union, TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
-
-
 from io_mesh_roomle.material_exporter._exporter import BlenderMaterialForExport, TextureNameManager
 from io_mesh_roomle.material_exporter._roomle_material_csv import MaterialDefinition, RoomleMaterialsCsv
 
@@ -29,13 +25,17 @@ def split_object_by_materials(obj: bpy.types.Object) -> set[bpy.types.Object]:
 
 def pbr_2_material_definition(data: BlenderMaterialForExport) -> MaterialDefinition:
 
-    def zip_path(value: Union[str, None]):
+    def zip_path(value: Union[str, None, bpy.types.Image]):
+
+        pass
+        # if isinstance(value, bpy.types.Image):
         if value is None:
             return ''
         # return 'zip://' + value.rsplit('/')[-1]
-        return value.replace('//textures/', 'zip://')
+        # return value.replace('//textures/', 'zip://')
+        return f'zip://{value}'
 
-    def prec(value: Union[float, None], default: float):
+    def prec(value: Union[float, None, tuple[float]], default: float):
         if value is None:
             return default
         return round(value, 2)
@@ -67,7 +67,7 @@ def pbr_2_material_definition(data: BlenderMaterialForExport) -> MaterialDefinit
         pbr.ior.default_value, 1.5)      # type: ignore
 
     # md.diffuse_map.image = zip_path(pbr.diffuse.map)
-    md.diffuse_map.image = f'zip://{pbr.diffuse.map}'
+    md.diffuse_map.image = zip_path(pbr.diffuse.map)
     md.diffuse_map.mapping = "RGB" if zip_path(pbr.diffuse.map) != '' else ''
 
     md.normal_map.image = zip_path(pbr.normal.map)
@@ -138,7 +138,7 @@ def export_materials(**keywords):
     ]
 
     for m in material_exports:
-        m.pbr = PBR_ShaderData(m.material, texture_name_manager)
+        m.pbr = PBR_ShaderData(m.material)
         pass
         for channel in m.pbr.all_pbr_channels:
             channel.map = texture_name_manager.validate_name(channel.map)

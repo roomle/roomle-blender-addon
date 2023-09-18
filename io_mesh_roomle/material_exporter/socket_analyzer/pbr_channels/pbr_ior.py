@@ -3,8 +3,7 @@ import bpy
 from typing import Union, TYPE_CHECKING
 
 from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ChannelTester
-if TYPE_CHECKING:
-    from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
+
 from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 
 

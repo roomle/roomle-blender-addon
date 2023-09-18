@@ -10,6 +10,8 @@ In the future you'll be able to download directly here.
 
 Advanced users can check out [Build](#build) to build it themselves.
 
+- TODO: Apply `Rotation and Scale` on all elements (hierarchy of emties and objects)
+
 ## Install
 
 - Open Blender 3.5 (or later)
