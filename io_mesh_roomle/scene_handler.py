@@ -1,5 +1,7 @@
 import bpy
+import logging
 
+log = logging.getLogger(__file__)
 
 class SceneHandler():
     def __init__(self, scene: bpy.types.Scene) -> None:
@@ -37,6 +39,10 @@ class SceneHandler():
                 'data': set(),
                 'fn_remove': bpy.data.meshes.remove,
             },
+            'EMPTY': {
+                'data': set(),
+                'fn_remove': bpy.data.objects.remove,
+            },
         }
 
         # collect data blocks to remove
@@ -44,12 +50,21 @@ class SceneHandler():
             obj_type = object_.type
             if obj_type not in data_blocks:
                 print(f't not found')
-            data_blocks[obj_type]['data'].add(object_.data)
+            try:
+                #TODO: check why object_.data cane end up as exception string
+                data_blocks[obj_type]['data'].add(object_.data)
+            except Exception as e:
+                log.error('❌ error when removing object from export scene')
+                log.debug(e)
 
         # remove the actual data blocks
         for data_block_entry in data_blocks.values():
             for block in data_block_entry['data']:
-                data_block_entry['fn_remove'](block, do_unlink=True)
+                try:
+                    data_block_entry['fn_remove'](block, do_unlink=True)
+                except Exception as e:
+                    log.error('❌ error when removing object from export scene')
+                    log.debug(e)
 
         # Remove World
         # Scene `full copy` also duplicates the world -> we need to delete it
