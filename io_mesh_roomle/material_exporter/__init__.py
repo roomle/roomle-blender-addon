@@ -123,10 +123,12 @@ def export_materials(**keywords):
     mesh_objs_to_export = get_mesh_objects_for_export(use_selection)
 
     # ------------- [ separate objects by materials ] --------------
+    extracted_meshes = set()
     for obj in mesh_objs_to_export:
         material_parts = split_object_by_materials(obj)
         # add new mesh fragments to export
-        mesh_objs_to_export.update(material_parts)
+        extracted_meshes.update(material_parts)
+    mesh_objs_to_export.update(extracted_meshes)
 
     # ==================================================
 
