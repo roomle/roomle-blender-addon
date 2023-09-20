@@ -260,7 +260,6 @@ class ExportRoomleScript( Operator, ExportHelper ):
         if keywords['export_materials']:
             scene_handler.remove_export_scene()
             
-        bpy.ops.wm.save_mainfile(filepath='/Users/clemens/Dev/git/roomle-blender-addon/tmp/test_materials0/snapshot.blend')
         return {'FINISHED'}
 
 

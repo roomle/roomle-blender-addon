@@ -5,7 +5,6 @@ import logging
 
 
 logging.basicConfig(
-    filename='/Users/clemens/Dev/git/roomle-blender-addon/tmp/test_materials0/analyze.log',
     level= logging.DEBUG
 )
 
