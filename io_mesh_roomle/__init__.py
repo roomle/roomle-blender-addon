@@ -13,11 +13,17 @@
 #  from Roomle.
 # -----------------------------------------------------------------------
 
+import logging
+from pathlib import Path
+from re import DEBUG
+from .scene_handler import SceneHandler
+from .material_exporter import export_materials
+
 bl_info = {
     "name": "Roomle Configurator Script",
     "author": "Andreas Atteneder",
-    "version": (2, 1, 2),
-    "blender": (2, 81, 0),
+    "version": (3, 0, 0),
+    "blender": (3, 6, 2),
     "location": "File > Import-Export > Roomle",
     "description": "Export Roomle Configurator Script",
     "support": 'COMMUNITY',
@@ -129,6 +135,12 @@ class ExportRoomleScript( Operator, ExportHelper ):
         default=True,
         )
 
+    export_materials: BoolProperty(
+        name="Export Materials",
+        description="Export roomle material definitions",
+        default=False,
+        )
+
     apply_rotations: BoolProperty(
         name="Apply Rotations",
         description="Apply all rotations into vertex data",
@@ -146,6 +158,13 @@ class ExportRoomleScript( Operator, ExportHelper ):
         ("EXTERNAL", "Force Extern", "Include meshes as text command", 2),
         ("INTERNAL", "Force Intern", "Export meshes as external files", 3),
     ]
+
+
+    use_corto: BoolProperty(
+        name="Use Corto",
+        description="Create corto files if possible",
+        default=True,
+        )
 
     mesh_export_option: EnumProperty(
         items=mesh_export_options,
@@ -183,7 +202,9 @@ class ExportRoomleScript( Operator, ExportHelper ):
         layout.prop(self, 'catalog_id')
         layout.prop(self, 'use_selection')
         layout.prop(self, 'export_normals')
+        layout.prop(self, 'export_materials')
         layout.prop(self, 'apply_rotations')
+        layout.prop(self, 'use_corto')
         # TODO: remove warning once it's tested and stable
         if self.apply_rotations:
             layout.label(text='Apply rotation is experimental',icon=icon_exp)
@@ -199,9 +220,13 @@ class ExportRoomleScript( Operator, ExportHelper ):
     def execute(self, context):
         from mathutils import Matrix, Vector
         from . import roomle_script
+
         
         preferences = bpy.context.preferences.addons[__name__].preferences
 
+        if self.filepath == '':
+            raise Exception('no filepath provided')
+        
         keywords = self.as_keywords(ignore=("axis_forward",
                                             "axis_up",
                                             "global_scale",
@@ -211,6 +236,12 @@ class ExportRoomleScript( Operator, ExportHelper ):
                                             "use_mesh_modifiers",
                                             "advanced"
                                             ))
+
+        if keywords['export_materials']:
+            scene_handler = SceneHandler(bpy.context.scene)
+            scene_handler.copy_scene()
+            export_materials(**keywords)
+
 
         global_scale = 1000
         
@@ -226,14 +257,22 @@ class ExportRoomleScript( Operator, ExportHelper ):
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
 
+        if keywords['export_materials']:
+            scene_handler.remove_export_scene()
+            
         return {'FINISHED'}
+
 
 def menu_export(self, context):
     default_path = os.path.splitext(bpy.data.filepath)[0] + ".txt"
     self.layout.operator(ExportRoomleScript.bl_idname, text="Roomle Script (.txt)")
 
 
+
 def register():
+    # Logging
+    # TODO: add logging handler
+    # Blender
     bpy.utils.register_class(ExportRoomleScript)
     bpy.utils.register_class(ExportRoomleScriptPreferences)
     bpy.types.TOPBAR_MT_file_export.append(menu_export)
