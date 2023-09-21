@@ -10,9 +10,11 @@ You can download a ready-to-install package from the [dist](dist/index.md) folde
 
 Advanced users can check out [Build](#build) to build it themselves.
 
+- TODO: Apply `Rotation and Scale` on all elements (hierarchy of emties and objects)
+
 ## Install
 
-- Open Blender 2.81 (or later)
+- Open Blender 3.5 (or later)
 - Navigate the main menu to "Edit" > "Preferences"
 - On the left side, click the "Add-ons" tab
 - Click the "Install…" button at the top right
