@@ -13,6 +13,10 @@
 #  from Roomle.
 # -----------------------------------------------------------------------
 
+from __future__ import annotations
+import json
+from pathlib import Path
+from typing import Any
 import bpy
 import bmesh
 
@@ -577,6 +581,142 @@ def create_object_commands(
 
     return command
 
+
+
+@dataclass
+class Tag:
+    tag_id: str
+    label_en: str
+    material_ids: list[str]
+
+    @property
+    def line(self):
+        mids = ' '.join(self.material_ids)
+        return f'{self.tag_id}, {self.label_en}, {mids}'
+
+class Tags:
+    def __init__(self) -> None:
+        self.tags = []
+
+    @staticmethod
+    def from_material_parameters(*args: MaterialParameter):
+        ret = Tags()
+        for mp in args:
+            ret.tags.append(Tag(
+                tag_id=mp.tag_id,
+                label_en=mp.label_en,
+                material_ids=[mp.material_id]
+            ))
+        return ret
+    
+    @property
+    def csv(self):
+        return '\n'.join([tag.line for tag in self.tags])
+
+
+
+
+
+
+class MaterialParameter:
+    def __init__(self, material_id:str) -> None:
+        self.material_id = material_id
+        self.key = self.__genkey()
+
+    def __genkey(self) -> str:
+        return 'mat' + self.material_id.split(':')[-1]
+
+    @property
+    def label_en(self) -> str:
+        return "Main Material"
+    
+    @property
+    def tag_id(self) -> str:
+        return "main_materials"
+    
+    @property
+    def as_dict(self) -> dict[str,Any]:
+        return {
+            "key": self.key,
+            "type": "Material",
+            "labels": {
+                "en": self.label_en
+            },
+            "defaultValue": self.material_id,
+            "validGroups": [
+                self.tag_id
+            ]
+        }
+    
+
+    @staticmethod
+    def multiple_from_script(geometry_script) -> tuple[str,list[MaterialParameter]]:
+        """extract material statements from given roomle script
+
+        Args:
+            geometry_script (str): roomle geomrtry script
+
+        Returns:
+            tuple[str,list[MaterialParameter]]: modified geometry script, List[material parameters]
+        """
+
+        modified_geometry_script = []
+        material_parameters = []
+
+        for line in geometry_script.split('\n'):
+            if not line.startswith('SetObjSurface'):
+                modified_geometry_script.append(line)
+                continue
+            before, material_id, after = line.split("'")
+
+            new_mat_param = MaterialParameter(material_id)
+            material_parameters.append(new_mat_param)
+
+            modified_geometry_script.append(f"{before}{new_mat_param.key}{after}")
+
+        return '\n'.join(modified_geometry_script), material_parameters
+
+
+class ComponentDefinition:
+
+    def __init__(self, catalog_id: str, component_id: str, geometry_script: str,) -> None:
+
+        self.catalog_id: str = catalog_id
+        self.component_id: str = component_id
+        self.input_geometry_script: str = geometry_script
+
+        self._place_holder: str = '::GEO-SCRIPT::'
+
+        self.mod_geo_script: str
+        self.material_parameters: list[MaterialParameter]
+        self.mod_geo_script, self.material_parameters = MaterialParameter.multiple_from_script(
+            geometry_script)
+
+    @property
+    def external_id(self) -> str:
+        return f'{self.catalog_id}:{self.component_id}'
+
+    @property
+    def material_parameters_as_dict(self) -> list[dict]:
+        return [mat_para.as_dict for mat_para in self.material_parameters]
+
+    @property
+    def component_definition(self) -> str:
+        comp_json = {
+            "id": self.external_id,
+            "parameters": self.material_parameters_as_dict,
+            "geometry": self._place_holder
+        }
+        return (
+            json.dumps(comp_json, indent=4)
+            .replace(self._place_holder, self.mod_geo_script)
+        )
+
+
+
+
+
+
 def create_objects_commands(preferences,objects, object_list, extern_mesh_dir, global_matrix, apply_transform=False, **args):
     '''
     Create the Roomle Script command
@@ -618,12 +758,22 @@ def write_roomle_script( operator, preferences, context, filepath, global_matrix
 
         extern_mesh_dir = os.path.splitext(filepath)[0]
 
-        script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,**args)
-        if not bool(script):
+        geometry_script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,**args)
+        if not bool(geometry_script):
             raise Exception('Empty export! Make sure you have meshes selected.')
         else:
+            comp_def = ComponentDefinition(
+                catalog_id=args["catalog_id"],
+                component_id=args["component_id"],
+                geometry_script = geometry_script
+                )
+            
             with open(filepath, 'w') as data:
-                data.write(script)
+                data.write(comp_def.component_definition)
+            
+            (Path(filepath).parent / 'tags.csv').write_text(Tags.from_material_parameters(*comp_def.material_parameters).csv)
+            pass
+            
     except Exception as e:
         import traceback
         print('Exception',e)

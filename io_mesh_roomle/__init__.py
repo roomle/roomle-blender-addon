@@ -227,7 +227,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
         if self.filepath == '':
             raise Exception('no filepath provided')
         
-        keywords = self.as_keywords(ignore=("axis_forward",
+        keywords:dict = self.as_keywords(ignore=("axis_forward",
                                             "axis_up",
                                             "global_scale",
                                             "check_existing",
@@ -236,6 +236,11 @@ class ExportRoomleScript( Operator, ExportHelper ):
                                             "use_mesh_modifiers",
                                             "advanced"
                                             ))
+        keywords['component_id'] = (
+            os.path
+            .splitext(keywords['filepath'])[0]
+            .split('/')[-1]
+            )
 
         if keywords['export_materials']:
             scene_handler = SceneHandler(bpy.context.scene)
@@ -258,6 +263,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
             return {'CANCELLED'}
 
         if keywords['export_materials']:
+            # bpy.ops.wm.save_as_mainfile(filepath='/Users/clemens/Dev/git/DAP-AssetFactory/tmp/snap.blend')
             scene_handler.remove_export_scene()
             
         return {'FINISHED'}
