@@ -1,18 +1,12 @@
 from __future__ import annotations
-from typing import Iterable, List, Protocol, Tuple, Union, TYPE_CHECKING
+from typing import Iterable, List, Protocol, Tuple, Union
 
-from io_mesh_roomle.material_exporter.utils.materials import get_all_used_nodes, get_principled_bsdf_node, get_used_texture_nodes
-
-from dataclasses import dataclass
-from email.mime import image
-from pathlib import Path
-from shutil import copy
+import io_mesh_roomle.material_exporter.utils.materials as utils_materials
+import dataclasses
 import bpy
 
-
-
-from io_mesh_roomle.material_exporter.utils.color import get_valid_name
-from ..enums import SUPPORTED_TEXTURE_FILE_FORMATS
+from io_mesh_roomle.material_exporter.utils import color as utils_color
+from io_mesh_roomle import enums
 
 
 # def unpack_images(self, texture_name_manager: TextureNameManager):
@@ -43,7 +37,7 @@ class TextureNameManager:
         # filename : imagenode_id
         self.names = {}
 
-    def validate_name(self, image: ObjectToRegister) -> str:
+    def validate_name(self, image: ObjectToRegister) -> str | None:
         """returns a valid name by checking the requested name against already used ones.
         also registers the name in the class dictionaries
 
@@ -57,10 +51,10 @@ class TextureNameManager:
         if image is None:
             return None
         file_format = image.file_format
-        if not file_format in SUPPORTED_TEXTURE_FILE_FORMATS:
+        if not file_format in enums.SUPPORTED_TEXTURE_FILE_FORMATS:
             raise Exception(f'unsupported texture type {file_format}')
 
-        suffix = SUPPORTED_TEXTURE_FILE_FORMATS[image.file_format]
+        suffix = enums.SUPPORTED_TEXTURE_FILE_FORMATS[image.file_format]
         if image.name.endswith(suffix):
             name_to_use = image.name
         else:
@@ -80,7 +74,7 @@ class TextureNameManager:
         return name_to_use
 
 
-@dataclass
+@dataclasses.dataclass
 class PBR_Channel:
     """The concept of map and multiplocation
     Note that the default_values in Blender get overridden by the map
