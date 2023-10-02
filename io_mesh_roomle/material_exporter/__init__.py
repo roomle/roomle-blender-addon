@@ -141,7 +141,7 @@ def export_materials(addon_args: arguments.addon_arguments):
     materials = get_materials_used_by_objs(mesh_objs_to_export)
 
     material_exports: list[BlenderMaterialForExport]= [
-        BlenderMaterialForExport(material)
+        BlenderMaterialForExport(material,addon_args.component_id)
         for material in materials
     ]
 

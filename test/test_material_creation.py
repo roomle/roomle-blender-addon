@@ -8,6 +8,7 @@ import unittest
 from attr import dataclass
 
 from io_mesh_roomle import roomle_script
+from test.utils import TestCaseExtended
 
 BLENDER = '/Applications/Blender3.6.2-ARM-LTS.app/Contents/MacOS/blender'
 
@@ -65,7 +66,8 @@ def test_args(tmp_path: Path):
 
     # TODO: add check for params
 
-class MaterialUnittests(unittest.TestCase):
-    def test_first(self):
+class MaterialUnittests(TestCaseExtended):
+    def test_material_csv_6c95a1b9(self):
         pass
+
 
