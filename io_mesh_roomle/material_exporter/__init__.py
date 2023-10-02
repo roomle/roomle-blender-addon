@@ -2,6 +2,7 @@ import logging
 import bpy
 from pathlib import Path
 from typing import Iterable, List, Union, TYPE_CHECKING
+from io_mesh_roomle import arguments
 
 from io_mesh_roomle.material_exporter._exporter import BlenderMaterialForExport, TextureNameManager
 from io_mesh_roomle.material_exporter._roomle_material_csv import MaterialDefinition, RoomleMaterialsCsv
@@ -11,6 +12,11 @@ log.setLevel(logging.DEBUG)
 
 
 def split_object_by_materials(obj: bpy.types.Object) -> set[bpy.types.Object]:
+    # TODO: RML-8416
+    
+    # if len(obj.material_slots) < 2:
+    #     return set()
+
     bpy.ops.object.select_all(action='DESELECT')
     obj.select_set(True)
     # obj.name = get_valid_name(obj.name)
@@ -43,9 +49,9 @@ def pbr_2_material_definition(data: BlenderMaterialForExport) -> MaterialDefinit
     pbr = data.pbr
     md = MaterialDefinition()
 
-    md.material_id = data.name
-    md.label_en = data.name
-    md.label_de = data.name
+    md.material_id = data.material_id
+    md.label_en = data.label_en
+    md.label_de = data.label_de
 
     md.shading.alpha = prec(pbr.alpha.default_value,
                             1)                # type: ignore
@@ -97,7 +103,7 @@ def get_materials_used_by_objs(objects: Iterable[bpy.types.Object]) -> set:
 
 
 
-def export_materials(**keywords):
+def export_materials(addon_args: arguments.addon_arguments):
 
     log.info(f"\n{'='*80}\n{'STARTING MATERIAL EXPORT':^80}\n{'='*80}")
     # Rough outline
@@ -111,8 +117,8 @@ def export_materials(**keywords):
     # get the objects to export
     from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
 
-    out_path = Path(keywords['filepath']).parent
-    use_selection = keywords["use_selection"]
+    out_path = Path(addon_args.filepath).parent
+    use_selection = addon_args.use_selection
 
     csv_exporter = RoomleMaterialsCsv()
     texture_name_manager = TextureNameManager()

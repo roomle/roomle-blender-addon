@@ -3,8 +3,11 @@ from shutil import copy
 from subprocess import Popen, call
 import os
 import json
+import unittest
 
 from attr import dataclass
+
+from io_mesh_roomle import roomle_script
 
 BLENDER = '/Applications/Blender3.6.2-ARM-LTS.app/Contents/MacOS/blender'
 
@@ -20,7 +23,6 @@ class Params:
     @property
     def json(self):
         return json.dumps(self.__dict__)
-
 
 
 def test_materials(tmp_path):
@@ -62,4 +64,8 @@ def test_args(tmp_path: Path):
     assert txt.startswith('bpy.ops.export_mesh.roomle_script(')
 
     # TODO: add check for params
+
+class MaterialUnittests(unittest.TestCase):
+    def test_first(self):
+        pass
 

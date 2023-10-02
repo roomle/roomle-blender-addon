@@ -86,7 +86,8 @@ class PBR_Channel:
 class BlenderMaterialForExport:
 
     def __init__(self,
-                 material: bpy.types.Material
+                 material: bpy.types.Material,
+                 component_id: str = ""
                  ) -> None:
         from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
     
@@ -94,20 +95,49 @@ class BlenderMaterialForExport:
         self.pbr: PBR_ShaderData
 
         self.images: List[str] = []
-        self.name: str = get_valid_name(material.name)
+        self.component_id: str = component_id
+        self.blender_material_name: str = material.name
         self.material: bpy.types.Material = material
 
+    @property
+    def _component_id_prefix(self) -> str:
+        if len(self.component_id) > 0:
+            return f'{self.component_id}_'
+        else:
+            return ''
+        
+    @property
+    def _component_id_suffix(self) -> str:
+        if len(self.component_id) > 0:
+            return f' ({self.component_id})'
+        else:
+            return ''
+    
+    @property
+    def _valid_name(self):
+        return utils_color.get_valid_name(self.blender_material_name)
+    
+    @property
+    def material_id(self):
+        return f'{self._component_id_prefix}{self._valid_name}'
+    
+    @property
+    def label_en(self):
+        return f'{self._valid_name}{self._component_id_suffix}'
+    
+    @property
+    def label_de(self):
+        return self.label_en
 
     @property
     def used_nodes(self) -> Iterable:
-        return get_all_used_nodes(self.material)
-
+        return utils_materials.get_all_used_nodes(self.material)
 
     @property
     def used_principled_bsdf_shader(self) -> bpy.types.ShaderNodeBsdfPrincipled:
-        return get_principled_bsdf_node(self.material)
+        return utils_materials.get_principled_bsdf_node(self.material)
     
     @property
     def used_tex_nodes(self) -> list[bpy.types.ShaderNodeTexImage]:
-        return get_used_texture_nodes(self.material)
+        return utils_materials.get_used_texture_nodes(self.material)
 

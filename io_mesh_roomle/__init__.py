@@ -13,11 +13,13 @@
 #  from Roomle.
 # -----------------------------------------------------------------------
 
-import logging
+
 from pathlib import Path
-from re import DEBUG
-from .scene_handler import SceneHandler
-from .material_exporter import export_materials
+
+import sys
+sys.path.append(str(Path(__file__).parent.absolute() / 'external-packages'))
+
+from io_mesh_roomle import arguments, material_exporter, scene_handler
 
 bl_info = {
     "name": "Roomle Configurator Script",
@@ -39,6 +41,8 @@ if "bpy" in locals():
 else:
     from . import roomle_script
     from . import optimize_operator
+
+
 
 import os,sys,subprocess
 import bpy
@@ -98,7 +102,7 @@ def check_for_exe( name ):
 class ExportRoomleScriptPreferences(bpy.types.AddonPreferences):
    bl_idname = __name__
 
-   corto_exe: bpy.props.StringProperty(
+   corto_exe: bpy.props.StringProperty( #type: ignore
       name="Location of corto executable",
       subtype="FILE_PATH",
       default=check_for_exe('corto')
@@ -115,39 +119,39 @@ class ExportRoomleScript( Operator, ExportHelper ):
     bl_label = "Export Roomle Script"
 
     filename_ext = ".txt"
-    filter_glob: StringProperty(default="*.txt", options={'HIDDEN'})
+    filter_glob: StringProperty(default="*.txt", options={'HIDDEN'}) #type: ignore
 
-    catalog_id: StringProperty(
+    catalog_id: StringProperty( #type: ignore
         name="Catalog ID",
         description="Catalog name. Used as prefix for mesh and material IDs",
         default='catalog_id',
     )
 
-    use_selection: BoolProperty(
+    use_selection: BoolProperty( #type: ignore
             name="Only Selected Objects",
             description="Export only selected objects on visible layers",
             default=False,
             )
             
-    export_normals: BoolProperty(
+    export_normals: BoolProperty( #type: ignore
         name="Export Normals",
         description="Export normals per vertex as well.",
         default=True,
         )
 
-    export_materials: BoolProperty(
+    export_materials: BoolProperty( #type: ignore
         name="Export Materials",
         description="Export roomle material definitions",
         default=False,
         )
 
-    apply_rotations: BoolProperty(
+    apply_rotations: BoolProperty( #type: ignore
         name="Apply Rotations",
         description="Apply all rotations into vertex data",
         default=True,
         )
 
-    advanced: BoolProperty(
+    advanced: BoolProperty( #type: ignore
             name="Advanced Settings",
             description="Show advanced settings",
             default=False,
@@ -160,20 +164,20 @@ class ExportRoomleScript( Operator, ExportHelper ):
     ]
 
 
-    use_corto: BoolProperty(
+    use_corto: BoolProperty( #type: ignore
         name="Use Corto",
         description="Create corto files if possible",
         default=True,
         )
 
-    mesh_export_option: EnumProperty(
+    mesh_export_option: EnumProperty( #type: ignore
         items=mesh_export_options,
         name="Mesh export method",
         description="Meshes are converted into external files or script commands",
         default="AUTO",
         )
 
-    uv_float_precision: IntProperty(
+    uv_float_precision: IntProperty( #type: ignore
         name="UV Precision",
         description="Max floating point fraction precision of UVs in decimal digits when creating script commands",
         default=4,
@@ -181,7 +185,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
         max=8
     )
 
-    normal_float_precision: IntProperty(
+    normal_float_precision: IntProperty( #type: ignore
         name="Normal Precision",
         description="Max floating point fraction precision of Normals in decimal digits when creating script commands",
         default=5,
@@ -189,7 +193,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
         max=8
     )
             
-    debug: BoolProperty(
+    debug: BoolProperty( #type: ignore
             name="Debug mode",
             description="Creates a script that is easier to read and debug for changes/errors.",
             default=False,
@@ -217,6 +221,24 @@ class ExportRoomleScript( Operator, ExportHelper ):
             box.prop(self, 'uv_float_precision')
             box.prop(self, 'normal_float_precision')
 
+    @property
+    def addon_arguments(self) -> arguments.addon_arguments:
+        addon_args_as_dict:dict = self.as_keywords() #type: ignore
+        addon_args_as_dict['component_id'] = (
+            os.path
+            .splitext(addon_args_as_dict['filepath'])[0]
+            .split('/')[-1]
+            )
+        
+        # Mashumaro acts as a white list which parameters get added
+        args = arguments.addon_arguments.from_dict(addon_args_as_dict)
+
+        not_used = tuple(set(addon_args_as_dict.keys()) - set(args.to_dict().keys()))
+        pass
+
+        return args
+
+
     def execute(self, context):
         from mathutils import Matrix, Vector
         from . import roomle_script
@@ -227,25 +249,13 @@ class ExportRoomleScript( Operator, ExportHelper ):
         if self.filepath == '':
             raise Exception('no filepath provided')
         
-        keywords:dict = self.as_keywords(ignore=("axis_forward",
-                                            "axis_up",
-                                            "global_scale",
-                                            "check_existing",
-                                            "filter_glob",
-                                            "use_scene_unit",
-                                            "use_mesh_modifiers",
-                                            "advanced"
-                                            ))
-        keywords['component_id'] = (
-            os.path
-            .splitext(keywords['filepath'])[0]
-            .split('/')[-1]
-            )
+        addon_args = self.addon_arguments
 
-        if keywords['export_materials']:
-            scene_handler = SceneHandler(bpy.context.scene)
-            scene_handler.copy_scene()
-            export_materials(**keywords)
+
+        if addon_args.export_materials:
+            scn_hndlr = scene_handler.SceneHandler(bpy.context.scene)
+            scn_hndlr.copy_scene()
+            material_exporter.export_materials(addon_args)
 
 
         global_scale = 1000
@@ -257,14 +267,14 @@ class ExportRoomleScript( Operator, ExportHelper ):
         global_matrix = mat_axis @ mat_global_scale @ mat_flip
 
         try:
-            roomle_script.write_roomle_script( self, preferences, bpy.context, global_matrix=global_matrix, **keywords)
+            roomle_script.write_roomle_script( self, preferences, bpy.context,filepath=addon_args.filepath, global_matrix=global_matrix, addon_args=addon_args)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
 
-        if keywords['export_materials']:
+        if addon_args.export_materials:
             # bpy.ops.wm.save_as_mainfile(filepath='/Users/clemens/Dev/git/DAP-AssetFactory/tmp/snap.blend')
-            scene_handler.remove_export_scene()
+            scn_hndlr.remove_export_scene() #type: ignore
             
         return {'FINISHED'}
 
@@ -283,6 +293,7 @@ def register():
     bpy.utils.register_class(ExportRoomleScriptPreferences)
     bpy.types.TOPBAR_MT_file_export.append(menu_export)
     optimize_operator.register()
+
 
 def unregister():
     optimize_operator.unregister()

@@ -1,0 +1,45 @@
+[{
+        "key": "material_001",
+        "type": "Material",
+        "labels": {
+            "en": "Material004 (some_component_56a4)"
+        },
+        "defaultValue": "some_id_ac583s:some_component_56a4_Material004",
+        "validGroups": [
+            "some_component_56a4_Material004"
+        ]
+    },
+    {
+        "key": "material_002",
+        "type": "Material",
+        "labels": {
+            "en": "Material001 (some_component_56a4)"
+        },
+        "defaultValue": "some_id_ac583s:some_component_56a4_Material001",
+        "validGroups": [
+            "some_component_56a4_Material001"
+        ]
+    },
+    {
+        "key": "material_003",
+        "type": "Material",
+        "labels": {
+            "en": "Material002 (some_component_56a4)"
+        },
+        "defaultValue": "some_id_ac583s:some_component_56a4_Material002",
+        "validGroups": [
+            "some_component_56a4_Material002"
+        ]
+    },
+    {
+        "key": "material_004",
+        "type": "Material",
+        "labels": {
+            "en": "Material003 (some_component_56a4)"
+        },
+        "defaultValue": "some_id_ac583s:some_component_56a4_Material003",
+        "validGroups": [
+            "some_component_56a4_Material003"
+        ]
+    }
+]
