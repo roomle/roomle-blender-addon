@@ -30,12 +30,16 @@ class addon_arguments(mashumaro.DataClassDictMixin):
         return f'{self.catalog_id}_root'
     
     @property
-    def ext_id(self) -> str:
+    def component_ext_id(self) -> str:
         return f'{self.catalog_id}:{self.component_id}'
     
     @property
     def product_ext_id(self) -> str:
-        return self.ext_id
+        return self.component_ext_id
+    
+    @property
+    def product_id(self) -> str:
+        return self.component_id
     
     @property
     def export_dir(self) -> Path:
@@ -48,6 +52,19 @@ class addon_arguments(mashumaro.DataClassDictMixin):
     @property
     def materials_dir(self) -> Path:
         return self.export_dir / 'materials'
+    
+    @property
+    def components_dir(self) -> Path:
+        d = self.export_dir / 'components'
+        d.mkdir(exist_ok=True)
+        return self.export_dir / 'components'
+    
+    @property
+    def component_definition_file_name(self) -> str:
+        name = self.component_ext_id.replace(':','_')
+        ext = '.json'
+        return f'{name}{ext}'
+    
 
 
 

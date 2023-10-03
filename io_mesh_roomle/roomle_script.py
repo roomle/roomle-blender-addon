@@ -707,16 +707,25 @@ class ComponentDefinition:
 
     @property
     def component_definition(self) -> str:
-        comp_json = {
-            "id": self.external_id,
-            "parameters": self.material_parameters_as_dict,
-            "geometry": self._place_holder
-        }
-        return (
-            json.dumps(comp_json, indent=4)
-            .replace(self._place_holder, self.mod_geo_script)
-        )
-    
+        # TODO: decide how to handle line breaks within a geometry script
+        with_line_breaks = False
+        if with_line_breaks:
+            comp_json = {
+                "id": self.external_id,
+                "parameters": self.material_parameters_as_dict,
+                "geometry": self._place_holder
+            }
+            return (
+                json.dumps(comp_json, indent=4)
+                .replace(self._place_holder, self.mod_geo_script)
+            )
+        else:
+            comp_json = {
+                "id": self.external_id,
+                "parameters": self.material_parameters_as_dict,
+                "geometry": self.mod_geo_script
+            }
+            return json.dumps(comp_json, indent=4)
     @staticmethod
     def process_geometry_script(geometry_script, component_id, catalog_id) -> tuple[str, list[MaterialParameterTag]]:
         """extract material statements from given roomle script
@@ -769,7 +778,7 @@ def create_objects_commands(preferences, objects, object_list, extern_mesh_dir, 
 # def write_roomle_script( operator, preferences, context, filepath, global_matrix, **args ):
 
 
-def write_roomle_script(operator, preferences, context, filepath, global_matrix, addon_args: arguments.addon_arguments):
+def write_roomle_script(operator, preferences, context, global_matrix, addon_args: arguments.addon_arguments):
     """
     Write a roomle script file from faces,
 
@@ -790,7 +799,7 @@ def write_roomle_script(operator, preferences, context, filepath, global_matrix,
 
         object_list = bpy.context.selected_objects if addon_args.use_selection else bpy.context.visible_objects
 
-        extern_mesh_dir = filepath.parent / 'meshes'
+        extern_mesh_dir = addon_args.export_dir / 'meshes'
 
         geometry_script = create_objects_commands(
             preferences, root_objects, object_list, extern_mesh_dir, global_matrix, addon_args)
@@ -804,22 +813,22 @@ def write_roomle_script(operator, preferences, context, filepath, global_matrix,
                 geometry_script=geometry_script
             )
 
-            with open(filepath.parent / 'component.txt', 'w') as data:
+            with open(addon_args.components_dir / addon_args.component_definition_file_name, 'w') as data:
                 data.write(comp_def.component_definition)
 
             dict_csv_handler = CSV_Dict_Handler()
             dict_csv_handler.add_row({
                 TAG_CSV_COLS.TAG_ID: addon_args.component_tag,
                 TAG_CSV_COLS.LABEL_EN: addon_args.component_tag_label_en,
-                TAG_CSV_COLS.PARENTS_TO_ADD: addon_args.catalog_root_tag,
-                TAG_CSV_COLS.COMPONENTS_TO_ADD: addon_args.component_id
+                # TAG_CSV_COLS.PARENTS_TO_ADD: addon_args.catalog_root_tag,
+                TAG_CSV_COLS.COMPONENTS_TO_ADD: addon_args.component_ext_id
                 })
             for mat in comp_def.material_parameters:
                 row_dict = mat.csv_row
                 row_dict[TAG_CSV_COLS.PARENTS_TO_ADD] = (addon_args.component_tag,)
                 dict_csv_handler.add_row(row_dict)
 
-            dict_csv_handler.write(Path(filepath).parent / 'tags.csv')
+            dict_csv_handler.write(addon_args.export_dir / 'tags.csv')
 
     except Exception as e:
         import traceback

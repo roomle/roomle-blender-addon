@@ -20,6 +20,9 @@ import shutil
 
 import sys
 import zipfile
+
+from io_mesh_roomle.csv_handler import CSV_Dict_Handler
+from io_mesh_roomle.enums import COMP_CSV_COLS, PROD_CSV_COLS
 sys.path.append(str(Path(__file__).parent.absolute() / 'external-packages'))
 
 from io_mesh_roomle import arguments, material_exporter, scene_handler
@@ -272,7 +275,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
         global_matrix = mat_axis @ mat_global_scale @ mat_flip
 
         try:
-            roomle_script.write_roomle_script( self, preferences, bpy.context,filepath=addon_args.filepath, global_matrix=global_matrix, addon_args=addon_args)
+            roomle_script.write_roomle_script( self, preferences, bpy.context, global_matrix=global_matrix, addon_args=addon_args)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
@@ -282,6 +285,31 @@ class ExportRoomleScript( Operator, ExportHelper ):
             scn_hndlr.remove_export_scene() #type: ignore
 
         # TODO: add argument for this
+
+
+        # TODO: add width and height to product csv
+        prod_handler = CSV_Dict_Handler()
+        prod_handler.add_row(
+            {
+            PROD_CSV_COLS.ITEM_ID: addon_args.product_id,
+            PROD_CSV_COLS.CONFIGURATION : json.dumps({"componentId": addon_args.product_ext_id}),
+            PROD_CSV_COLS.VISIBILITY_STATUS : 0,
+            }
+        )
+        prod_handler.write(addon_args.export_dir / 'products.csv')
+
+
+        comp_handler = CSV_Dict_Handler()
+        for comp_file in addon_args.components_dir.glob('*.json'):
+            data = json.load(comp_file.open())
+            comp_handler.add_row(
+                {
+                COMP_CSV_COLS.COMPONENT_ID : data['id'].split(':')[-1],
+                COMP_CSV_COLS.COMPONENT_DEFINITION : f"zip://{comp_file.name}",
+                COMP_CSV_COLS.VISIBILITY_STATUS : 0,
+                }
+            )
+        comp_handler.write(addon_args.components_dir / 'components.csv')
 
 
         # ==================[ ZIP UP STUFF ]==================
@@ -307,20 +335,27 @@ class ExportRoomleScript( Operator, ExportHelper ):
                     zf.write(file, file.name)
 
         shutil.rmtree(meshes_dir)
+
+        # Components    
+
+        comp_dir = addon_args.components_dir
+        if comp_dir.exists() and comp_dir.is_dir():
+            with zipfile.ZipFile(output_dir  / 'components.zip','w') as zf:
+                for file in (comp_dir.rglob("*")):
+                    if file.suffix.lower == '.txt' or file.is_dir():
+                        continue
+                    zf.write(file, file.name)
+
+        shutil.rmtree(comp_dir)
         
         # ====================================================
-        
-
-        (addon_args.export_dir / 'product.txt').write_text(json.dumps({
-            "componentId": addon_args.product_ext_id
-        }, indent=4))
 
         (addon_args.export_dir / 'meta.json').write_text(json.dumps({
                                                             "target_id": addon_args.product_ext_id,
                                                             "materials": "materials.zip",
                                                             "meshes": "meshes.zip",
-                                                            "component": "component.txt",
-                                                            "product": "product.txt",
+                                                            "components": "components.zip",
+                                                            "products": "products.csv",
                                                             "tags": "tags.csv"
                                                             }, indent=4))
         
