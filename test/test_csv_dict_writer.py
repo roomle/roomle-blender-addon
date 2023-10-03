@@ -1,4 +1,5 @@
 from pathlib import Path
+from textwrap import dedent
 from io_mesh_roomle.csv_handler.CSV_Dict_Handler import CSV_Dict_Handler
 from test.utils import TestCaseExtended
 
@@ -41,3 +42,28 @@ class TestCsvDict(TestCaseExtended):
 
         assert self.sorted_txt_hash(
             output) == '9b3058e9d0b07d46e906c2ce4bb0f6bb'
+    
+    def test_blank_field_creation(self):
+        out = self.tmp_path / 'out-fields.csv'
+        handler = CSV_Dict_Handler()
+        handler.add_fields('one','two')
+        handler.add_fields('three')
+        handler.write(out)
+        assert out.read_text() == '"one","two","three"\n'
+
+    def test_sorted_output(self):
+
+        
+        handler = CSV_Dict_Handler()
+        handler.add_row({"a":'z'})
+        handler.add_row({"b":'z', "a":"c"})
+        handler.add_row({"d":'a', "a":"a"})
+        handler.write(self.tmp_path / 'out-sorted.csv')
+
+        assert (self.tmp_path / 'out-sorted.csv').read_text() == dedent("""\
+                                                                        "a","b","d"
+                                                                        "a","","a"
+                                                                        "c","z",""
+                                                                        "z","",""
+                                                                        """)
+        

@@ -1,6 +1,9 @@
+from dataclasses import dataclass
 from hashlib import md5
+import inspect
 import json
 from pathlib import Path
+from subprocess import Popen
 from typing import Union
 
 
@@ -38,13 +41,46 @@ class AssetHandling:
     @classmethod
     def asset_dict(cls, filename: str) -> dict:
         return cls._read_file_json_to_dict(cls.assets / filename)
+    
+    @classmethod
+    def asset_path(cls, filename: str) -> Path:
+        return cls.assets / filename
+    
+    def expectations_path(cls, filename: str) -> Path:
+        return cls.expectations / filename
 
 
-    @property
-    def tmp_path(self):
-        tmp_path = Path(__file__).parent.parent.parent.absolute() / 'tmp' / self.__class__.__name__
+    @classmethod
+    def tmp_path_class(cls):
+        tmp_path = Path(__file__).parent.parent.parent.absolute() / 'tmp' / cls.__name__
         tmp_path.mkdir(exist_ok=True, parents=True)
         return tmp_path
+    
+    @property
+    def tmp_path(self) -> Path:
+        """searches the test method name inside the callstack
+        and generates a folder with the same name
+
+        Returns:
+            _type_: _description_
+        """
+        # find the internal function that called the test method -> our method is index -1 from this
+        method_caller_name = '_callTestMethod'
+
+        # put all names of the call stack into one tuple
+        call_stack_names = tuple((frame[3] for frame in inspect.stack()))
+
+        if method_caller_name in call_stack_names:
+            index_of_caller_in_stack = call_stack_names.index(method_caller_name)
+            frame_name = call_stack_names[index_of_caller_in_stack-1]
+        else:
+            # in case if we could not find the method, generate a unique folder name
+            frame_name = 'unknown-' + md5((','.join(list(call_stack_names))).encode('utf-8')).hexdigest()[:8]
+
+        new_folder = self.tmp_path_class() / frame_name
+        new_folder.mkdir(exist_ok=True, parents=True)
+        return new_folder
+
 
     def dump_txt(self, data: str, filename: str) -> Path:
         file = self.tmp_path / filename
@@ -76,6 +112,41 @@ class Assertions:
         return md5(file_content).hexdigest()
 
 
-class TestCaseExtended(unittest.TestCase, AssetHandling, Assertions):
+BLENDER = '/Applications/Blender3.6.2-ARM-LTS.app/Contents/MacOS/blender'
+
+
+@dataclass
+class AddonExportParams:
+    filepath: str
+    catalog_id: str='catalog_id'
+    mesh_export_option: str="EXTERNAL"
+    use_corto: bool = False
+    export_materials: bool = True
+
+    @property
+    def json(self):
+        return json.dumps(self.__dict__)
+
+
+class BlenderRunner(AssetHandling):
+
+    @staticmethod
+    def convert_file(file:Path, output: Path):
+
+        params = AddonExportParams(
+            filepath=str(output)
+        )
+
+
+        cmd = [
+            BLENDER,
+            '--background',
+            '--python', Path(__file__).parent.parent / 'simple_export.py',
+            '--', file, params.json
+        ]
+        Popen(cmd).wait()
+
+
+class TestCaseExtended(unittest.TestCase, Assertions, BlenderRunner):
 
     __logger: logging.Logger
