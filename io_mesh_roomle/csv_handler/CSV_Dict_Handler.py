@@ -1,6 +1,7 @@
 import csv
+import json
 from pathlib import Path
-from typing import Union
+from typing import Iterable, Union
 from io_mesh_roomle.csv_handler.CSV_WriterBase import CSV_WriterBase
 
 
@@ -21,13 +22,13 @@ class CSV_Dict_Handler(CSV_WriterBase):
     def rows(self) -> tuple:
         return tuple(self._rows)
 
-    def _add_fields(self,*fields_to_add: str) -> None:
+    def add_fields(self,*fields_to_add: str) -> None:
         for field in fields_to_add:
             if field not in self._fieldnames:
-                self._fieldnames.append(field)  
+                self._fieldnames.append(field)
 
     def add_row(self, data: dict):
-        self._add_fields(*data.keys())
+        self.add_fields(*data.keys())
         for key,value in data.items():
             data[key] = self._evaluate_cell(value)
 
@@ -37,9 +38,27 @@ class CSV_Dict_Handler(CSV_WriterBase):
         for line in data:
             self.add_row(line)
     
+    @property
+    def rows_sorted(self):
+        column = self.fieldnames[0]
+        keys = []
+        lookup_table = {}
+        for row in self.rows:
+            if column in row:
+                seg_a = row[column]
+            else:
+                seg_a = "Z"
+            seg_b = json.dumps(row)
+            key = f'{seg_a}-{seg_b}'
+            keys.append(key)
+            lookup_table[key] = row
+        keys.sort()
+        return[lookup_table[i] for i in keys]
+
+    
     def write(self, filepath: Path):
         with open(filepath, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=self.fieldnames, quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
-            for row in self.rows:
+            for row in self.rows_sorted:
                 writer.writerow(row)

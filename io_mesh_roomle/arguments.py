@@ -28,6 +28,26 @@ class addon_arguments(mashumaro.DataClassDictMixin):
     @property
     def catalog_root_tag(self) -> str:
         return f'{self.catalog_id}_root'
+    
+    @property
+    def ext_id(self) -> str:
+        return f'{self.catalog_id}:{self.component_id}'
+    
+    @property
+    def product_ext_id(self) -> str:
+        return self.ext_id
+    
+    @property
+    def export_dir(self) -> Path:
+        return self.filepath.parent
+    
+    @property
+    def meshes_dir(self) -> Path:
+        return self.export_dir / 'meshes'
+    
+    @property
+    def materials_dir(self) -> Path:
+        return self.export_dir / 'materials'
 
 
 

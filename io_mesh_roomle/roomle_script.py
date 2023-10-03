@@ -790,7 +790,7 @@ def write_roomle_script(operator, preferences, context, filepath, global_matrix,
 
         object_list = bpy.context.selected_objects if addon_args.use_selection else bpy.context.visible_objects
 
-        extern_mesh_dir = os.path.splitext(filepath)[0]
+        extern_mesh_dir = filepath.parent / 'meshes'
 
         geometry_script = create_objects_commands(
             preferences, root_objects, object_list, extern_mesh_dir, global_matrix, addon_args)
@@ -804,7 +804,7 @@ def write_roomle_script(operator, preferences, context, filepath, global_matrix,
                 geometry_script=geometry_script
             )
 
-            with open(filepath, 'w') as data:
+            with open(filepath.parent / 'component.txt', 'w') as data:
                 data.write(comp_def.component_definition)
 
             dict_csv_handler = CSV_Dict_Handler()

@@ -14,9 +14,12 @@
 # -----------------------------------------------------------------------
 
 
+import json
 from pathlib import Path
+import shutil
 
 import sys
+import zipfile
 sys.path.append(str(Path(__file__).parent.absolute() / 'external-packages'))
 
 from io_mesh_roomle import arguments, material_exporter, scene_handler
@@ -118,6 +121,8 @@ class ExportRoomleScript( Operator, ExportHelper ):
     bl_idname = "export_mesh.roomle_script"
     bl_label = "Export Roomle Script"
 
+    #TODO: 0d9bf2c5 bundle in .roomle file
+    # filename_ext = ".roomle"
     filename_ext = ".txt"
     filter_glob: StringProperty(default="*.txt", options={'HIDDEN'}) #type: ignore
 
@@ -275,6 +280,52 @@ class ExportRoomleScript( Operator, ExportHelper ):
         if addon_args.export_materials:
             # bpy.ops.wm.save_as_mainfile(filepath='/Users/clemens/Dev/git/DAP-AssetFactory/tmp/snap.blend')
             scn_hndlr.remove_export_scene() #type: ignore
+
+        # TODO: add argument for this
+
+
+        # ==================[ ZIP UP STUFF ]==================
+        
+        output_dir = addon_args.export_dir
+
+        # Materials
+        materials_dir = addon_args.materials_dir
+        if materials_dir.exists() and materials_dir.is_dir():
+            with zipfile.ZipFile(output_dir  / 'materials.zip','w') as zf:
+                for file in (materials_dir.rglob("*")):
+                    zf.write(file, file.name)
+        shutil.rmtree(materials_dir)
+
+        # Meshes    
+
+        meshes_dir = addon_args.meshes_dir
+        if meshes_dir.exists() and meshes_dir.is_dir():
+            with zipfile.ZipFile(output_dir  / 'meshes.zip','w') as zf:
+                for file in (meshes_dir.rglob("*")):
+                    if file.suffix.lower == '.txt' or file.is_dir():
+                        continue
+                    zf.write(file, file.name)
+
+        shutil.rmtree(meshes_dir)
+        
+        # ====================================================
+        
+
+        (addon_args.export_dir / 'product.txt').write_text(json.dumps({
+            "componentId": addon_args.product_ext_id
+        }, indent=4))
+
+        (addon_args.export_dir / 'meta.json').write_text(json.dumps({
+                                                            "target_id": addon_args.product_ext_id,
+                                                            "materials": "materials.zip",
+                                                            "meshes": "meshes.zip",
+                                                            "component": "component.txt",
+                                                            "product": "product.txt",
+                                                            "tags": "tags.csv"
+                                                            }, indent=4))
+        
+        #TODO: 0d9bf2c5 bundle in .roomle file
+
             
         return {'FINISHED'}
 
