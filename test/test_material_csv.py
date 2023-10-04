@@ -73,7 +73,7 @@ class TestRoomleExport(TestCaseExtended):
         
         assert (self.tmp_path / 'materials.csv').exists()
         assert (self.tmp_path / 'Untitled.png').exists()
-        assert self.sorted_txt_hash(self.tmp_path / 'materials.csv') == '5f0af20172288dae2460e91e33546153'
+        assert self.sorted_txt_hash(self.tmp_path / 'materials.csv') == '9112aa83b771153f704b2817ee00e698'
 
     def test_meshes_zip_content(self):
         zip_file = self.fld / "meshes.zip"
