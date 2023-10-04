@@ -43,7 +43,7 @@ from bpy_extras.io_utils import (
 from io_mesh_roomle import arguments, material_exporter
 from io_mesh_roomle.csv_handler import CSV_Writer
 from io_mesh_roomle.csv_handler import _CSV_DictHandler
-from io_mesh_roomle.enums import TAG_CSV_COLS
+from io_mesh_roomle.enums import FILE_NAMES, TAG_CSV_COLS
 
 
 @dataclass
@@ -828,7 +828,7 @@ def write_roomle_script(operator, preferences, context, global_matrix, addon_arg
                 row_dict[TAG_CSV_COLS.PARENTS_TO_ADD] = (addon_args.component_tag,)
                 dict_csv_handler.add_row(row_dict)
 
-            dict_csv_handler.write(addon_args.export_dir / 'tags.csv')
+            dict_csv_handler.write(addon_args.export_dir / FILE_NAMES.TAGS_CSV)
 
     except Exception as e:
         import traceback

@@ -43,10 +43,10 @@ class TestRoomleExport(TestCaseExtended):
 
 
     def test_file_tags_exist(self):
-        assert self.assert_txt(self.fld / "tags.csv", 'bdce74035c6fe28383965318adad8672')
+        assert self.assert_txt(self.fld / FILE_NAMES.TAGS_CSV, 'bdce74035c6fe28383965318adad8672')
 
     def test_file_products_exist(self):
-        self.assert_txt(self.fld / 'items.csv', 'bdce74035c6fe28383965318adad8672')
+        self.assert_txt(self.fld / FILE_NAMES.ITEMS_CSV, 'bdce74035c6fe28383965318adad8672')
 
     def test_file_meta_exist(self):
         assert (self.fld / FILE_NAMES.META_JSON).exists()
@@ -54,20 +54,20 @@ class TestRoomleExport(TestCaseExtended):
         assert self.sorted_txt_hash(self.fld / FILE_NAMES.META_JSON) == 'efccba29e24e518c81a111d62a04fe48'
 
     def test_file_meshes_exist(self):
-        assert (self.fld / "meshes.zip").exists()
-        assert (self.fld / "meshes.zip").is_file()
+        assert (self.fld / FILE_NAMES.MESHES_ZIP).exists()
+        assert (self.fld / FILE_NAMES.MESHES_ZIP).is_file()
 
     def test_file_materials_exist(self):
-        assert (self.fld / "materials.zip").exists()
-        assert (self.fld / "materials.zip").is_file()
+        assert (self.fld / FILE_NAMES.MATERIALS_ZIP).exists()
+        assert (self.fld / FILE_NAMES.MATERIALS_ZIP).is_file()
 
     def test_file_components_exist(self):
-        assert (self.fld / "components.zip").exists()
-        assert (self.fld / "components.zip").is_file()
+        assert (self.fld / FILE_NAMES.COMPONENTS_ZIP).exists()
+        assert (self.fld / FILE_NAMES.COMPONENTS_ZIP).is_file()
 
 
     def test_materials_zip_content(self):
-        zip_file = self.fld / "materials.zip"
+        zip_file = self.fld / FILE_NAMES.MATERIALS_ZIP
         with zipfile.ZipFile(zip_file, 'r') as zip_ref:
             zip_ref.extractall(self.tmp_path)
         

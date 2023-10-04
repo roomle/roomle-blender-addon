@@ -259,11 +259,16 @@ class ExportRoomleScript(Operator, ExportHelper):
 
         addon_args = self.addon_arguments
 
+        # region ======================= [ 🔶  MATERIAL EXPORT 🔶 ] ===============================
+
         if addon_args.export_materials:
             scn_hndlr = scene_handler.SceneHandler(bpy.context.scene)
             scn_hndlr.copy_scene()
             material_exporter.export_materials(addon_args)
 
+        # endregion
+
+        # region ======================= [ 🔶  ROOMLE SCRIPT 🔶 ] ===============================
         global_scale = 1000
 
         mat_axis = axis_conversion(to_forward='-Y', to_up='Z',).to_4x4()
@@ -279,13 +284,18 @@ class ExportRoomleScript(Operator, ExportHelper):
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
 
+        # endregion
+
+        # region ======================= [ 🔶  REMOVE EXPORT SCENE 🔶 ] ===============================
         if addon_args.export_materials:
-            # bpy.ops.wm.save_as_mainfile(filepath='/Users/clemens/Dev/git/DAP-AssetFactory/tmp/snap.blend')
             scn_hndlr.remove_export_scene()  # type: ignore
+        # endregion
 
         # TODO: add argument for this
 
         # TODO: add width and height to product csv
+
+        # region ======================= [ 🔶  WRITE CSV AND JSON DATA 🔶 ] ===============================
         prod_handler = _CSV_DictHandler()
         prod_handler.add_row(
             {
@@ -308,7 +318,20 @@ class ExportRoomleScript(Operator, ExportHelper):
             )
         comp_handler.write(addon_args.components_dir / 'components.csv')
 
-        # ==================[ ZIP UP STUFF ]==================
+        # fmt: off
+        (addon_args.export_dir / FILE_NAMES.META_JSON).write_text(json.dumps({
+                        META_JSON_FIELDS.TARGET_ID:  addon_args.product_ext_id,
+                        META_JSON_FIELDS.MATERIALS:  FILE_NAMES.MATERIALS_ZIP,
+                        META_JSON_FIELDS.MESHES:     FILE_NAMES.MESHES_ZIP,
+                        META_JSON_FIELDS.COMPONENTS: FILE_NAMES.COMPONENTS_ZIP,
+                        META_JSON_FIELDS.ITEMS:      FILE_NAMES.ITEMS_CSV,
+                        META_JSON_FIELDS.TAGS:       FILE_NAMES.TAGS_CSV
+                        }, indent=4))
+        
+        # fmt: on
+        # endregion
+
+        # region ======================= [ 🔶  ZIP UP STUFF 🔶 ] ===============================
 
         output_dir = addon_args.export_dir
 
@@ -344,18 +367,9 @@ class ExportRoomleScript(Operator, ExportHelper):
 
             shutil.rmtree(comp_dir)
 
-        # ====================================================
 
-        # fmt: off
-        (addon_args.export_dir / FILE_NAMES.META_JSON).write_text(json.dumps({
-                        META_JSON_FIELDS.TARGET_ID:  addon_args.product_ext_id,
-                        META_JSON_FIELDS.MATERIALS:  FILE_NAMES.MATERIALS_ZIP,
-                        META_JSON_FIELDS.MESHES:     FILE_NAMES.MESHES_ZIP,
-                        META_JSON_FIELDS.COMPONENTS: FILE_NAMES.COMPONENTS_ZIP,
-                        META_JSON_FIELDS.ITEMS:      FILE_NAMES.ITEMS_CSV,
-                        META_JSON_FIELDS.TAGS:       FILE_NAMES.TAGS_CSV
-                        }, indent=4))
-        # fmt: on
+        # endregion
+
 
         # TODO: 0d9bf2c5 bundle in .roomle file
 
