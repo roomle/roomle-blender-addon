@@ -1,6 +1,6 @@
 from pathlib import Path
 from textwrap import dedent
-from io_mesh_roomle.csv_handler.CSV_Dict_Handler import CSV_Dict_Handler
+from io_mesh_roomle.csv_handler import _CSV_DictHandler
 from test.utils import TestCaseExtended
 
 
@@ -10,7 +10,7 @@ class TestCsvDict(TestCaseExtended):
 
         output = self.tmp_path / 'out.csv'
 
-        handler = CSV_Dict_Handler()
+        handler = _CSV_DictHandler()
         handler.add_row({'field a': 'a9af025c'})
         handler.add_row({'field b': 'd5d2d3e9'})
         handler.add_row({
@@ -30,7 +30,7 @@ class TestCsvDict(TestCaseExtended):
     def test_iterable_field(self):
         output = self.tmp_path / 'out-3.csv'
 
-        handler = CSV_Dict_Handler()
+        handler = _CSV_DictHandler()
         handler.add_rows(
             {'iterable': ['test', 'some', 'strings']},
             {'field two': 1234},
@@ -45,7 +45,7 @@ class TestCsvDict(TestCaseExtended):
     
     def test_blank_field_creation(self):
         out = self.tmp_path / 'out-fields.csv'
-        handler = CSV_Dict_Handler()
+        handler = _CSV_DictHandler()
         handler.add_fields('one','two')
         handler.add_fields('three')
         handler.write(out)
@@ -54,7 +54,7 @@ class TestCsvDict(TestCaseExtended):
     def test_sorted_output(self):
 
         
-        handler = CSV_Dict_Handler()
+        handler = _CSV_DictHandler()
         handler.add_row({"a":'z'})
         handler.add_row({"b":'z', "a":"c"})
         handler.add_row({"d":'a', "a":"a"})

@@ -42,7 +42,7 @@ import shutil
 
 import zipfile
 
-from io_mesh_roomle.csv_handler import CSV_Dict_Handler
+from io_mesh_roomle.csv_handler import _CSV_DictHandler
 from io_mesh_roomle.enums import COMP_CSV_COLS, FILE_NAMES, ITEMS_CSV_COLS, META_JSON_FIELDS
 
 
@@ -286,7 +286,7 @@ class ExportRoomleScript(Operator, ExportHelper):
         # TODO: add argument for this
 
         # TODO: add width and height to product csv
-        prod_handler = CSV_Dict_Handler()
+        prod_handler = _CSV_DictHandler()
         prod_handler.add_row(
             {
                 ITEMS_CSV_COLS.ITEM_ID: addon_args.product_id,
@@ -296,7 +296,7 @@ class ExportRoomleScript(Operator, ExportHelper):
         )
         prod_handler.write(addon_args.export_dir / 'items.csv')
 
-        comp_handler = CSV_Dict_Handler()
+        comp_handler = _CSV_DictHandler()
         for comp_file in addon_args.components_dir.glob('*.json'):
             data = json.load(comp_file.open())
             comp_handler.add_row(
