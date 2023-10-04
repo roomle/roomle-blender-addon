@@ -76,8 +76,9 @@ class TextureNameManager:
 
 @dataclasses.dataclass
 class PBR_Channel:
-    """The concept of map and multiplocation
+    """The concept of map and multiplication...
     Note that the default_values in Blender get overridden by the map
+    while ThreeJS mutiplies the RGB value into the texture map
     """
     map: Union[bpy.types.Image, None] = None
     default_value: Union[float, Tuple, None] = None
