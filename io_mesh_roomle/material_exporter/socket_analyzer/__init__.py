@@ -31,7 +31,7 @@ class PBR_DefaultValues():
     diffuse = (1.0,)*4
     alpha = 1.0 
     roughness = 1.0
-    metallic = 1.0
+    metallic = 0.0
     transmission = 1.0
     ior = 1.45
 

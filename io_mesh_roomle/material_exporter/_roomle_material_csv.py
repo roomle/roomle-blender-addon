@@ -68,7 +68,7 @@ class BaseColor(DataClassJSONMixin):
 class Shading(DataClassJSONMixin):
     alpha: float = 1
     roughness: float = 1
-    metallic: float = 1
+    metallic: float = 0
     basecolor: BaseColor = BaseColor()
     transmissionIOR: float = 1.5
     transmission: float = 0
