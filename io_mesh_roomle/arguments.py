@@ -21,7 +21,7 @@ class _AddonArguments(mashumaro.DataClassDictMixin):
     debug: bool
 
 class _Strings(_AddonArguments):
-    """string maipulations"""
+    """string manipulations"""
     
     @property
     def component_tag(self) -> str:

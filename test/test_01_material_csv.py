@@ -2,6 +2,7 @@
 from pathlib import Path
 from subprocess import Popen
 import zipfile
+from io_mesh_roomle.enums import FILE_NAMES
 from test.utils import BLENDER, AddonExportParams, TestCaseExtended
 
 
@@ -45,12 +46,12 @@ class TestRoomleExport(TestCaseExtended):
         assert self.assert_txt(self.fld / "tags.csv", 'bdce74035c6fe28383965318adad8672')
 
     def test_file_products_exist(self):
-        self.assert_txt(self.fld / 'products.csv', 'bdce74035c6fe28383965318adad8672')
+        self.assert_txt(self.fld / 'items.csv', 'bdce74035c6fe28383965318adad8672')
 
     def test_file_meta_exist(self):
-        assert (self.fld / "meta.json").exists()
-        assert (self.fld / "meta.json").is_file()
-        assert self.sorted_txt_hash(self.fld / 'meta.json') == '2aac45258652ad664a672bba413834de'
+        assert (self.fld / FILE_NAMES.META_JSON).exists()
+        assert (self.fld / FILE_NAMES.META_JSON).is_file()
+        assert self.sorted_txt_hash(self.fld / FILE_NAMES.META_JSON) == 'efccba29e24e518c81a111d62a04fe48'
 
     def test_file_meshes_exist(self):
         assert (self.fld / "meshes.zip").exists()
@@ -94,7 +95,7 @@ class TestRoomleExport(TestCaseExtended):
         assert self.sorted_txt_hash(self.tmp_path / 'catalog_id_converted_glb.json') == 'e505c15d74c7646d6d816bebddd8c38e'
         assert self.sorted_txt_hash(self.tmp_path / 'components.csv') == 'ccb75cc56e0a171dfc7c1783a95a24c0'
         
-class TestRoomleExportAlt(TestCaseExtended):
+class RoomleExportAlt(TestCaseExtended):
     @classmethod
     def setUpClass(cls) -> None:
         cls.fld = cls.tmp_path_class() / 'shared'
