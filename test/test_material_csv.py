@@ -94,3 +94,28 @@ class TestRoomleExport(TestCaseExtended):
         assert self.sorted_txt_hash(self.tmp_path / 'catalog_id_converted_glb.json') == 'e505c15d74c7646d6d816bebddd8c38e'
         assert self.sorted_txt_hash(self.tmp_path / 'components.csv') == 'ccb75cc56e0a171dfc7c1783a95a24c0'
         
+class TestRoomleExportAlt(TestCaseExtended):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.fld = cls.tmp_path_class() / 'shared'
+        cls.fld.mkdir(exist_ok=True)
+
+
+        params = AddonExportParams(
+            filepath=str(cls.fld / 'converted_glb.txt'),
+            export_materials=False,
+        )
+
+        file = cls.asset_path('combined-image-7dc4e4a0.glb')
+
+        Popen([
+            BLENDER,
+            '--background',
+            '--python', Path(__file__).parent / 'simple_export.py',
+            '--', file, params.json
+        ]).wait()
+        pass
+        return super().setUpClass()
+
+    def test_no_material_export(self):
+        pass

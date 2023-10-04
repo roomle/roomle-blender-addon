@@ -3,7 +3,10 @@ from pathlib import Path
 import mashumaro
 
 @dataclasses.dataclass
-class addon_arguments(mashumaro.DataClassDictMixin):
+class _AddonArguments(mashumaro.DataClassDictMixin):
+    """
+    store all arguments coming from the blender addon
+    """
     filepath: Path
     catalog_id: str
     use_selection: bool
@@ -17,6 +20,9 @@ class addon_arguments(mashumaro.DataClassDictMixin):
     component_id: str
     debug: bool
 
+class _Strings(_AddonArguments):
+    """string maipulations"""
+    
     @property
     def component_tag(self) -> str:
         return self.component_id
@@ -42,6 +48,15 @@ class addon_arguments(mashumaro.DataClassDictMixin):
         return self.component_id
     
     @property
+    def component_definition_file_name(self) -> str:
+        name = self.component_ext_id.replace(':','_')
+        ext = '.json'
+        return f'{name}{ext}'
+
+class _Paths(_Strings):
+    """manage paths"""
+
+    @property
     def export_dir(self) -> Path:
         return self.filepath.parent
     
@@ -57,13 +72,11 @@ class addon_arguments(mashumaro.DataClassDictMixin):
     def components_dir(self) -> Path:
         d = self.export_dir / 'components'
         d.mkdir(exist_ok=True)
-        return self.export_dir / 'components'
+        return d
+
+class ArgsStore(_Paths):
+    ...
     
-    @property
-    def component_definition_file_name(self) -> str:
-        name = self.component_ext_id.replace(':','_')
-        ext = '.json'
-        return f'{name}{ext}'
     
 
 

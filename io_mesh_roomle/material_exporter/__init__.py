@@ -103,7 +103,7 @@ def get_materials_used_by_objs(objects: Iterable[bpy.types.Object]) -> set:
 
 
 
-def export_materials(addon_args: arguments.addon_arguments):
+def export_materials(addon_args: arguments.ArgsStore):
 
     log.info(f"\n{'='*80}\n{'STARTING MATERIAL EXPORT':^80}\n{'='*80}")
     # Rough outline

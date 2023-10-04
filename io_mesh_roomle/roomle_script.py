@@ -218,7 +218,7 @@ def indices_from_mesh(ob, use_mesh_modifiers=False):
     return vertices, indices, uvs, normals, split_uvs
 
 
-def create_mesh_command(object, global_matrix, addon_args: arguments.addon_arguments, use_mesh_modifiers=True, scale=None, rotation=None):
+def create_mesh_command(object, global_matrix, addon_args: arguments.ArgsStore, use_mesh_modifiers=True, scale=None, rotation=None):
 
     debug = addon_args.debug
 
@@ -348,7 +348,7 @@ def create_extern_mesh_command(
     extern_mesh_dir,
     object,
     global_matrix,
-    addon_args: arguments.addon_arguments,
+    addon_args: arguments.ArgsStore,
     use_mesh_modifiers=True,
     scale=None,
     rotation=None,
@@ -521,7 +521,7 @@ def create_object_commands(
     object_list,
     extern_mesh_dir,
     global_matrix,
-    addon_args: arguments.addon_arguments,
+    addon_args: arguments.ArgsStore,
     parent_scale=None,
     parent_rotation=None,
     apply_transform=False,
@@ -755,7 +755,7 @@ class ComponentDefinition:
         return '\n'.join(modified_geometry_script), material_parameters
 
 
-def create_objects_commands(preferences, objects, object_list, extern_mesh_dir, global_matrix, addon_args: arguments.addon_arguments, ):
+def create_objects_commands(preferences, objects, object_list, extern_mesh_dir, global_matrix, addon_args: arguments.ArgsStore, ):
     '''
     Create the Roomle Script command
     iterate over all objects and pass them
@@ -778,7 +778,7 @@ def create_objects_commands(preferences, objects, object_list, extern_mesh_dir, 
 # def write_roomle_script( operator, preferences, context, filepath, global_matrix, **args ):
 
 
-def write_roomle_script(operator, preferences, context, global_matrix, addon_args: arguments.addon_arguments):
+def write_roomle_script(operator, preferences, context, global_matrix, addon_args: arguments.ArgsStore):
     """
     Write a roomle script file from faces,
 

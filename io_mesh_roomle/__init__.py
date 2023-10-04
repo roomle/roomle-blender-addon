@@ -230,7 +230,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
             box.prop(self, 'normal_float_precision')
 
     @property
-    def addon_arguments(self) -> arguments.addon_arguments:
+    def addon_arguments(self) -> arguments.ArgsStore:
         addon_args_as_dict:dict = self.as_keywords() #type: ignore
         addon_args_as_dict['component_id'] = (
             os.path
@@ -239,7 +239,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
             )
         
         # Mashumaro acts as a white list which parameters get added
-        args = arguments.addon_arguments.from_dict(addon_args_as_dict)
+        args = arguments.ArgsStore.from_dict(addon_args_as_dict)
 
         not_used = tuple(set(addon_args_as_dict.keys()) - set(args.to_dict().keys()))
         pass
@@ -322,7 +322,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
             with zipfile.ZipFile(output_dir  / 'materials.zip','w') as zf:
                 for file in (materials_dir.rglob("*")):
                     zf.write(file, file.name)
-        shutil.rmtree(materials_dir)
+            shutil.rmtree(materials_dir)
 
         # Meshes    
 
@@ -334,7 +334,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
                         continue
                     zf.write(file, file.name)
 
-        shutil.rmtree(meshes_dir)
+            shutil.rmtree(meshes_dir)
 
         # Components    
 
@@ -346,7 +346,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
                         continue
                     zf.write(file, file.name)
 
-        shutil.rmtree(comp_dir)
+            shutil.rmtree(comp_dir)
         
         # ====================================================
 
