@@ -651,13 +651,20 @@ class MaterialParameterTag:
         return f'{ma} ({self.component_id})'
     
     @property
+    def script_label_en(self) -> str:
+        """this label is shown above the material selection in the configurator"""
+        ma = self.material_id.replace('_',' ')
+        return f'{ma} ({self.component_id})'
+    
+    @property
     def material_ext_id(self) -> str:
         return f'{self.catalog_id}:{self.component_id}_{self.material_id}'
 
     @property
     def tag_id(self) -> str:
         # return md5(self.material_ext_id.encode('utf-8')).hexdigest()
-        return f'{self.component_id}_{self.material_id}'
+        return f'{self.component_id}_{self.material_id}_{self.catalog_id}'
+        # return f'{self.component_id}_{self.material_id}'
 
     @property
     def as_dict(self) -> dict[str, Any]:
@@ -665,7 +672,7 @@ class MaterialParameterTag:
             "key": self.key,
             "type": "Material",
             "labels": {
-                "en": self.label_en
+                "en": self.script_label_en
             },
             "defaultValue": self.material_ext_id,
             "validGroups": [
@@ -676,7 +683,7 @@ class MaterialParameterTag:
     def csv_row(self) -> dict:
         return {
                 TAG_CSV_COLS.TAG_ID: self.tag_id,
-                TAG_CSV_COLS.LABEL_EN: self.label_en,
+                TAG_CSV_COLS.LABEL_EN: self.script_label_en,
                 TAG_CSV_COLS.MATERIALS_TO_ADD: [self.material_ext_id]
                 }
 
@@ -807,15 +814,23 @@ def write_roomle_script(operator, preferences, context, global_matrix, addon_arg
             raise Exception(
                 'Empty export! Make sure you have meshes selected.')
         else:
+
+            # region #*======================= [ 🔶  GENERATE COMPONENT DEFINITION FROM GEO SCRIPT 🔶 ] ===============================
+
             comp_def = ComponentDefinition(
                 catalog_id=addon_args.catalog_id,
                 component_id=addon_args.component_id,
                 geometry_script=geometry_script
             )
-
+                
             with open(addon_args.components_dir / addon_args.component_definition_file_name, 'w') as data:
                 data.write(comp_def.component_definition)
 
+            # endregio
+
+            # region #*======================= [ 🔶  WRITE TAGS.CSV 🔶 ] ===============================
+            
+            
             dict_csv_handler = _CSV_DictHandler()
             dict_csv_handler.add_row({
                 TAG_CSV_COLS.TAG_ID: addon_args.component_tag,
@@ -823,12 +838,23 @@ def write_roomle_script(operator, preferences, context, global_matrix, addon_arg
                 # TAG_CSV_COLS.PARENTS_TO_ADD: addon_args.catalog_root_tag,
                 TAG_CSV_COLS.COMPONENTS_TO_ADD: addon_args.component_ext_id
                 })
+            
+            #* We have to track the created tag ids in order to prevent duplication
+            track_ids = []
+
             for mat in comp_def.material_parameters:
                 row_dict = mat.csv_row
+                curr_id = row_dict[TAG_CSV_COLS.TAG_ID]
+                if curr_id in track_ids:
+                    continue
+                else:
+                    track_ids.append(curr_id)
                 row_dict[TAG_CSV_COLS.PARENTS_TO_ADD] = (addon_args.component_tag,)
                 dict_csv_handler.add_row(row_dict)
 
             dict_csv_handler.write(addon_args.export_dir / FILE_NAMES.TAGS_CSV)
+
+            # endregion
 
     except Exception as e:
         import traceback

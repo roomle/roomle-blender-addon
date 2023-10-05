@@ -25,7 +25,7 @@ class _Strings(_AddonArguments):
     
     @property
     def component_tag(self) -> str:
-        return self.component_id
+        return f'{self.component_id}_{self.catalog_id}'
     
     @property
     def component_tag_label_en(self) -> str:
@@ -40,11 +40,21 @@ class _Strings(_AddonArguments):
         return f'{self.catalog_id}:{self.component_id}'
     
     @property
+    def component_label(self) -> str:
+        """will be the name shown in the components overview"""
+        return f'{self.component_id}'
+    
+    @property
     def product_ext_id(self) -> str:
         return self.component_ext_id
     
     @property
     def product_id(self) -> str:
+        return self.component_id
+    
+    @property
+    def product_label(self) -> str:
+        """will be the name in the products overview"""
         return self.component_id
     
     @property

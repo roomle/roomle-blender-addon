@@ -1,8 +1,14 @@
+# - [ ] Handle Multi user materials more elegantly
+# - [ ] fix tests
+# - [ ] write tests for different export scenearios
+
+
 import logging
 import bpy
 from pathlib import Path
 from typing import Iterable, List, Union, TYPE_CHECKING
 from io_mesh_roomle import arguments
+from io_mesh_roomle.enums import FILE_NAMES
 
 from io_mesh_roomle.material_exporter._exporter import BlenderMaterialForExport, TextureNameManager
 from io_mesh_roomle.material_exporter._roomle_material_csv import MaterialDefinition, RoomleMaterialsCsv
@@ -159,7 +165,7 @@ def export_materials(addon_args: arguments.ArgsStore):
         csv_exporter.add_material_definition(
             pbr_2_material_definition(mat)
         )
-    csv_exporter.write(out_path / 'materials/materials.csv')
+    csv_exporter.write((out_path / 'materials') / FILE_NAMES.MATERIALS_CSV)
 
     # ==================================================
 

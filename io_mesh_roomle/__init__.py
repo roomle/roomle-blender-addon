@@ -259,7 +259,7 @@ class ExportRoomleScript(Operator, ExportHelper):
 
         addon_args = self.addon_arguments
 
-        # region ======================= [ 🔶  MATERIAL EXPORT 🔶 ] ===============================
+        # region #*======================= [ 🔶  MATERIAL EXPORT 🔶 ] ===============================
 
         if addon_args.export_materials:
             scn_hndlr = scene_handler.SceneHandler(bpy.context.scene)
@@ -268,7 +268,7 @@ class ExportRoomleScript(Operator, ExportHelper):
 
         # endregion
 
-        # region ======================= [ 🔶  ROOMLE SCRIPT 🔶 ] ===============================
+        # region #*======================= [ 🔶  ROOMLE SCRIPT 🔶 ] ===============================
         global_scale = 1000
 
         mat_axis = axis_conversion(to_forward='-Y', to_up='Z',).to_4x4()
@@ -286,7 +286,7 @@ class ExportRoomleScript(Operator, ExportHelper):
 
         # endregion
 
-        # region ======================= [ 🔶  REMOVE EXPORT SCENE 🔶 ] ===============================
+        # region #*======================= [ 🔶  REMOVE EXPORT SCENE 🔶 ] ===============================
         if addon_args.export_materials:
             scn_hndlr.remove_export_scene()  # type: ignore
         # endregion
@@ -295,11 +295,12 @@ class ExportRoomleScript(Operator, ExportHelper):
 
         # TODO: add width and height to product csv
 
-        # region ======================= [ 🔶  WRITE CSV AND JSON DATA 🔶 ] ===============================
+        # region #*======================= [ 🔶  WRITE CSV AND JSON DATA 🔶 ] ===============================
         prod_handler = _CSV_DictHandler()
         prod_handler.add_row(
             {
                 ITEMS_CSV_COLS.ITEM_ID: addon_args.product_id,
+                ITEMS_CSV_COLS.LABEL_EN: addon_args.product_label,
                 ITEMS_CSV_COLS.CONFIGURATION: json.dumps({"componentId": addon_args.product_ext_id}),
                 ITEMS_CSV_COLS.VISIBILITY_STATUS: 0,
             }
@@ -312,6 +313,7 @@ class ExportRoomleScript(Operator, ExportHelper):
             comp_handler.add_row(
                 {
                     COMP_CSV_COLS.COMPONENT_ID: data['id'].split(':')[-1],
+                    COMP_CSV_COLS.LABEL_EN: addon_args.component_label,
                     COMP_CSV_COLS.COMPONENT_DEFINITION: f"zip://{comp_file.name}",
                     COMP_CSV_COLS.VISIBILITY_STATUS: 0,
                 }
@@ -331,7 +333,7 @@ class ExportRoomleScript(Operator, ExportHelper):
         # fmt: on
         # endregion
 
-        # region ======================= [ 🔶  ZIP UP STUFF 🔶 ] ===============================
+        # region #*======================= [ 🔶  ZIP UP STUFF 🔶 ] ===============================
 
         output_dir = addon_args.export_dir
 

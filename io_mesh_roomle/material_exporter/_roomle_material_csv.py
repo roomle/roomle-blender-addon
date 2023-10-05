@@ -139,7 +139,7 @@ class MaterialDefinition(CsvLine):
         self.tag_ids_to_add: str = ''
         self.tag_ids_to_remove: str = ''
         self.description_en: str = ''
-        self.active: str = ''
+        self.active: int = 1
         self.active_from: str = ''
         self.active_till: str = ''
         self.visibility_status: str = ''

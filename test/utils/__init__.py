@@ -3,12 +3,41 @@ from hashlib import md5
 import inspect
 import json
 from pathlib import Path
+import shutil
 from subprocess import Popen
-from typing import Union
+from typing import Any, Union
 
 
 import logging
 import unittest
+
+
+class JsonUtils:
+
+    @staticmethod
+    def ordered_json(obj):
+        if isinstance(obj, dict):
+            return sorted((k, JsonUtils.ordered_json(v)) for k, v in obj.items())
+        if isinstance(obj, (list, tuple)):
+            return sorted(JsonUtils.ordered_json(x) for x in obj)
+        else:
+            return obj
+
+    
+    @staticmethod
+    def dump_file_sorted(data, filepath: Path) -> Path:
+        sorted_data = JsonUtils.ordered_json(data)
+        filepath.write_text(json.dumps(sorted_data))
+        return filepath
+    
+    @staticmethod
+    def _load(resource: Union[str, Path, dict, list, tuple]) -> Any:
+        if isinstance(resource, str):
+            data = json.loads(resource)
+            # json.decoder.JSONDecodeError
+            # try:
+            # except Exception as e:
+            #     pass
 
 
 class AssetHandling:
@@ -48,6 +77,14 @@ class AssetHandling:
     
     def expectations_path(cls, filename: str) -> Path:
         return cls.expectations / filename
+
+    def compare_json_vs_expected_file(self, name: str, data, filename):
+
+        ex_file = self.expectations_path(filename)
+        shutil.copy(ex_file, self.tmp_path / f'{name}-expected.json')
+
+        
+        json.dump(data, (self.tmp_path / f'{name}-actual.json').open())
 
 
     @classmethod

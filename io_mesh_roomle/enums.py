@@ -18,8 +18,10 @@ class TAG_CSV_COLS:
     TAG_ID: str =               'tag_id'
     LABEL_EN: str =             'label_en'
     PARENTS_TO_ADD: str =       'parents_to_add'
-    COMPONENTS_TO_ADD: str =    'components_to_add'
-    MATERIALS_TO_ADD: str =     'materials_to_add'
+    COMPONENTS_TO_ADD: str =    'component_ids_to_add'
+    MATERIALS_TO_ADD: str =     'material_ids_to_add'
+    # COMPONENTS_TO_ADD: str =    'components_to_add'
+    # MATERIALS_TO_ADD: str =     'materials_to_add'
 
 
 @dataclass(frozen=True)
@@ -85,6 +87,7 @@ class FILE_NAMES:
     COMPONENTS_ZIP: str =       'components.zip'
     ITEMS_CSV: str =            'items.csv'
     TAGS_CSV: str =             'tags.csv'
+    MATERIALS_CSV: str =        'materials.csv'
 
 
 @dataclass(frozen=True)

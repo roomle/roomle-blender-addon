@@ -68,7 +68,7 @@ class TestAddonArguments(TestCaseExtended):
         assert len(expected) == 0, f'expected methods in `{self.class_name_to_test}` are missing `{expected}`'
 
 class TestArgumentsProperties(TestCaseExtended):
-    expected_static_properties = {
+    expected_properties = {
         'component_tag': str(),
         'component_tag_label_en': str(),
         'catalog_root_tag': str(),
@@ -80,6 +80,8 @@ class TestArgumentsProperties(TestCaseExtended):
         'materials_dir': Path(),
         'components_dir': Path(),
         'component_definition_file_name': str(),
+        'component_label': str(),
+        'product_label': str(),
     }
 
 
@@ -92,7 +94,7 @@ class TestArgumentsProperties(TestCaseExtended):
     
 
     def test_addon_args_static(self):
-        ex_args = self.expected_static_properties
+        ex_args = self.expected_properties
         args = self.instance
 
         expected = list(ex_args.keys())

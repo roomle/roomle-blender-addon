@@ -124,7 +124,8 @@ class BlenderMaterialForExport:
     
     @property
     def label_en(self):
-        return f'{self._valid_name}{self._component_id_suffix}'
+        # return f'{self._valid_name}{self._component_id_suffix}'
+        return f'{self._valid_name}'
     
     @property
     def label_de(self):
