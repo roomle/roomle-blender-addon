@@ -379,7 +379,8 @@ def create_extern_mesh_command(
     if not os.path.isdir(extern_mesh_dir):
         os.makedirs(extern_mesh_dir)
 
-    script_name = os.path.basename(extern_mesh_dir)
+    # TODO: RML-7624 change variable name
+    script_name = addon_args.component_id
 
     scene = bpy.context.scene
 
@@ -448,6 +449,7 @@ def create_extern_mesh_command(
     center_str = (floatFormat(bb_origin.x, 1), floatFormat(
         bb_origin.y, 1), floatFormat(bb_origin.z, 1))
 
+    # TODO: RML-7624 refactor
     script = 'AddExternalMesh(\'{}:{}_{}\',Vector3f{{{},{},{}}},Vector3f{{{},{},{}}});\n'.format(
         addon_args.catalog_id,
         script_name,
