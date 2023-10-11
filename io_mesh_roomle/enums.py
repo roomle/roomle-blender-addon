@@ -17,7 +17,7 @@ SUPPORTED_TEXTURE_FILE_FORMATS = {
 class TAG_CSV_COLS:
     TAG_ID: str =               'tag_id'
     LABEL_EN: str =             'label_en'
-    PARENTS_TO_ADD: str =       'parents_to_add'
+    PARENTS_TO_ADD: str =       'parent_tag_ids_to_add'
     COMPONENTS_TO_ADD: str =    'component_ids_to_add'
     MATERIALS_TO_ADD: str =     'material_ids_to_add'
     # COMPONENTS_TO_ADD: str =    'components_to_add'
