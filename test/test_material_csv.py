@@ -43,10 +43,10 @@ class TestRoomleExport(TestCaseExtended):
 
 
     def test_file_tags_exist(self):
-        assert self.assert_txt(self.fld / FILE_NAMES.TAGS_CSV, 'bdce74035c6fe28383965318adad8672')
+        assert self.assert_txt(self.fld / FILE_NAMES.TAGS_CSV, 'c225058a07e822c067b7f7a56b90d368')
 
     def test_file_products_exist(self):
-        self.assert_txt(self.fld / FILE_NAMES.ITEMS_CSV, 'bdce74035c6fe28383965318adad8672')
+        self.assert_txt(self.fld / FILE_NAMES.ITEMS_CSV, 'c225058a07e822c067b7f7a56b90d368')
 
     def test_file_meta_exist(self):
         assert (self.fld / FILE_NAMES.META_JSON).exists()
@@ -73,7 +73,7 @@ class TestRoomleExport(TestCaseExtended):
         
         assert (self.tmp_path / 'materials.csv').exists()
         assert (self.tmp_path / 'Untitled.png').exists()
-        assert self.sorted_txt_hash(self.tmp_path / 'materials.csv') == '9112aa83b771153f704b2817ee00e698'
+        assert self.sorted_txt_hash(self.tmp_path / 'materials.csv') == '11bea795a679183acc38e2c817effe7c'
 
     def test_meshes_zip_content(self):
         zip_file = self.fld / "meshes.zip"
@@ -92,8 +92,8 @@ class TestRoomleExport(TestCaseExtended):
         assert (self.tmp_path / 'components.csv').exists()
         assert (self.tmp_path / 'components.csv').is_file()
 
-        assert self.sorted_txt_hash(self.tmp_path / 'catalog_id_converted_glb.json') == 'e505c15d74c7646d6d816bebddd8c38e'
-        assert self.sorted_txt_hash(self.tmp_path / 'components.csv') == 'ccb75cc56e0a171dfc7c1783a95a24c0'
+        assert self.sorted_txt_hash(self.tmp_path / 'catalog_id_converted_glb.json') == '03ce2fb5202e232713be15b1b9dc9451'
+        assert self.sorted_txt_hash(self.tmp_path / 'components.csv') == '4f622ee19d187a3655ae0126609e532c'
         
 class RoomleExportAlt(TestCaseExtended):
     @classmethod

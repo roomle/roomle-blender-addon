@@ -59,9 +59,12 @@ class AssetHandling:
     def expect_text(cls, filename: str) -> str:
         return cls._read_file_text(cls.expectations / filename)
 
-    @classmethod
-    def expected_dict(cls, filename: str) -> dict:
-        return cls._read_file_json_to_dict(cls.expectations / filename)
+
+    def expected_dict(self, filename: str) -> dict:
+
+        data = self._read_file_json_to_dict(self.expectations / filename)
+        self.dump_json(data, 'expected.json')
+        return data
 
     @classmethod
     def asset_text(cls, filename: str) -> str:

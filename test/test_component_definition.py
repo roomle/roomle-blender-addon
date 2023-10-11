@@ -30,16 +30,18 @@ class test_component_definition_creation(utils.TestCaseExtended):
         """check the static fields within the component defintion"""
 
 
-        self.dump_json(self.component_definition.material_parameters_as_dict, 'params-3656f286.json')
-        self.dump_txt(self.component_definition.component_definition, 'component_definition.txt')
 
         assert self.component_definition.external_id == f'{StaticStrings.catalog_id}:some_component_56a4'
 
 
+
+        expected = self.dump_json(json.load(self.expectations_path('mat_params-39139e1a.json').open()), 'params-3656f286.json')
         actual = self.dump_json(self.component_definition.material_parameters_as_dict, 'mat_params_actual.json')
-        expected = self.expectations_path('mat_params-39139e1a.json')
         
         assert self.component_definition.material_parameters_as_dict == self.expected_dict('mat_params-39139e1a.json')
+
+        self.dump_txt(self.component_definition.component_definition, 'component_definition.txt')
+        self.dump_txt(self.expectations_path('component_definition-76772eb6.txt').read_text(),'component_expected.txt')
         assert self.component_definition.component_definition == self.expect_text('component_definition-76772eb6.txt')
 
     def test_properties(self):

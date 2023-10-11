@@ -6,7 +6,7 @@
         },
         "defaultValue": "some_id_ac583s:some_component_56a4_Material004",
         "validGroups": [
-            "some_component_56a4_Material004"
+            "some_component_56a4_Material004_some_id_ac583s"
         ]
     },
     {
@@ -17,7 +17,7 @@
         },
         "defaultValue": "some_id_ac583s:some_component_56a4_Material001",
         "validGroups": [
-            "some_component_56a4_Material001"
+            "some_component_56a4_Material001_some_id_ac583s"
         ]
     },
     {
@@ -28,7 +28,7 @@
         },
         "defaultValue": "some_id_ac583s:some_component_56a4_Material002",
         "validGroups": [
-            "some_component_56a4_Material002"
+            "some_component_56a4_Material002_some_id_ac583s"
         ]
     },
     {
@@ -39,7 +39,7 @@
         },
         "defaultValue": "some_id_ac583s:some_component_56a4_Material003",
         "validGroups": [
-            "some_component_56a4_Material003"
+            "some_component_56a4_Material003_some_id_ac583s"
         ]
     }
 ]

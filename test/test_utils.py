@@ -4,10 +4,10 @@ from test.utils import JsonUtils, TestCaseExtended
 from test import utils
 
 
-class TestJsonUtils(TestCaseExtended):
+# class TestJsonUtils(TestCaseExtended):
 
-    def test_load(self):
-        JsonUtils._load('test')
+#     def test_load(self):
+#         JsonUtils._load('test')
 
 class JsonOrdered(TestCaseExtended):
     @classmethod

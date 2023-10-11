@@ -38,6 +38,7 @@ class test_material_parameter(utils.TestCaseExtended):
                         'catalog_id',
                         'component_id',
                         'material_id',
+                        'script_label_en'
                         ])
         
         assert found_fields - expected_fields == set()
@@ -51,8 +52,10 @@ class test_material_parameter(utils.TestCaseExtended):
         assert self.mp.material_ext_id == 'catalog_id:component_id_material_id'
         assert self.mp.key == 'material_001'
         assert self.mp.label_en == 'material id (component_id)'
-        assert self.mp.tag_id == 'component_id_material_id'
+        assert self.mp.tag_id == 'component_id_material_id_catalog_id'
         self.dump_json(self.mp.as_dict, '11c11e81-51ee-4fbd-bc38-f4781b825c2b')
+
+
         assert self.mp.as_dict == self.expected_dict(
             'material_parameters_as_dict-cb382cf9.json')
     
