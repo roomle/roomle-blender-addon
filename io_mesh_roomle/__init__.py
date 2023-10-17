@@ -314,6 +314,7 @@ class ExportRoomleScript(Operator, ExportHelper):
                 {
                     COMP_CSV_COLS.COMPONENT_ID: data['id'].split(':')[-1],
                     COMP_CSV_COLS.LABEL_EN: addon_args.component_label,
+                    COMP_CSV_COLS.DESCRIPTION_EN: "converted from level 1",
                     COMP_CSV_COLS.COMPONENT_DEFINITION: f"zip://{comp_file.name}",
                     COMP_CSV_COLS.VISIBILITY_STATUS: 0,
                 }
