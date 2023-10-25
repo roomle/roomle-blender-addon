@@ -2,42 +2,12 @@ from pathlib import Path
 from shutil import copy
 from subprocess import Popen, call
 import os
-import json
-
-from attr import dataclass
-
-BLENDER = '/Applications/Blender3.6.2-ARM-LTS.app/Contents/MacOS/blender'
+import unittest
 
 
-@dataclass
-class Params:
-    filepath: str
-    catalog_id: str='catalog_id'
-    mesh_export_option: str="EXTERNAL"
-    use_corto: bool = False
-    export_materials: bool = True
-
-    @property
-    def json(self):
-        return json.dumps(self.__dict__)
-
-
-
-def test_materials(tmp_path):
-
-    params = Params(
-        filepath=str(tmp_path / 'out.txt')
-    )
-
-    file = Path('/Users/clemens/Dev/git/DAP-AssetFactory/test/data/static_item_conversion/combined-image.glb')
-
-    Popen([
-        BLENDER,
-        '--background',
-        '--python', Path(__file__).parent / 'simple_export.py',
-        '--', file, params.json
-    ]).wait()
-    pass
+from io_mesh_roomle import roomle_script
+from test.utils import AddonExportParams, TestCaseExtended
+from test.utils import BLENDER
 
 
 def test_args(tmp_path: Path):
@@ -62,4 +32,9 @@ def test_args(tmp_path: Path):
     assert txt.startswith('bpy.ops.export_mesh.roomle_script(')
 
     # TODO: add check for params
+
+class MaterialUnittests(TestCaseExtended):
+    def test_material_csv_6c95a1b9(self):
+        pass
+
 
