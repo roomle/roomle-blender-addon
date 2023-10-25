@@ -1,0 +1,11 @@
+/* Roomle script (Roomle Blender addon version 3.0.0) */
+AddExternalMesh('new_catalog:new_item_id_Cube.005',Vector3f{1406.2,1703.1,1968.8},Vector3f{-1331.1,-2871.3,612});
+SetObjSurface(material_001);
+AddExternalMesh('new_catalog:new_item_id_Torus.001',Vector3f{2500,2500,500},Vector3f{-1250,-1250,-250});
+MoveMatrixBy(Vector3f{114.7,2529,1359.1});
+AddExternalMesh('new_catalog:new_item_id_Cube.006',Vector3f{2000,2000,2000},Vector3f{-1000,-1000,-1000});
+SetObjSurface(material_002);
+AddExternalMesh('new_catalog:new_item_id_Cube.007',Vector3f{2000,1546,2806.4},Vector3f{-1000,-546,-1000});
+SetObjSurface(material_003);
+AddExternalMesh('new_catalog:new_item_id_Cube.008',Vector3f{1367.2,1703.1,1968.8},Vector3f{36.1,-2871.3,612});
+SetObjSurface(material_004);
