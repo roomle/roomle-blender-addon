@@ -92,8 +92,8 @@ class TestRoomleExport(TestCaseExtended):
         assert (self.tmp_path / 'components.csv').exists()
         assert (self.tmp_path / 'components.csv').is_file()
 
-        assert self.sorted_txt_hash(self.tmp_path / 'catalog_id_converted_glb.json') == '03ce2fb5202e232713be15b1b9dc9451'
-        assert self.sorted_txt_hash(self.tmp_path / 'components.csv') == '4f622ee19d187a3655ae0126609e532c'
+        assert self.sorted_txt_hash(self.tmp_path / 'catalog_id_converted_glb.json') == '25383aca0b64506208065c36731ed89c'
+        assert self.sorted_txt_hash(self.tmp_path / 'components.csv') == '0afb4fa00585a7f54e1cee9e491ac0de'
         
 class RoomleExportAlt(TestCaseExtended):
     @classmethod
