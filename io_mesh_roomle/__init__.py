@@ -261,11 +261,18 @@ class ExportRoomleScript(Operator, ExportHelper):
 
         # region #*======================= [ 🔶  MATERIAL EXPORT 🔶 ] ===============================
 
+        scn_hndlr = scene_handler.SceneHandler(bpy.context.scene)
+        scn_hndlr.copy_scene()
         if addon_args.export_materials:
-            scn_hndlr = scene_handler.SceneHandler(bpy.context.scene)
-            scn_hndlr.copy_scene()
             material_exporter.export_materials(addon_args)
 
+
+        # endregion
+
+        # region #*======================= [ 🔶  APPLY TRANSFORMATIONS 🔶 ] =======================
+        bpy.ops.object.select_all(action='SELECT')
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+        bpy.ops.object.select_all(action='DESELECT')
         # endregion
 
         # region #*======================= [ 🔶  ROOMLE SCRIPT 🔶 ] ===============================
@@ -287,8 +294,7 @@ class ExportRoomleScript(Operator, ExportHelper):
         # endregion
 
         # region #*======================= [ 🔶  REMOVE EXPORT SCENE 🔶 ] ===============================
-        if addon_args.export_materials:
-            scn_hndlr.remove_export_scene()  # type: ignore
+        scn_hndlr.remove_export_scene()  # type: ignore
         # endregion
 
         # TODO: add argument for this
