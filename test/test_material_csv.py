@@ -3,7 +3,15 @@ from pathlib import Path
 from subprocess import Popen
 import zipfile
 from io_mesh_roomle.enums import FILE_NAMES
+from io_mesh_roomle.roomle_script import get_valid_name
 from test.utils import BLENDER, AddonExportParams, TestCaseExtended
+
+
+def test_material_name_validation_RML_XXX():
+    assert get_valid_name('some::name') == 'some_name'
+    assert get_valid_name('some:_:name') == 'some___name'
+    assert get_valid_name('some::::_::::name') == 'some___name'
+    assert get_valid_name('some@name') == 'some_name'
 
 
 class TestMaterialCSV(TestCaseExtended):
@@ -43,10 +51,10 @@ class TestRoomleExport(TestCaseExtended):
 
 
     def test_file_tags_exist(self):
-        assert self.assert_txt(self.fld / FILE_NAMES.TAGS_CSV, '1a1b7cad56a353f25a3468a048b4372f')
+        assert self.assert_txt(self.fld / FILE_NAMES.TAGS_CSV, 'dbca80fd44c45596f39d425738c62071')
 
     def test_file_products_exist(self):
-        self.assert_txt(self.fld / FILE_NAMES.ITEMS_CSV, '1a1b7cad56a353f25a3468a048b4372f')
+        self.assert_txt(self.fld / FILE_NAMES.ITEMS_CSV, 'dbca80fd44c45596f39d425738c62071')
 
     def test_file_meta_exist(self):
         assert (self.fld / FILE_NAMES.META_JSON).exists()
@@ -73,7 +81,7 @@ class TestRoomleExport(TestCaseExtended):
         
         assert (self.tmp_path / 'materials.csv').exists()
         assert (self.tmp_path / 'Untitled.png').exists()
-        assert self.sorted_txt_hash(self.tmp_path / 'materials.csv') == '11bea795a679183acc38e2c817effe7c'
+        assert self.sorted_txt_hash(self.tmp_path / 'materials.csv') == '7876f5af3195b96c3c45382fcedf0f4c'
 
     def test_meshes_zip_content(self):
         zip_file = self.fld / "meshes.zip"
@@ -92,7 +100,7 @@ class TestRoomleExport(TestCaseExtended):
         assert (self.tmp_path / 'components.csv').exists()
         assert (self.tmp_path / 'components.csv').is_file()
 
-        assert self.sorted_txt_hash(self.tmp_path / 'catalog_id_converted_glb.json') == '34f60f9e31994b2d90507f4bc0a15391'
+        assert self.sorted_txt_hash(self.tmp_path / 'catalog_id_converted_glb.json') == '400d1e7d3f0e858a7385a7d6e0a02330'
         assert self.sorted_txt_hash(self.tmp_path / 'components.csv') == '0afb4fa00585a7f54e1cee9e491ac0de'
         
 class RoomleExportAlt(TestCaseExtended):
