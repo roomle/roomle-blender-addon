@@ -7,6 +7,7 @@ import bpy
 
 from io_mesh_roomle.material_exporter.utils import color as utils_color
 from io_mesh_roomle import enums
+from io_mesh_roomle.roomle_script import get_valid_name
 
 
 # def unpack_images(self, texture_name_manager: TextureNameManager):
@@ -116,7 +117,7 @@ class BlenderMaterialForExport:
     
     @property
     def _valid_name(self):
-        return utils_color.get_valid_name(self.blender_material_name)
+        return get_valid_name(self.blender_material_name)
     
     @property
     def material_id(self):

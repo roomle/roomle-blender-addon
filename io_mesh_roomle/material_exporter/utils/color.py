@@ -17,14 +17,3 @@ def linear_to_srgb(c:float) -> float:
         srgb = 1.055 * math.pow(c, 1.0 / 2.4) - 0.055
     return max(min(int(srgb * 255 + 0.5), 255), 0) / 255
 
-
-def get_valid_name(name: str) -> str:
-    """make a filename valid – the same as inside the roomle blender extension
-
-    Args:
-        name (str): the string to start from
-
-    Returns:
-        str: valid filename
-    """
-    return re.sub('[^0-9a-zA-Z:_]+', '', name)

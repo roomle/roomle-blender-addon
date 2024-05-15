@@ -53,8 +53,8 @@ class VertexVariant:
     #normal: Vector
 
 
-def getValidName(name):
-    return re.sub('[^0-9a-zA-Z:_]+', '', name)
+def get_valid_name(name):
+    return re.sub('[^0-9a-zA-Z_]+', '_', name)
 
 
 def isZero(self, precision=0):
@@ -360,6 +360,7 @@ def create_extern_mesh_command(
 
     apply_rotation = addon_args.apply_rotations and rotation
     name = object.name if (scale or apply_rotation) else object.data.name
+    name = name.replace(' ','_')
 
     mesh = object.to_mesh(
         depsgraph=bpy.context.evaluated_depsgraph_get(),
@@ -580,7 +581,7 @@ def create_object_commands(
             # Material
             material = ''
             if object.material_slots:
-                material_name = getValidName(object.material_slots[0].name)
+                material_name = get_valid_name(object.material_slots[0].name)
                 # TODO: 5959 create material definition
                 material = f"SetObjSurface('{material_name}');\n"
 
@@ -604,7 +605,7 @@ def create_object_commands(
     empty = empty and not hasChildren
 
     if hasChildren:
-        command += "BeginObjGroup('{}');\n".format(getValidName(object.name))
+        command += "BeginObjGroup('{}');\n".format(get_valid_name(object.name))
 
     command += mesh
     command += material
