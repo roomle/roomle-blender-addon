@@ -15,6 +15,8 @@
 
 import sys
 from pathlib import Path
+
+from io_mesh_roomle.blender_utils import get_scene_bounding_box
 sys.path.append(str(Path(__file__).parent.absolute() / 'external-packages'))
 
 import subprocess
@@ -302,6 +304,10 @@ class ExportRoomleScript(Operator, ExportHelper):
         # TODO: add width and height to product csv
 
         # region #*======================= [ 🔶  WRITE CSV AND JSON DATA 🔶 ] ===============================
+        
+        _,bbox_dimensions = get_scene_bounding_box()
+        bbox_dimensions = [round(x*1000) for x in bbox_dimensions]
+        
         prod_handler = _CSV_DictHandler()
         prod_handler.add_row(
             {
@@ -309,6 +315,9 @@ class ExportRoomleScript(Operator, ExportHelper):
                 ITEMS_CSV_COLS.LABEL_EN: addon_args.product_label,
                 ITEMS_CSV_COLS.CONFIGURATION: json.dumps({"componentId": addon_args.product_ext_id}),
                 ITEMS_CSV_COLS.VISIBILITY_STATUS: 0,
+                ITEMS_CSV_COLS.WIDTH: bbox_dimensions[0],
+                ITEMS_CSV_COLS.HEIGHT: bbox_dimensions[2],
+                ITEMS_CSV_COLS.DEPTH: bbox_dimensions[1],
             }
         )
         prod_handler.write(addon_args.export_dir / 'items.csv')
