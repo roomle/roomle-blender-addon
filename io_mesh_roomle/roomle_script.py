@@ -657,7 +657,7 @@ class MaterialParameterTag:
     def script_label_en(self) -> str:
         """this label is shown above the material selection in the configurator"""
         ma = self.material_id.replace('_',' ')
-        return f'{ma} ({self.component_id})'
+        return f'{ma}'
     
     @property
     def material_ext_id(self) -> str:
