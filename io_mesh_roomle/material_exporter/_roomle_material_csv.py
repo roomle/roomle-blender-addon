@@ -1,6 +1,6 @@
 from pathlib import Path
 from abc import ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Union
 import json
@@ -64,27 +64,33 @@ class BaseColor(DataClassJSONMixin):
 
 
 
-@dataclass(init=False)
+@dataclass
 class Shading(DataClassJSONMixin):
     version:str = "2.0.0"
-    alpha: float = 1
-    roughness: float = 1
-    metallic: float = 0
-    basecolor: BaseColor = BaseColor()
-    transmissionIOR: float = 1.5
-    transmission: float = 0
-    doubleSided: bool = False
-    def __init__(self) -> None:
-        self.version: str = "2.0.0"
-        self.alpha: float = 1
-        self.roughness: float = 1
-        self.metallic: float = 1
-        self.basecolor: BaseColor = BaseColor()
 
-        self.transmissionIOR: float = 1.5
-        self.doubleSided:bool = False
-        self.transmission: float = 0
+    alpha:float = 1
+    alphaCutoff:float = 0
+    basecolor:BaseColor = field(default_factory=BaseColor)
+    transmission:float = 0
+    transmissionIOR:float = 1.45
+    metallic:float = 0
+    roughness:float = .85
+    doubleSided:bool = False
+    occlusion:float = 1
 
+    emissiveColor: BaseColor =        field(default_factory=lambda: BaseColor(0,0,0))
+    emissiveIntensity: float =    0.0
+    clearcoatIntensity: float =   0.0
+    clearcoatRoughness: float =   0.0
+    clearcoatNormalScale: float = 0.0
+    sheenColor: BaseColor =           field(default_factory=lambda: BaseColor(0,0,0))
+    sheenIntensity: float =       0.0
+    sheenRoughness: float =       0.65
+    normalScale: float =          1.0
+    specularIntensity: float =    0.0
+    thicknessFactor: float =      0.0
+    attenuationColor: BaseColor =     field(default_factory=lambda: BaseColor(0,0,0))
+    attenuationDistance: float =  0.0
 
 
 @dataclass
