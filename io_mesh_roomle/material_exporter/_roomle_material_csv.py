@@ -66,6 +66,7 @@ class BaseColor(DataClassJSONMixin):
 
 @dataclass(init=False)
 class Shading(DataClassJSONMixin):
+    version:str = "2.0.0"
     alpha: float = 1
     roughness: float = 1
     metallic: float = 0
@@ -74,6 +75,7 @@ class Shading(DataClassJSONMixin):
     transmission: float = 0
     doubleSided: bool = False
     def __init__(self) -> None:
+        self.version: str = "2.0.0"
         self.alpha: float = 1
         self.roughness: float = 1
         self.metallic: float = 1
