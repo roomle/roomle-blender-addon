@@ -108,18 +108,6 @@ def get_materials_used_by_objs(objects: Iterable[bpy.types.Object]) -> set:
                 data.add(slot.material)
     return data
 
-def invert_red_channel(file: str):
-    """invert the red channel (Occlusion) of
-    an ORM map in place (overwrite original)
-
-    Args:
-        file (str): image file
-    """
-    image = Image.open(file)
-    channels = list(image.split())
-    channels[0] = channels[0].point(lambda p: 255 - p)
-    inverted_image = Image.merge(image.mode, channels)
-    inverted_image.save(file)
 
 def export_materials(addon_args: arguments.ArgsStore):
 
@@ -172,18 +160,10 @@ def export_materials(addon_args: arguments.ArgsStore):
             name = texture_name_manager.validate_name(tex.image)
             tex.image.save(filepath=str(out_path / 'materials' / name))
 
-    all_orm_maps = set()
     for mat in material_exports:
         material_definition = pbr_2_material_definition(mat)
-        all_orm_maps.add(material_definition.orm_map.image)
         csv_exporter.add_material_definition(material_definition)
     csv_exporter.write((out_path / 'materials') / FILE_NAMES.MATERIALS_CSV)
-
-    #* in order to work correctly in Material V1 we have to invert the occlusion channel
-    for orm_map in all_orm_maps:
-        if orm_map != '':
-            orm_map_path = out_path / f'materials{orm_map[5:]}'
-            invert_red_channel(str(orm_map_path.absolute()))
 
     # ==================================================
 
