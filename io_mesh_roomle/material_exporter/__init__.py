@@ -181,10 +181,9 @@ def export_materials(addon_args: arguments.ArgsStore):
 
     #* in order to work correctly in Material V1 we have to invert the occlusion channel
     for orm_map in all_orm_maps:
-        if orm_map == '':
-            continue
-        orm_map_path = out_path / f'materials{orm_map[5:]}'
-        invert_red_channel(str(orm_map_path.absolute()))
+        if orm_map != '':
+            orm_map_path = out_path / f'materials{orm_map[5:]}'
+            invert_red_channel(str(orm_map_path.absolute()))
 
     # ==================================================
 
