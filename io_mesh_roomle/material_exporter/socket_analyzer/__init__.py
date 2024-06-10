@@ -141,7 +141,7 @@ class PBR_ShaderData:
         # TODO: roomle support for emission.
         # TODO: process ao maps (either bake inside the dap or find a way to blend it in threeJS)
 
-        self.ao = PBR_Channel()
+        self.ao = PBR_Channel(default_value=0)
         self.emission = PBR_Channel()
 
     
