@@ -111,44 +111,6 @@ class Shading(DataClassJSONMixin):
 
 
 @dataclass
-class CsvHeaders(CsvLine):
-    ordered_labels = [
-        "material_id",
-        "label_en",
-        "label_de",
-        "shading",
-        "thumbnail",
-        "tex0_tileable",
-        "tex0_image",
-        "tex0_mapping",
-        "tex0_mmwidth",
-        "tex0_mmheight",
-        "tex1_tileable",
-        "tex1_image",
-        "tex1_mapping",
-        "tex1_mmwidth",
-        "tex1_mmheight",
-        "tex2_tileable",
-        "tex2_image",
-        "tex2_mapping",
-        "tex2_mmwidth",
-        "tex2_mmheight",
-        "tag_ids_to_add",
-        "tag_ids_to_remove",
-        "description_en",
-        "active",
-        "activeFrom",
-        "activeTill",
-        "visibilityStatus",
-        "sort",
-        "properties",
-    ]
-
-    def print_line(self) -> List:
-        return self.ordered_labels
-
-
-@dataclass
 class CSV_ByDicts:
     row_dicts: list[dict] = field(default_factory=list)
     _quoting = csv.QUOTE_ALL
@@ -218,25 +180,6 @@ class MaterialDefinition(CsvLine):
         ]
         )
         return data
-
-
-class RoomleMaterialsCsv:
-
-    lines: List[Union[CsvHeaders, MaterialDefinition]] = []
-
-    def __init__(self) -> None:
-        self.lines=[CsvHeaders()]
-
-    def add_material_definition(self, definition: MaterialDefinition):
-        self.lines.append(definition)
-
-    def write(self, csv_path:Path):
-        assert str(csv_path).lower().endswith('.csv')
-        csv_path.parent.mkdir(exist_ok=True)
-        arr = [x.print_line() for x in self.lines]
-        with open(csv_path, 'w', encoding='utf-8') as csv_file:
-            csv_writer = csv.writer(csv_file, delimiter=',')
-            csv_writer.writerows(arr)
 
 
 

@@ -3,16 +3,17 @@
 # - [ ] write tests for different export scenearios
 
 
+from dataclasses import field
 import logging
 import bpy
 from PIL import Image
 from pathlib import Path
 from typing import Iterable, List, Union, TYPE_CHECKING
 from io_mesh_roomle import arguments
-from io_mesh_roomle.enums import FILE_NAMES
+from io_mesh_roomle.enums import FILE_NAMES, MATERIALS_CSV_COLS
 
 from io_mesh_roomle.material_exporter._exporter import BlenderMaterialForExport, TextureNameManager
-from io_mesh_roomle.material_exporter._roomle_material_csv import MaterialDefinition, RoomleMaterialsCsv
+from io_mesh_roomle.material_exporter._roomle_material_csv import MaterialDefinition, CSV_ByDicts
 
 log = logging.getLogger('legacy csv')
 log.setLevel(logging.DEBUG)
@@ -36,6 +37,38 @@ def split_object_by_materials(obj: bpy.types.Object) -> set[bpy.types.Object]:
     return set(bpy.context.selected_objects)
 
 
+
+class MaterialCSVRow:
+    def __init__(self) -> None:
+        self.dct: dict = {}
+        self.image_index: int = -1
+
+    def set_texture(self,
+            tex_image: str,
+            tex_mapping: str,
+            tex_mmwidth: float = 1,
+            tex_mmheight: float = 1,
+            tex_tileable: bool = True
+            ) -> None:
+        if not tex_image:
+            return
+        
+        self.image_index += 1
+        format = lambda x : x.format(**{"index":self.image_index})
+
+        self.dct.update({
+            format(MATERIALS_CSV_COLS.TEX_IMAGE): tex_image,
+            format(MATERIALS_CSV_COLS.TEX_MAPPING): tex_mapping,
+            format(MATERIALS_CSV_COLS.TEX_MMWIDTH): tex_mmwidth,
+            format(MATERIALS_CSV_COLS.TEX_MMHEIGHT): tex_mmheight,
+            format(MATERIALS_CSV_COLS.TEX_TILEABLE): tex_tileable,
+        })
+
+
+    def set(self, key, value):
+        self.dct.update({key: value})
+    
+
 def pbr_2_material_definition(data: BlenderMaterialForExport) -> MaterialDefinition:
 
     def zip_path(value: Union[str, None, bpy.types.Image]):
@@ -56,38 +89,40 @@ def pbr_2_material_definition(data: BlenderMaterialForExport) -> MaterialDefinit
     pbr = data.pbr
     md = MaterialDefinition()
 
-    md.material_id = data.material_id
-    md.label_en = data.label_en
-    md.label_de = data.label_de
+    mdd = {}
 
-    md.shading.alpha = prec(pbr.alpha.default_value,
-                            1)                # type: ignore
-    md.shading.roughness = prec(
-        pbr.roughness.default_value, 0.5)      # type: ignore
-    md.shading.metallic = prec(
-        pbr.metallic.default_value, 0)          # type: ignore
+    # md.material_id = data.material_id
+    # md.label_en = data.label_en
+    # md.label_de = data.label_de
 
-    log.debug(f'🍕 {data.material.name}')
-    log.debug(f'diffuse: {pbr.diffuse.default_value}')
-    md.shading.basecolor.set(*pbr.diffuse.default_value)               # type: ignore
+    # md.shading.alpha = prec(pbr.alpha.default_value,
+    #                         1)                # type: ignore
+    # md.shading.roughness = prec(
+    #     pbr.roughness.default_value, 0.5)      # type: ignore
+    # md.shading.metallic = prec(
+    #     pbr.metallic.default_value, 0)          # type: ignore
+
+    # log.debug(f'🍕 {data.material.name}')
+    # log.debug(f'diffuse: {pbr.diffuse.default_value}')
+    # md.shading.basecolor.set(*pbr.diffuse.default_value)               # type: ignore
 
 
-    md.shading.transmission = prec(
-        pbr.transmission.default_value, 0)  # type: ignore
+    # md.shading.transmission = prec(
+    #     pbr.transmission.default_value, 0)  # type: ignore
     
-    log.debug(f'ior: {pbr.ior.default_value}')
-    md.shading.transmissionIOR = prec(
-        pbr.ior.default_value, 1.5)      # type: ignore
+    # log.debug(f'ior: {pbr.ior.default_value}')
+    # md.shading.transmissionIOR = prec(
+    #     pbr.ior.default_value, 1.5)      # type: ignore
 
     # md.diffuse_map.image = zip_path(pbr.diffuse.map)
-    md.diffuse_map.image = zip_path(pbr.diffuse.map)
-    md.diffuse_map.mapping = "RGB" if zip_path(pbr.diffuse.map) != '' else ''
+    # md.diffuse_map.image = zip_path(pbr.diffuse.map)
+    # md.diffuse_map.mapping = "RGB" if zip_path(pbr.diffuse.map) != '' else ''
 
-    md.normal_map.image = zip_path(pbr.normal.map)
-    md.normal_map.mapping = "XYZ" if zip_path(pbr.normal.map) != '' else ''
+    # md.normal_map.image = zip_path(pbr.normal.map)
+    # md.normal_map.mapping = "XYZ" if zip_path(pbr.normal.map) != '' else ''
 
-    md.orm_map.image = zip_path(pbr.roughness.map)
-    md.orm_map.mapping = "ORM" if zip_path(pbr.roughness.map) != '' else ''
+    # md.orm_map.image = zip_path(pbr.roughness.map)
+    # md.orm_map.mapping = "ORM" if zip_path(pbr.roughness.map) != '' else ''
     return md
 
 
@@ -126,7 +161,6 @@ def export_materials(addon_args: arguments.ArgsStore):
     out_path = Path(addon_args.filepath).parent
     use_selection = addon_args.use_selection
 
-    csv_exporter = RoomleMaterialsCsv()
     texture_name_manager = TextureNameManager()
 
 
@@ -160,10 +194,13 @@ def export_materials(addon_args: arguments.ArgsStore):
             name = texture_name_manager.validate_name(tex.image)
             tex.image.save(filepath=str(out_path / 'materials' / name))
 
+    csv_new = CSV_ByDicts()
     for mat in material_exports:
-        material_definition = pbr_2_material_definition(mat)
-        csv_exporter.add_material_definition(material_definition)
-    csv_exporter.write((out_path / 'materials') / FILE_NAMES.MATERIALS_CSV)
+        csv_new.add_row(mat.csv_dict)
+
+        # material_definition = pbr_2_material_definition(mat)
+
+    csv_new.write((out_path / 'materials') / FILE_NAMES.MATERIALS_CSV)
 
     # ==================================================
 

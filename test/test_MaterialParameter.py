@@ -5,7 +5,6 @@ from pathlib import Path
 from textwrap import dedent
 from unittest import TestCase
 
-from attr import field
 from test import utils
 
 from io_mesh_roomle.roomle_script import ComponentDefinition, MaterialParameterTag

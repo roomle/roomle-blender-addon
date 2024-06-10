@@ -3,6 +3,7 @@ import bpy
 from typing import Union, TYPE_CHECKING
 
 from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ChannelTester
+from io_mesh_roomle.material_exporter._roomle_material_csv import TextureMapping
 from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 
 
@@ -26,7 +27,8 @@ class normal(PBR_ChannelTester):
             pass
         try:
             return PBR_Channel(
-                map=image_texture.image
+                map=image_texture.image,
+                mapping=TextureMapping.XYZ
             )
         except Exception as e:
             pass

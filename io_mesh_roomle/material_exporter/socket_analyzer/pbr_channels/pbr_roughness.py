@@ -3,6 +3,7 @@ import bpy
 from typing import Union, TYPE_CHECKING
 
 from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ChannelTester
+from io_mesh_roomle.material_exporter._roomle_material_csv import TextureMapping
 from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 
 
@@ -37,5 +38,6 @@ class roughness(PBR_ChannelTester):
 
         return PBR_Channel(
             map=image_node.image,
+            mapping=TextureMapping.ORM,
             default_value=self.def_value
         )

@@ -1,11 +1,13 @@
 from __future__ import annotations
-from typing import Iterable, List, Protocol, Tuple, Union
+from typing import Iterable, List, Optional, Protocol, Tuple, Union
 
+from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
 import io_mesh_roomle.material_exporter.utils.materials as utils_materials
 import dataclasses
 import bpy
 
 from io_mesh_roomle.material_exporter.utils import color as utils_color
+from io_mesh_roomle.material_exporter._roomle_material_csv import Shading
 from io_mesh_roomle import enums
 from io_mesh_roomle.roomle_script import get_valid_name
 
@@ -75,14 +77,58 @@ class TextureNameManager:
         return name_to_use
 
 
-@dataclasses.dataclass
-class PBR_Channel:
+@dataclasses.dataclass(kw_only=True)
+class PBR_Channel_Base:
     """The concept of map and multiplication...
     Note that the default_values in Blender get overridden by the map
     while ThreeJS mutiplies the RGB value into the texture map
     """
-    map: Union[bpy.types.Image, None] = None
+    #TODO: we need to extract the texture scaling out of the node setup
     default_value: Union[float, Tuple, None] = None
+
+    def default_value_rounded(self, precision: int = 2):
+        if self.default_value == None:
+            return self.default_value
+        if isinstance(self.default_value, (int,float)):
+            return round(self.default_value, precision)
+        if isinstance(self.default_value, (tuple,list)):
+            return tuple([round(v,precision) for v in self.default_value])
+
+# TODO: rename class
+
+@dataclasses.dataclass(kw_only=True)
+class PBR_Channel(PBR_Channel_Base):
+    map: Optional[bpy.types.Image] = None
+    with_mm: float = 1
+    height_mm: float = 1
+    mapping: str = ''
+    tileable: bool = True
+
+    @property
+    def zip_path(self) -> Union[None, str]:
+        value = self.map
+        if value:
+            return f'zip://{value}'
+        else:
+            return None
+
+
+    @property
+    def as_tuple(self) -> tuple:
+        return (
+            self.zip_path,
+            self.mapping,
+            self.with_mm,
+            self.height_mm,
+            self.tileable
+        )
+
+def prec(value: Union[float, None, tuple[float]], default: float):
+    if value is None:
+        return default
+    return round(value, 2)
+
+
 
 
 class BlenderMaterialForExport:
@@ -143,4 +189,34 @@ class BlenderMaterialForExport:
     @property
     def used_tex_nodes(self) -> list[bpy.types.ShaderNodeTexImage]:
         return utils_materials.get_used_texture_nodes(self.material)
+
+
+
+    @property
+    def csv_dict(self) -> dict:
+        from io_mesh_roomle.material_exporter import MaterialCSVRow
+
+        col = enums.MATERIALS_CSV_COLS
+
+        shading = Shading()
+        shading.alpha = prec(self.pbr.alpha.default_value, 1)
+        shading.roughness = prec(self.pbr.roughness.default_value, 0.5)
+        shading.metallic = prec(self.pbr.metallic.default_value, 0)
+        shading.basecolor.set(*self.pbr.diffuse.default_value)
+        shading.transmission = prec(self.pbr.transmission.default_value, 0)
+        shading.transmissionIOR = prec(self.pbr.ior.default_value, 1.5)
+
+        row_handler = MaterialCSVRow()
+        row_handler.set(col.SHADING,  shading.to_json())
+        row_handler.set(col.MATERIAL_ID, self.material_id)
+        row_handler.set(col.LABEL_EN, self.label_en)
+        row_handler.set(col.LABEL_DE,  self.label_de)
+        row_handler.set(col.ACTIVE,  True)
+
+        row_handler.set_texture(*self.pbr.diffuse.as_tuple)
+        row_handler.set_texture(*self.pbr.normal.as_tuple)
+        row_handler.set_texture(*self.pbr.roughness.as_tuple)
+
+        return row_handler.dct
+
 

@@ -6,6 +6,7 @@ from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ChannelTester, 
 from io_mesh_roomle.material_exporter.utils.materials import get_principled_bsdf_node, get_mix_shader_sockets, get_socket_origin
 
 from io_mesh_roomle.material_exporter._exporter import PBR_Channel
+from io_mesh_roomle.material_exporter._roomle_material_csv import TextureMapping
 from io_mesh_roomle.material_exporter.utils.color import linear_to_srgb
 
 
@@ -37,6 +38,7 @@ class diffuse(PBR_ChannelTester):
             return
         return PBR_Channel(
             map=n.image,
+            mapping=TextureMapping.RGBA,
             default_value=self.pbr_defaults.diffuse
         )
 
@@ -56,6 +58,7 @@ class diffuse(PBR_ChannelTester):
 
         return PBR_Channel(
             map=n.image,
+            mapping=TextureMapping.RGBA,
             default_value=self.pbr_defaults.diffuse
         )
 
@@ -86,6 +89,7 @@ class diffuse(PBR_ChannelTester):
         
         return PBR_Channel(
             map=n.image,
+            mapping=TextureMapping.RGBA,
             default_value=self.pbr_defaults.diffuse
         )
 

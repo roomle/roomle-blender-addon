@@ -2,7 +2,9 @@
 from pathlib import Path
 from subprocess import Popen
 import zipfile
-from io_mesh_roomle.enums import FILE_NAMES
+from io_mesh_roomle.enums import FILE_NAMES, MATERIALS_CSV_COLS
+from io_mesh_roomle.material_exporter import MaterialCSVRow
+from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 from io_mesh_roomle.roomle_script import get_valid_name
 from test.utils import BLENDER, AddonExportParams, TestCaseExtended
 
@@ -74,7 +76,60 @@ class TestRoomleExport(TestCaseExtended):
         assert (self.fld / FILE_NAMES.COMPONENTS_ZIP).is_file()
 
 
-    def test_materials_zip_content(self):
+    def test_texture_skipping_3b774e5c(self):
+        m = MaterialCSVRow()
+        p = PBR_Channel()
+        
+        m.set_texture(*p.as_tuple)
+        assert m.dct == {}
+
+        
+
+    def test_materials_zip_content_NEW_3b774e5c(self):
+        m = MaterialCSVRow()
+        m.set_texture('img.jpg','THE_MAPPING')
+        assert m.dct == {'tex0_image': 'img.jpg', 'tex0_mapping': 'THE_MAPPING', 'tex0_mmwidth': 1, 'tex0_mmheight': 1, 'tex0_tileable': True}
+        m.set_texture(
+            tex_image='a',
+            tex_mapping='some mapping',
+            tex_mmheight=10,
+            tex_mmwidth=20,
+            tex_tileable=False
+            )
+        assert m.dct == {
+            'tex0_image': 'img.jpg', 'tex0_mapping': 'THE_MAPPING', 'tex0_mmwidth': 1, 'tex0_mmheight': 1, 'tex0_tileable': True,
+            'tex1_image': 'a', 'tex1_mapping': 'some mapping', 'tex1_mmwidth': 20, 'tex1_mmheight': 10, 'tex1_tileable': False,
+            }
+        
+    def test_materials_zip_content_PBR_Channel_3b774e5c(self):
+        pc = PBR_Channel()
+        pc.map = "some/path/to/image.png"  # type: ignore
+        pc.mapping = "RGB"
+
+        assert pc.as_tuple == ('zip://some/path/to/image.png', 'RGB', 1, 1, True)
+
+        m = MaterialCSVRow()
+        m.set_texture(*pc.as_tuple)
+
+        assert m.dct == {'tex0_image': 'zip://some/path/to/image.png', 'tex0_mapping': 'RGB', 'tex0_mmwidth': 1, 'tex0_mmheight': 1, 'tex0_tileable': True}
+
+
+
+
+    def test_materials_zip_content_NEW_2_3b774e5c(self):
+        m = MaterialCSVRow()
+        m.set('MY KEY', 'new value')
+        assert m.dct == {'MY KEY' : 'new value'}
+
+        m.set('MY KEY', 'overwrite')
+        assert m.dct == {'MY KEY' : 'overwrite'}
+
+        m.set('added key', 100)
+        assert m.dct == {'MY KEY' : 'overwrite', 'added key': 100}
+
+
+    def test_materials_zip_content_3b774e5c(self):
+
         zip_file = self.fld / FILE_NAMES.MATERIALS_ZIP
         with zipfile.ZipFile(zip_file, 'r') as zip_ref:
             zip_ref.extractall(self.tmp_path)

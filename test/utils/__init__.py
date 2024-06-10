@@ -184,7 +184,9 @@ class BlenderRunner(AssetHandling):
             '--python', Path(__file__).parent.parent / 'simple_export.py',
             '--', file, params.json
         ]
-        Popen(cmd).wait()
+        out_file = Path(__file__).parent.parent.parent / 'tmp/blender_log.log'
+        with out_file.open('w') as out:
+            Popen(cmd,stdout=out).wait()
 
 
 class TestCaseExtended(unittest.TestCase, Assertions, BlenderRunner):
