@@ -22,13 +22,13 @@ class emission_color(PBR_ChannelTester):
         return PBR_Channel(default_value=self.def_val)
 
 
-class emission_strength(PBR_ChannelTester):
+class emission_intensity(PBR_ChannelTester):
     def __init__(self, material: bpy.types.Material) -> None:
+        super().__init__(material)
         self.socket = self.principled_bsdf_socket(20)  # strength
+        self.def_val = self.socket.default_value
 
     def check_strength(self):
         if self.socket.is_linked:
             return
-        return PBR_Channel
-        pass
-        ...
+        return PBR_Channel(default_value=self.def_val)

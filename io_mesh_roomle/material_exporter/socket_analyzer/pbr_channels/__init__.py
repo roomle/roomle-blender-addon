@@ -5,4 +5,4 @@ from .pbr_metallness import metallness
 from .pbr_normal import normal
 from .pbr_roughness import roughness
 from .pbr_transmission import transmission
-from .pbr_emission import emission_color
+from .pbr_emission import emission_color, emission_intensity

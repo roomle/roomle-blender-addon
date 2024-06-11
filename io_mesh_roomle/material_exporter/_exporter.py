@@ -207,6 +207,7 @@ class BlenderMaterialForExport:
         shading.transmissionIOR = prec(self.pbr.ior.default_value, 1.5)
         shading.occlusion = prec(self.pbr.ao.default_value, 0)
         shading.emissiveColor.set(*self.pbr.emission.default_value)
+        shading.emissiveIntensity = prec(self.pbr.emission_intensity.default_value, 0)
 
         row_handler = MaterialCSVRow()
         row_handler.set(col.SHADING,  shading.to_json())

@@ -143,6 +143,7 @@ class PBR_ShaderData:
 
         self.ao = PBR_Channel(default_value=0)
         self.emission: PBR_Channel = pbr_channels.emission_color(self.material).pbr_channel                         # ✅
+        self.emission_intensity: PBR_Channel = pbr_channels.emission_intensity(self.material).pbr_channel                         # ✅
 
     
     def socket_origin(self, socket: bpy.types.NodeSocket) -> Union[bpy.types.Node, None]:
