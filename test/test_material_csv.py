@@ -40,7 +40,8 @@ class TestRoomleExport(TestCaseExtended):
         cls.fld = cls.tmp_path_class() / 'shared'
         cls.fld.mkdir(exist_ok=True)
         cls.convert_file(
-            cls.asset_path('combined-image-7dc4e4a0.glb'),
+            # cls.asset_path('combined-image-7dc4e4a0.glb'),
+            Path('/Users/clemens/Library/CloudStorage/GoogleDrive-clemens.holleis@roomle.com/Meine Ablage/Assets/Smoketesting/Static Items/Stray_Truck.glb'),
             cls.fld / 'converted_glb.txt'
         )
         return super().setUpClass()
@@ -80,7 +81,7 @@ class TestRoomleExport(TestCaseExtended):
         m = MaterialCSVRow()
         p = PBR_Channel()
         
-        m.set_texture(*p.as_tuple)
+        m.set_texture(*p.map_data_as_tuple)
         assert m.dct == {}
 
         
@@ -106,10 +107,10 @@ class TestRoomleExport(TestCaseExtended):
         pc.map = "some/path/to/image.png"  # type: ignore
         pc.mapping = "RGB"
 
-        assert pc.as_tuple == ('zip://some/path/to/image.png', 'RGB', 1, 1, True)
+        assert pc.map_data_as_tuple == ('zip://some/path/to/image.png', 'RGB', 1, 1, True)
 
         m = MaterialCSVRow()
-        m.set_texture(*pc.as_tuple)
+        m.set_texture(*pc.map_data_as_tuple)
 
         assert m.dct == {'tex0_image': 'zip://some/path/to/image.png', 'tex0_mapping': 'RGB', 'tex0_mmwidth': 1, 'tex0_mmheight': 1, 'tex0_tileable': True}
 

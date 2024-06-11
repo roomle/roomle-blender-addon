@@ -1,7 +1,7 @@
 from __future__ import annotations
 import inspect
 import logging  
-from typing import Iterable, TYPE_CHECKING, Union
+from typing import Any, Generator, TYPE_CHECKING, Union
 from dataclasses import dataclass
 
 import bpy
@@ -142,7 +142,7 @@ class PBR_ShaderData:
         # TODO: process ao maps (either bake inside the dap or find a way to blend it in threeJS)
 
         self.ao = PBR_Channel(default_value=0)
-        self.emission = PBR_Channel()
+        self.emission: PBR_Channel = pbr_channels.emission_color(self.material).pbr_channel                         # ✅
 
     
     def socket_origin(self, socket: bpy.types.NodeSocket) -> Union[bpy.types.Node, None]:

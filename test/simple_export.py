@@ -11,7 +11,7 @@ if True:
     import debugpy
     debugpy.listen(('localhost',5678))
     debugpy.wait_for_client()
-    breakpoint()
+    # breakpoint()
 
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)

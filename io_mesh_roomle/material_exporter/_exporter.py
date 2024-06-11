@@ -114,7 +114,7 @@ class PBR_Channel(PBR_Channel_Base):
 
 
     @property
-    def as_tuple(self) -> tuple:
+    def map_data_as_tuple(self) -> tuple:
         return (
             self.zip_path,
             self.mapping,
@@ -206,6 +206,7 @@ class BlenderMaterialForExport:
         shading.transmission = prec(self.pbr.transmission.default_value, 0)
         shading.transmissionIOR = prec(self.pbr.ior.default_value, 1.5)
         shading.occlusion = prec(self.pbr.ao.default_value, 0)
+        shading.emissiveColor.set(*self.pbr.emission.default_value)
 
         row_handler = MaterialCSVRow()
         row_handler.set(col.SHADING,  shading.to_json())
@@ -214,9 +215,10 @@ class BlenderMaterialForExport:
         row_handler.set(col.LABEL_DE,  self.label_de)
         row_handler.set(col.ACTIVE,  True)
 
-        row_handler.set_texture(*self.pbr.diffuse.as_tuple)
-        row_handler.set_texture(*self.pbr.normal.as_tuple)
-        row_handler.set_texture(*self.pbr.roughness.as_tuple)
+        row_handler.set_texture(*self.pbr.diffuse.map_data_as_tuple)
+        row_handler.set_texture(*self.pbr.normal.map_data_as_tuple)
+        row_handler.set_texture(*self.pbr.roughness.map_data_as_tuple)
+        row_handler.set_texture(*self.pbr.emission.map_data_as_tuple)
 
         return row_handler.dct
 

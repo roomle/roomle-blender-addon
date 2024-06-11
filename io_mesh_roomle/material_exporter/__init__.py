@@ -8,7 +8,7 @@ import logging
 import bpy
 from PIL import Image
 from pathlib import Path
-from typing import Iterable, List, Union, TYPE_CHECKING
+from typing import Any, Generator, Iterable, List, Union, TYPE_CHECKING
 from io_mesh_roomle import arguments
 from io_mesh_roomle.enums import FILE_NAMES, MATERIALS_CSV_COLS
 
