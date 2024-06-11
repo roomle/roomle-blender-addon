@@ -135,13 +135,13 @@ def get_mesh_objects_for_export(use_selection: bool = False) -> set[bpy.types.Ob
     return data
 
 
-def get_materials_used_by_objs(objects: Iterable[bpy.types.Object]) -> set:
-    data = set()
+def get_materials_used_by_objs(objects: Iterable[bpy.types.Object]) -> Generator[bpy.types.Material,Any,Any]:
+    material_register = set()
     for obj in objects:
         for slot in obj.material_slots:
-            if slot.material:
-                data.add(slot.material)
-    return data
+            if slot.material and slot.material not in material_register:
+                material_register.add(slot.material)
+                yield slot.material
 
 
 def export_materials(addon_args: arguments.ArgsStore):
@@ -178,11 +178,10 @@ def export_materials(addon_args: arguments.ArgsStore):
 
     # ==================================================
 
-    materials = get_materials_used_by_objs(mesh_objs_to_export)
 
     material_exports: list[BlenderMaterialForExport]= [
         BlenderMaterialForExport(material,addon_args.component_id)
-        for material in materials
+        for material in get_materials_used_by_objs(mesh_objs_to_export)
     ]
 
     for m in material_exports:

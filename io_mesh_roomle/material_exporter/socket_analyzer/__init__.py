@@ -149,7 +149,7 @@ class PBR_ShaderData:
         return get_socket_origin(self.material,socket)
     
     @property
-    def all_pbr_channels(self) -> Iterable[PBR_Channel]:
+    def all_pbr_channels(self) -> Generator[PBR_Channel,Any,Any]:
         """iterate over all fields of `self` and find all of type PBR_Channel
 
         Returns:
@@ -159,16 +159,10 @@ class PBR_ShaderData:
         from io_mesh_roomle.material_exporter._exporter import PBR_Channel
         this_field_name = inspect.stack()[0][3]
 
-        # TODO: use for loop instead of list comprehension
-        return [
-            getattr(self, field)
-            for field in dir(self)
+        for field in dir(self):
+            if field != this_field_name and isinstance(getattr(self,field), PBR_Channel):
+                yield getattr(self, field)
 
-            # check if the field is this function to avoid infinite calls
-            if field != this_field_name
-            
-            and isinstance(getattr(self,field), PBR_Channel)
-        ]
 
 
     @staticmethod
