@@ -25,6 +25,7 @@ class metallness(PBR_ChannelTester):
             mapping=TextureMapping.ORM
         )
 
+    # TODO: metallic value set other that 1.0
     def check_orm(self) -> Union[PBR_Channel, None]:
         if not self.socket.is_linked:
             return
@@ -43,7 +44,7 @@ class metallness(PBR_ChannelTester):
         return PBR_Channel(
             map=image_node.image,
             mapping=TextureMapping.RGBA,
-            default_value=self.pbr_defaults.metallic
+            default_value=1
         )
     
     def check_directly_attached_image(self) -> Union[PBR_Channel, None]:
