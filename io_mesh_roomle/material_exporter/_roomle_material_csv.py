@@ -108,6 +108,8 @@ class Shading(DataClassJSONMixin):
     thicknessFactor: float =      0.0
     attenuationColor: BaseColor = field(default_factory=lambda: BaseColor(0,0,0))
     attenuationDistance: float =  0.0
+    # TODO: make this work with material definition
+    blendMode = "OPAQUE"
 
 
 @dataclass
