@@ -161,7 +161,6 @@ def export_materials(addon_args: arguments.ArgsStore):
     out_path = Path(addon_args.filepath).parent
     use_selection = addon_args.use_selection
 
-    texture_name_manager = TextureNameManager()
 
 
     log.info(f"\n{('*'*30):^80}\n{'get mesh objects':^80}\n{('*'*30):^80}")
@@ -184,9 +183,8 @@ def export_materials(addon_args: arguments.ArgsStore):
         for material in get_materials_used_by_objs(mesh_objs_to_export)
     ]
 
+    texture_name_manager = TextureNameManager()
     for m in material_exports:
-        m.pbr = PBR_ShaderData(m.material)
-        pass
         for channel in m.pbr.all_pbr_channels:
             channel.map = texture_name_manager.validate_name(channel.map)
         for tex in m.used_tex_nodes:

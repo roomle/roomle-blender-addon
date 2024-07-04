@@ -36,8 +36,11 @@ class diffuse(PBR_ChannelTester):
         n = self.origin(self.socket)
         if not isinstance(n, bpy.types.ShaderNodeTexImage):
             return
+        w,h = self.image_dimensions(n)
         return PBR_Channel(
             map=n.image,
+            with_mm=w,
+            height_mm=h,
             mapping=TextureMapping.RGBA,
             default_value=self.pbr_defaults.diffuse
         )
@@ -77,7 +80,7 @@ class diffuse(PBR_ChannelTester):
         if not (factor.default_value == 0 or factor.default_value == 1):
             return None
 
-        # TODO: assuming all vertex colors are whit and hav eno effect on the texture
+        # TODO: assuming all vertex colors are white and have no effect on the texture
 
         tex_node = [ori for ori in (self.origin(a), self.origin(b)) if isinstance(
             ori, bpy.types.ShaderNodeTexImage)]
@@ -87,10 +90,17 @@ class diffuse(PBR_ChannelTester):
 
         n = tex_node[0]
         
+        tex_node = [ori for ori in (a, b) if self.origin(ori) == None]
+
+        if len(tex_node) != 1:
+            return None
+
+        c = tex_node[0]
+        
         return PBR_Channel(
             map=n.image,
             mapping=TextureMapping.RGBA,
-            default_value=self.pbr_defaults.diffuse
+            default_value=tuple(c.default_value)[0:3]
         )
 
     def check_indirectly_attached_color(self) -> Union[PBR_Channel, None]:

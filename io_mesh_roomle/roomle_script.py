@@ -44,6 +44,7 @@ from io_mesh_roomle import arguments, material_exporter
 from io_mesh_roomle.csv_handler import CSV_Writer
 from io_mesh_roomle.csv_handler import _CSV_DictHandler
 from io_mesh_roomle.enums import FILE_NAMES, TAG_CSV_COLS
+from io_mesh_roomle.material_exporter.utils.materials import get_all_used_nodes, get_used_texture_nodes
 
 
 @dataclass
@@ -518,6 +519,16 @@ def create_transform_commands(
     return command
 
 
+def extract_texture_transformations(mat):
+    try:
+        nodes = [node for node in get_all_used_nodes(mat) if isinstance(node, bpy.types.ShaderNodeMapping)]
+        n = nodes[0]
+        x,y,z = tuple(n.inputs[3].default_value)
+        return x,y
+    except Exception as e:
+        print(e)
+        return (1.0, 1.0)
+
 def create_object_commands(
     preferences,
     object,
@@ -584,6 +595,8 @@ def create_object_commands(
                 material_name = get_valid_name(object.material_slots[0].name)
                 # TODO: 5959 create material definition
                 material = f"SetObjSurface('{material_name}');\n"
+                x,y = extract_texture_transformations(object.material_slots[0].material)
+                material += f"ScaleUvMatrixBy(Vector2f{{{x},{y}}});\n"
 
     # Children
     childCommands = ''

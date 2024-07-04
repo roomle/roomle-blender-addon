@@ -87,6 +87,7 @@ class Shading(DataClassJSONMixin):
 
     alpha:float = 1
     alphaCutoff:float = 0
+    alphaMode: str = "OPAQUE"
     basecolor:BaseColor = field(default_factory=BaseColor)
     transmission:float = 0
     transmissionIOR:float = 1.45
@@ -109,7 +110,6 @@ class Shading(DataClassJSONMixin):
     attenuationColor: BaseColor = field(default_factory=lambda: BaseColor(0,0,0))
     attenuationDistance: float =  0.0
     # TODO: make this work with material definition
-    blendMode = "OPAQUE"
 
 
 @dataclass

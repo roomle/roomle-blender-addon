@@ -132,20 +132,20 @@ def prec(value: Union[float, None, tuple[float]], default: float):
 
 
 class BlenderMaterialForExport:
-
+    """handle blender material and the corresponding roomle data"""
     def __init__(self,
                  material: bpy.types.Material,
                  component_id: str = ""
                  ) -> None:
-        from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
+        # from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
     
         # valid name – this has to be the same as created inside the Blender addon
-        self.pbr: PBR_ShaderData
 
         self.images: List[str] = []
         self.component_id: str = component_id
         self.blender_material_name: str = material.name
         self.material: bpy.types.Material = material
+        self.pbr: PBR_ShaderData = PBR_ShaderData(self.material)
 
     @property
     def _component_id_prefix(self) -> str:
@@ -190,6 +190,19 @@ class BlenderMaterialForExport:
     def used_tex_nodes(self) -> list[bpy.types.ShaderNodeTexImage]:
         return utils_materials.get_used_texture_nodes(self.material)
 
+    @property
+    def is_double_sided(self) -> bool:
+        if self.material.use_backface_culling:
+            return False
+        else:
+            return True
+
+    @property
+    def blend_mode(self) -> str:
+        if self.material.blend_method in ('CLIP', 'HASHED', 'BLEND'):
+            return 'BLEND'
+        else:
+            return 'OPAQUE'
 
 
     @property
@@ -200,6 +213,8 @@ class BlenderMaterialForExport:
 
         shading = Shading()
         shading.alpha = prec(self.pbr.alpha.default_value, 1)
+        shading.alphaMode = self.blend_mode
+        shading.doubleSided = self.is_double_sided
         shading.roughness = prec(self.pbr.roughness.default_value, 0.5)
         shading.metallic = prec(self.pbr.metallic.default_value, 0)
         shading.basecolor.set(*self.pbr.diffuse.default_value)
@@ -208,6 +223,13 @@ class BlenderMaterialForExport:
         shading.occlusion = prec(self.pbr.ao.default_value, 0)
         shading.emissiveColor.set(*self.pbr.emission.default_value)
         shading.emissiveIntensity = prec(self.pbr.emission_intensity.default_value, 0)
+        try:
+            shading.sheenColor.set(*self.pbr.sheen.color[0:3])
+            shading.sheenIntensity = self.pbr.sheen.sigma
+        except:
+            ...
+
+        pass
 
         row_handler = MaterialCSVRow()
         row_handler.set(col.SHADING,  shading.to_json())
@@ -215,6 +237,7 @@ class BlenderMaterialForExport:
         row_handler.set(col.LABEL_EN, self.label_en)
         row_handler.set(col.LABEL_DE,  self.label_de)
         row_handler.set(col.ACTIVE,  True)
+        # row_handler.set(col.TAG_IDS_TO_ADD,  'SOME TAG')
 
         row_handler.set_texture(*self.pbr.diffuse.map_data_as_tuple)
         row_handler.set_texture(*self.pbr.normal.map_data_as_tuple)

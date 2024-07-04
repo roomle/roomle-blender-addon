@@ -16,6 +16,7 @@ log.setLevel(logging.DEBUG)
 
 
 if TYPE_CHECKING:
+    from io_mesh_roomle.material_exporter.socket_analyzer.pbr_channels.pbr_sheen import PBR_SheenChannel
     from io_mesh_roomle.material_exporter._exporter import TextureNameManager, PBR_Channel
 
 
@@ -62,6 +63,15 @@ class PBR_ChannelTester():
         return get_principled_bsdf_node(self.material)
 
 
+    def image_dimensions(self,image_node) -> tuple[float,float]:
+        mapping_node = self.origin(image_node.inputs[0])
+        if mapping_node is None:
+            return (1,1)
+        w,h,_ = mapping_node.inputs[3].default_value
+        # TODO: use `ScaleUvMatrixBy(Vector2f{30,30});``
+        # return (1/w,1/h)
+        return (1.0,1.0)
+    
     def _run_checks(self):
         log.warning(f'running shader checks for {self.__class__.__name__}')
         methods = [meth for meth in dir(self) if meth.startswith(PBR_ChannelTester.prefix)]
@@ -137,6 +147,10 @@ class PBR_ShaderData:
         self.metallic: PBR_Channel = pbr_channels.metallness(self.material).pbr_channel             # ✅
         self.transmission: PBR_Channel = pbr_channels.transmission(self.material).pbr_channel       # ✅
         self.ior: PBR_Channel = pbr_channels.ior(self.material).pbr_channel                         # ✅
+        
+        self.sheen: PBR_SheenChannel = pbr_channels.sheen(self.material).pbr_channel                         # ✅
+
+        # TODO: sheen is not exported!!!
 
         # TODO: roomle support for emission.
         # TODO: process ao maps (either bake inside the dap or find a way to blend it in threeJS)
