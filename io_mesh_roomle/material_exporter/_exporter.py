@@ -217,7 +217,10 @@ class BlenderMaterialForExport:
         shading.doubleSided = self.is_double_sided
         shading.roughness = prec(self.pbr.roughness.default_value, 0.5)
         shading.metallic = prec(self.pbr.metallic.default_value, 0)
-        shading.basecolor.set(*self.pbr.diffuse.default_value)
+        try:
+            shading.basecolor.set(*self.pbr.diffuse.default_value)
+        except:
+            ...
         shading.transmission = prec(self.pbr.transmission.default_value, 0)
         shading.transmissionIOR = prec(self.pbr.ior.default_value, 1.5)
         shading.occlusion = prec(self.pbr.ao.default_value, 0)
