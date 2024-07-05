@@ -128,6 +128,8 @@ class CSV_ByDicts:
         self.row_dicts.append(row_dct)
 
     def write(self, file: Path):
+        # TODO: level1 conversion for 602ed815:aeep3h breaks while more complex items work without the line below?
+        file.parent.mkdir(exist_ok=True, parents=True)
         with file.open(mode="w", newline="") as output_csv:
             writer = csv.DictWriter(
                 output_csv, fieldnames=self.fieldnames, quoting=self._quoting
