@@ -126,3 +126,41 @@ class diffuse(PBR_ChannelTester):
         return PBR_Channel(
             default_value=b.default_value  # [0:3]
         )
+    
+    def check_indirectly_attched_with_vertex_colors(self) -> Union[PBR_Channel, None]:
+        """ignore vertex colors since they are not yet supported by the frontend"""
+
+        self.assert_socket_is_linked(self.socket)
+
+        n = self.origin(self.socket)
+
+        if not isinstance(n, bpy.types.ShaderNodeMix):
+            return
+
+        factor, a, b = get_mix_shader_sockets(n)
+
+        if factor.is_linked:
+            return None
+
+
+
+        tex_node = [ori for ori in (self.origin(a), self.origin(b)) if isinstance(
+            ori, bpy.types.ShaderNodeTexImage)]
+        pass
+
+        vertex_colors = [ori for ori in (self.origin(a), self.origin(b)) if isinstance(
+            ori, bpy.types.ShaderNodeVertexColor)]
+
+        if len(tex_node) != 1:
+            return None
+        if len(vertex_colors) != 1:
+            return None
+        
+        #! We ignore the vertex colors for now !!!
+
+        n = tex_node[0]
+        
+        return PBR_Channel(
+            map=n.image,
+            mapping=TextureMapping.RGBA
+        )
