@@ -54,6 +54,7 @@ class BaseColor(DataClassJSONMixin):
     b: float = 1
 
     def set(self, *args):
+        args = args if len(args) == 3 else args[0:3]
         try:
             (
                 self.r,

@@ -87,7 +87,7 @@ class PBR_ChannelTester():
 
         return self.eliminate_none(results)
     
-    def principled_bsdf_socket(self, slot:int) -> bpy.types.NodeSocket:
+    def principled_bsdf_socket(self, slot:int) -> Union[bpy.types.NodeSocket,bpy.types.NodeSocketColor]:
         return self.principled_bsdf.inputs[slot]
     
     def origin(self, socket: bpy.types.NodeSocket) -> Union[bpy.types.Node, None]:
