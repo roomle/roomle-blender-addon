@@ -1,13 +1,14 @@
 from __future__ import annotations
 import bpy
-from typing import Union, TYPE_CHECKING
+from typing import Union 
 
 from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ChannelTester
+from io_mesh_roomle.material_exporter._roomle_material_csv import TextureMapping
 from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 
 
 class normal(PBR_ChannelTester):
-    def __init__(self, material: Material) -> None:
+    def __init__(self, material: bpy.types.Material) -> None:
         super().__init__(material)
         self.socket= self.principled_bsdf_socket(22)
         
@@ -26,7 +27,8 @@ class normal(PBR_ChannelTester):
             pass
         try:
             return PBR_Channel(
-                map=image_texture.image
+                map=image_texture.image,
+                mapping=TextureMapping.XYZ
             )
         except Exception as e:
             pass

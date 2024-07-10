@@ -23,6 +23,27 @@ class TAG_CSV_COLS:
     # COMPONENTS_TO_ADD: str =    'components_to_add'
     # MATERIALS_TO_ADD: str =     'materials_to_add'
 
+@dataclass(frozen=True)
+class MATERIALS_CSV_COLS:
+    MATERIAL_ID:str =         'material_id'
+    LABEL_EN:str =            'label_en'
+    LABEL_DE:str =            'label_de'
+    SHADING:str =             'shading'
+    THUMBNAIL:str =           'thumbnail'
+    TEX_TILEABLE:str =        'tex{index}_tileable'
+    TEX_IMAGE:str =           'tex{index}_image'
+    TEX_MAPPING:str =         'tex{index}_mapping'
+    TEX_MMWIDTH:str =         'tex{index}_mmwidth'
+    TEX_MMHEIGHT:str =        'tex{index}_mmheight'
+    TAG_IDS_TO_ADD:str =      'tag_ids_to_add'
+    TAG_IDS_TO_REMOVE:str =   'tag_ids_to_remove'
+    DEISCRIPTION_EN:str =     'deiscription_en'
+    ACTIVE:str =              'active'
+    ACTIVEFROM:str =          'activeFrom'
+    ACTIVETILL:str =          'activeTill'
+    VISIBILITYSTATUS:str =    'visibilityStatus'
+    SORT:str =                'sort'
+    PROPERTIES:str =          'properties'
 
 @dataclass(frozen=True)
 class COMP_CSV_COLS:

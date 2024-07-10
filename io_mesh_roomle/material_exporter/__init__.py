@@ -7,12 +7,12 @@ import logging
 import bpy
 from PIL import Image
 from pathlib import Path
-from typing import Iterable, List, Union, TYPE_CHECKING
+from typing import Any, Generator, Iterable, Union
 from io_mesh_roomle import arguments
-from io_mesh_roomle.enums import FILE_NAMES
+from io_mesh_roomle.enums import FILE_NAMES, MATERIALS_CSV_COLS
 
 from io_mesh_roomle.material_exporter._exporter import BlenderMaterialForExport, TextureNameManager
-from io_mesh_roomle.material_exporter._roomle_material_csv import MaterialDefinition, RoomleMaterialsCsv
+from io_mesh_roomle.material_exporter._roomle_material_csv import MaterialDefinition, CSV_ByDicts
 
 log = logging.getLogger('legacy csv')
 log.setLevel(logging.DEBUG)
@@ -20,7 +20,7 @@ log.setLevel(logging.DEBUG)
 
 def split_object_by_materials(obj: bpy.types.Object) -> set[bpy.types.Object]:
     # TODO: RML-8416
-    
+
     # if len(obj.material_slots) < 2:
     #     return set()
 
@@ -36,59 +36,43 @@ def split_object_by_materials(obj: bpy.types.Object) -> set[bpy.types.Object]:
     return set(bpy.context.selected_objects)
 
 
-def pbr_2_material_definition(data: BlenderMaterialForExport) -> MaterialDefinition:
+class MaterialCSVRow:
+    def __init__(self) -> None:
+        self.data_dict: dict = {}
+        self._image_index: int = -1
 
-    def zip_path(value: Union[str, None, bpy.types.Image]):
+    def add_texture_field(
+        self,
+        tex_image: str,
+        tex_mapping: str,
+        tex_mmwidth: float = 1,
+        tex_mmheight: float = 1,
+        tex_tileable: bool = True,
+    ) -> None:
+        if not tex_image:
+            return
 
-        pass
-        # if isinstance(value, bpy.types.Image):
-        if value is None:
-            return ''
-        # return 'zip://' + value.rsplit('/')[-1]
-        # return value.replace('//textures/', 'zip://')
-        return f'zip://{value}'
+        self._image_index += 1
+        csv_col_add_index = lambda x: x.format(**{"index": self._image_index})
 
-    def prec(value: Union[float, None, tuple[float]], default: float):
-        if value is None:
-            return default
-        return round(value, 2)
+        self.data_dict.update(
+            {
+                csv_col_add_index(MATERIALS_CSV_COLS.TEX_IMAGE): tex_image,
+                csv_col_add_index(MATERIALS_CSV_COLS.TEX_MAPPING): tex_mapping,
+                csv_col_add_index(MATERIALS_CSV_COLS.TEX_MMWIDTH): tex_mmwidth,
+                csv_col_add_index(MATERIALS_CSV_COLS.TEX_MMHEIGHT): tex_mmheight,
+                csv_col_add_index(MATERIALS_CSV_COLS.TEX_TILEABLE): tex_tileable,
+            }
+        )
 
-    pbr = data.pbr
-    md = MaterialDefinition()
+    def set_field(self, key, value) -> None:
+        """set a single field in the csv
 
-    md.material_id = data.material_id
-    md.label_en = data.label_en
-    md.label_de = data.label_de
-
-    md.shading.alpha = prec(pbr.alpha.default_value,
-                            1)                # type: ignore
-    md.shading.roughness = prec(
-        pbr.roughness.default_value, 0.5)      # type: ignore
-    md.shading.metallic = prec(
-        pbr.metallic.default_value, 0)          # type: ignore
-
-    log.debug(f'🍕 {data.material.name}')
-    log.debug(f'diffuse: {pbr.diffuse.default_value}')
-    md.shading.basecolor.set(*pbr.diffuse.default_value)               # type: ignore
-
-
-    md.shading.transmission = prec(
-        pbr.transmission.default_value, 0)  # type: ignore
-    
-    log.debug(f'ior: {pbr.ior.default_value}')
-    md.shading.transmissionIOR = prec(
-        pbr.ior.default_value, 1.5)      # type: ignore
-
-    # md.diffuse_map.image = zip_path(pbr.diffuse.map)
-    md.diffuse_map.image = zip_path(pbr.diffuse.map)
-    md.diffuse_map.mapping = "RGB" if zip_path(pbr.diffuse.map) != '' else ''
-
-    md.normal_map.image = zip_path(pbr.normal.map)
-    md.normal_map.mapping = "XYZ" if zip_path(pbr.normal.map) != '' else ''
-
-    md.orm_map.image = zip_path(pbr.roughness.map)
-    md.orm_map.mapping = "ORM" if zip_path(pbr.roughness.map) != '' else ''
-    return md
+        Args:
+            key (str): column name
+            value (str, float, int): value in this row
+        """
+        self.data_dict.update({key: value})
 
 
 def get_mesh_objects_for_export(use_selection: bool = False) -> set[bpy.types.Object]:
@@ -100,26 +84,26 @@ def get_mesh_objects_for_export(use_selection: bool = False) -> set[bpy.types.Ob
     return data
 
 
-def get_materials_used_by_objs(objects: Iterable[bpy.types.Object]) -> set:
-    data = set()
-    for obj in objects:
-        for slot in obj.material_slots:
-            if slot.material:
-                data.add(slot.material)
-    return data
-
-def invert_red_channel(file: str):
-    """invert the red channel (Occlusion) of
-    an ORM map in place (overwrite original)
+def get_materials_used_by_objs(
+    objects: Iterable[bpy.types.Object],
+) -> Generator[bpy.types.Material, Any, Any]:
+    """generator returning all unique materials used by objects.
+    If a material is used in multiple objects the material will only
+    be yielded once!
 
     Args:
-        file (str): image file
+        objects (Iterable[bpy.types.Object]): blender objects to check
+
+    Yields:
+        Generator[bpy.types.Material,Any,Any]: generator
     """
-    image = Image.open(file)
-    channels = list(image.split())
-    channels[0] = channels[0].point(lambda p: 255 - p)
-    inverted_image = Image.merge(image.mode, channels)
-    inverted_image.save(file)
+    _material_register = set()
+    for obj in objects:
+        for slot in obj.material_slots:
+            if slot.material and slot.material not in _material_register:
+                _material_register.add(slot.material)
+                yield slot.material
+
 
 def export_materials(addon_args: arguments.ArgsStore):
 
@@ -138,10 +122,6 @@ def export_materials(addon_args: arguments.ArgsStore):
     out_path = Path(addon_args.filepath).parent
     use_selection = addon_args.use_selection
 
-    csv_exporter = RoomleMaterialsCsv()
-    texture_name_manager = TextureNameManager()
-
-
     log.info(f"\n{('*'*30):^80}\n{'get mesh objects':^80}\n{('*'*30):^80}")
 
     mesh_objs_to_export = get_mesh_objects_for_export(use_selection)
@@ -156,35 +136,24 @@ def export_materials(addon_args: arguments.ArgsStore):
 
     # ==================================================
 
-    materials = get_materials_used_by_objs(mesh_objs_to_export)
-
-    material_exports: list[BlenderMaterialForExport]= [
-        BlenderMaterialForExport(material,addon_args.component_id)
-        for material in materials
+    materials_for_export: list[BlenderMaterialForExport] = [
+        BlenderMaterialForExport(material, addon_args.component_id)
+        for material in get_materials_used_by_objs(mesh_objs_to_export)
     ]
 
-    for m in material_exports:
-        m.pbr = PBR_ShaderData(m.material)
-        pass
-        for channel in m.pbr.all_pbr_channels:
+    texture_name_manager = TextureNameManager()
+    for blender_mat_for_export in materials_for_export:
+        for channel in blender_mat_for_export.pbr.all_pbr_channels:
             channel.map = texture_name_manager.validate_name(channel.map)
-        for tex in m.used_tex_nodes:
+        for tex in blender_mat_for_export.used_tex_nodes:
             name = texture_name_manager.validate_name(tex.image)
-            tex.image.save(filepath=str(out_path / 'materials' / name))
+            tex.image.save(filepath=str(out_path / "materials" / name))
 
-    all_orm_maps = set()
-    for mat in material_exports:
-        material_definition = pbr_2_material_definition(mat)
-        all_orm_maps.add(material_definition.orm_map.image)
-        csv_exporter.add_material_definition(material_definition)
-    csv_exporter.write((out_path / 'materials') / FILE_NAMES.MATERIALS_CSV)
+    material_csv = CSV_ByDicts()
+    for mat_for_export in materials_for_export:
+        material_csv.add_row(mat_for_export.csv_dict)
 
-    #* in order to work correctly in Material V1 we have to invert the occlusion channel
-    for orm_map in all_orm_maps:
-        if orm_map == '':
-            continue
-        orm_map_path = out_path / f'materials{orm_map[5:]}'
-        invert_red_channel(str(orm_map_path.absolute()))
+    material_csv.write_csv((out_path / "materials") / FILE_NAMES.MATERIALS_CSV)
 
     # ==================================================
 
