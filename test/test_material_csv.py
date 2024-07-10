@@ -40,8 +40,7 @@ class TestRoomleExport(TestCaseExtended):
         cls.fld = cls.tmp_path_class() / 'shared'
         cls.fld.mkdir(exist_ok=True)
         cls.convert_file(
-            # cls.asset_path('combined-image-7dc4e4a0.glb'),
-            Path('/Users/clemens/Library/CloudStorage/GoogleDrive-clemens.holleis@roomle.com/Meine Ablage/Assets/Smoketesting/Static Items/Stray_Truck.glb'),
+            cls.asset_path('combined-image-7dc4e4a0.glb'),
             cls.fld / 'converted_glb.txt'
         )
         return super().setUpClass()
@@ -137,7 +136,7 @@ class TestRoomleExport(TestCaseExtended):
         
         assert (self.tmp_path / 'materials.csv').exists()
         assert (self.tmp_path / 'Untitled.png').exists()
-        assert self.sorted_txt_hash(self.tmp_path / 'materials.csv') == '7de0a818060a7ea36b347b7907aefaf8'
+        assert self.sorted_txt_hash(self.tmp_path / 'materials.csv') == '1948fce4233b3c1ffd25acb7531fc72a'
 
     def test_meshes_zip_content(self):
         zip_file = self.fld / "meshes.zip"

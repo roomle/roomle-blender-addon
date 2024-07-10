@@ -123,6 +123,8 @@ class CSV_ByDicts:
         all_keys = set()
         for single_row_dict in self.row_dicts:
             all_keys.update(single_row_dict.keys())
+        all_keys = list(all_keys)
+        all_keys.sort()
         return tuple(all_keys)
 
     def add_row(self, row_dct: dict) -> None:

@@ -3,7 +3,7 @@ import bpy
 from pathlib import Path
 import sys, os
 
-if True:
+if False:
     for s in Path('./env').rglob('site-packages'):
         if s.is_dir():
             sys.path.insert(0,str(s.resolve().absolute()))

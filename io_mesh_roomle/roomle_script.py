@@ -596,7 +596,8 @@ def create_object_commands(
                 # TODO: 5959 create material definition
                 material = f"SetObjSurface('{material_name}');\n"
                 x,y = extract_texture_transformations(object.material_slots[0].material)
-                material += f"ScaleUvMatrixBy(Vector2f{{{x},{y}}});\n"
+                if not x == y == 1.0 :
+                    material += f"ScaleUvMatrixBy(Vector2f{{{x},{y}}});\n"
 
     # Children
     childCommands = ''
