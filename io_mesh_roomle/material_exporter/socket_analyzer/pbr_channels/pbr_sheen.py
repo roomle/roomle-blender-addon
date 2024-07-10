@@ -25,7 +25,6 @@ class sheen(PBR_ChannelTester):
         super().__init__(material)
         self.socket: bpy.types.NodeSocket = self.principled_bsdf.inputs[0]
         self.def_val = [linear_to_srgb(c) for c in self.socket.default_value[0:3]]
-        log.debug(f"🎨 {self.def_val}")
 
     @property
     def _velvet_node(self) -> Optional[bpy.types.ShaderNodeBsdfPrincipled]:
