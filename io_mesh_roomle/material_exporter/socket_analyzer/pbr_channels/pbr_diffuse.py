@@ -127,7 +127,7 @@ class diffuse(PBR_ChannelTester):
         )
 
     def check_indirectly_attached_with_vertex_colors(self) -> Union[PBR_Channel, None]:
-        """ignore vertex colors since they are not yet supported by the frontend"""
+        #! We ignore the vertex colors for now since they are not yet supported by the frontend
 
         self.assert_socket_is_linked(self.socket)
 
@@ -146,7 +146,6 @@ class diffuse(PBR_ChannelTester):
             for ori in (self.origin(a), self.origin(b))
             if isinstance(ori, bpy.types.ShaderNodeTexImage)
         ]
-        pass
 
         vertex_colors = [
             ori
@@ -158,8 +157,6 @@ class diffuse(PBR_ChannelTester):
             return
         if len(vertex_colors) != 1:
             return
-
-        #! We ignore the vertex colors for now !!!
 
         n = tex_node[0]
 

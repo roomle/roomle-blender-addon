@@ -72,7 +72,7 @@ def get_enabled_inputs(node: bpy.types.ShaderNode) -> List[bpy.types.NodeSocket]
 
 #TODO: use named tuple for type hinting
 
-def get_mix_shader_sockets(node: bpy.types.ShaderNodeMix) -> tuple[bpy.types.NodeSocket]:
+def get_mix_shader_sockets(node: bpy.types.ShaderNodeMix) -> tuple[bpy.types.NodeSocket, ...]:
 
     # Blender 3.6 hides basically multiple socket connectors depending on the type of input
 
