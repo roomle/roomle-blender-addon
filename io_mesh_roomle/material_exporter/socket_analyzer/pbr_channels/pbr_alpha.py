@@ -7,7 +7,6 @@ from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 
 
 class alpha(PBR_ChannelTester):
-    # TODO: image alpha?
     def __init__(self, material: bpy.types.Material) -> None:
         super().__init__(material)
         self.socket = self.principled_bsdf_socket(21)

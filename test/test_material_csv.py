@@ -2,7 +2,7 @@
 from pathlib import Path
 from subprocess import Popen
 import zipfile
-from io_mesh_roomle.enums import FILE_NAMES, MATERIALS_CSV_COLS
+from io_mesh_roomle.enums import FILE_NAMES 
 from io_mesh_roomle.material_exporter import MaterialCSVRow
 from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 from io_mesh_roomle.roomle_script import get_valid_name
@@ -80,23 +80,23 @@ class TestRoomleExport(TestCaseExtended):
         m = MaterialCSVRow()
         p = PBR_Channel()
         
-        m.set_texture(*p.map_data_as_tuple)
-        assert m.dct == {}
+        m.add_texture_field(*p.texture_map_data_as_tuple)
+        assert m.data_dict == {}
 
         
 
     def test_materials_zip_content_NEW_3b774e5c(self):
         m = MaterialCSVRow()
-        m.set_texture('img.jpg','THE_MAPPING')
-        assert m.dct == {'tex0_image': 'img.jpg', 'tex0_mapping': 'THE_MAPPING', 'tex0_mmwidth': 1, 'tex0_mmheight': 1, 'tex0_tileable': True}
-        m.set_texture(
+        m.add_texture_field('img.jpg','THE_MAPPING')
+        assert m.data_dict == {'tex0_image': 'img.jpg', 'tex0_mapping': 'THE_MAPPING', 'tex0_mmwidth': 1, 'tex0_mmheight': 1, 'tex0_tileable': True}
+        m.add_texture_field(
             tex_image='a',
             tex_mapping='some mapping',
             tex_mmheight=10,
             tex_mmwidth=20,
             tex_tileable=False
             )
-        assert m.dct == {
+        assert m.data_dict == {
             'tex0_image': 'img.jpg', 'tex0_mapping': 'THE_MAPPING', 'tex0_mmwidth': 1, 'tex0_mmheight': 1, 'tex0_tileable': True,
             'tex1_image': 'a', 'tex1_mapping': 'some mapping', 'tex1_mmwidth': 20, 'tex1_mmheight': 10, 'tex1_tileable': False,
             }
@@ -106,26 +106,26 @@ class TestRoomleExport(TestCaseExtended):
         pc.map = "some/path/to/image.png"  # type: ignore
         pc.mapping = "RGB"
 
-        assert pc.map_data_as_tuple == ('zip://some/path/to/image.png', 'RGB', 1, 1, True)
+        assert pc.texture_map_data_as_tuple == ('zip://some/path/to/image.png', 'RGB', 1, 1, True)
 
         m = MaterialCSVRow()
-        m.set_texture(*pc.map_data_as_tuple)
+        m.add_texture_field(*pc.texture_map_data_as_tuple)
 
-        assert m.dct == {'tex0_image': 'zip://some/path/to/image.png', 'tex0_mapping': 'RGB', 'tex0_mmwidth': 1, 'tex0_mmheight': 1, 'tex0_tileable': True}
+        assert m.data_dict == {'tex0_image': 'zip://some/path/to/image.png', 'tex0_mapping': 'RGB', 'tex0_mmwidth': 1, 'tex0_mmheight': 1, 'tex0_tileable': True}
 
 
 
 
     def test_materials_zip_content_NEW_2_3b774e5c(self):
         m = MaterialCSVRow()
-        m.set('MY KEY', 'new value')
-        assert m.dct == {'MY KEY' : 'new value'}
+        m.set_field('MY KEY', 'new value')
+        assert m.data_dict == {'MY KEY' : 'new value'}
 
-        m.set('MY KEY', 'overwrite')
-        assert m.dct == {'MY KEY' : 'overwrite'}
+        m.set_field('MY KEY', 'overwrite')
+        assert m.data_dict == {'MY KEY' : 'overwrite'}
 
-        m.set('added key', 100)
-        assert m.dct == {'MY KEY' : 'overwrite', 'added key': 100}
+        m.set_field('added key', 100)
+        assert m.data_dict == {'MY KEY' : 'overwrite', 'added key': 100}
 
 
     def test_materials_zip_content_3b774e5c(self):

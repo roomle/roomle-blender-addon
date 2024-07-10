@@ -28,7 +28,6 @@ class CsvLine(ABC):
         pass
 
 
-
 class RoomleTextureImage:
     def __init__(self) -> None:
         self.tileable: bool = True
@@ -54,8 +53,8 @@ class BaseColor(DataClassJSONMixin):
     b: float = 1
 
     def set(self, *args):
-        args = args if len(args) == 3 else args[0:3]
         try:
+            args = args if len(args) == 3 else args[0:3]
             (
                 self.r,
                 self.g,
@@ -66,15 +65,15 @@ class BaseColor(DataClassJSONMixin):
 
 @unique
 class TextureMapping(str,Enum):
-    #* V1 Mappings
+    # * V1 Mappings
     RGB='RGB'
     RGBA='RGBA'
     XYZ='XYZ'
     ORM='ORM'
 
-    #* V2 Mappings
+    # * V2 Mappings
     # https://roomle.atlassian.net/wiki/spaces/DT/pages/2255650817/Material+Definition+V2
-        
+
     EMRGB='EMRGB'
     CCRG='CCRG'
     CCXYZ='CCXYZ'
@@ -82,41 +81,40 @@ class TextureMapping(str,Enum):
     SPRGBA='SPRGBA'
     TTRG='TTRG'
 
+
 @dataclass
 class Shading(DataClassJSONMixin):
-    version:str = "2.0.0"
+    version: str = "2.0.0"
 
-    alpha:float = 1
-    alphaCutoff:float = 0
+    alpha: float = 1
+    alphaCutoff: float = 0
     alphaMode: str = "OPAQUE"
-    basecolor:BaseColor = field(default_factory=BaseColor)
-    transmission:float = 0
-    transmissionIOR:float = 1.45
-    metallic:float = 0
-    roughness:float = .85
-    doubleSided:bool = False
-    occlusion:float = 1
+    basecolor: BaseColor = field(default_factory=BaseColor)
+    transmission: float = 0
+    transmissionIOR: float = 1.45
+    metallic: float = 0
+    roughness: float = 0.85
+    doubleSided: bool = False
+    occlusion: float = 1
 
-    emissiveColor: BaseColor =    field(default_factory=lambda: BaseColor(0,0,0))
-    emissiveIntensity: float =    0.0
-    clearcoatIntensity: float =   0.0
-    clearcoatRoughness: float =   0.0
+    emissiveColor: BaseColor = field(default_factory=lambda: BaseColor(0, 0, 0))
+    emissiveIntensity: float = 0.0
+    clearcoatIntensity: float = 0.0
+    clearcoatRoughness: float = 0.0
     clearcoatNormalScale: float = 0.0
-    sheenColor: BaseColor =       field(default_factory=lambda: BaseColor(0,0,0))
-    sheenIntensity: float =       0.0
-    sheenRoughness: float =       0.65
-    normalScale: float =          1.0
-    specularIntensity: float =    0.0
-    thicknessFactor: float =      0.0
-    attenuationColor: BaseColor = field(default_factory=lambda: BaseColor(0,0,0))
-    attenuationDistance: float =  0.0
-    # TODO: make this work with material definition
+    sheenColor: BaseColor = field(default_factory=lambda: BaseColor(0, 0, 0))
+    sheenIntensity: float = 0.0
+    sheenRoughness: float = 0.65
+    normalScale: float = 1.0
+    specularIntensity: float = 0.0
+    thicknessFactor: float = 0.0
+    attenuationColor: BaseColor = field(default_factory=lambda: BaseColor(0, 0, 0))
+    attenuationDistance: float = 0.0
 
 
 @dataclass
 class CSV_ByDicts:
     row_dicts: list[dict] = field(default_factory=list)
-    _quoting = csv.QUOTE_ALL
 
     @property
     def fieldnames(self):
@@ -130,12 +128,11 @@ class CSV_ByDicts:
     def add_row(self, row_dct: dict) -> None:
         self.row_dicts.append(row_dct)
 
-    def write(self, file: Path):
-        # TODO: level1 conversion for 602ed815:aeep3h breaks while more complex items work without the line below?
+    def write_csv(self, file: Path):
         file.parent.mkdir(exist_ok=True, parents=True)
         with file.open(mode="w", newline="") as output_csv:
             writer = csv.DictWriter(
-                output_csv, fieldnames=self.fieldnames, quoting=self._quoting
+                output_csv, fieldnames=self.fieldnames, quoting=csv.QUOTE_ALL
             )
             writer.writeheader()
             writer.writerows(self.row_dicts)
@@ -187,6 +184,3 @@ class MaterialDefinition(CsvLine):
         ]
         )
         return data
-
-
-

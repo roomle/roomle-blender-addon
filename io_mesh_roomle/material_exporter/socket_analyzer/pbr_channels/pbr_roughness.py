@@ -1,6 +1,6 @@
 from __future__ import annotations
 import bpy
-from typing import Union, TYPE_CHECKING
+from typing import Union 
 
 from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ChannelTester
 from io_mesh_roomle.material_exporter._roomle_material_csv import TextureMapping
@@ -8,7 +8,7 @@ from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 
 
 class roughness(PBR_ChannelTester):
-    def __init__(self, material: Material) -> None:
+    def __init__(self, material: bpy.types.Material) -> None:
         super().__init__(material)
         self.socket = self.principled_bsdf_socket(9)
         self.def_value = self.socket.default_value

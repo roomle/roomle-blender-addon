@@ -519,15 +519,21 @@ def create_transform_commands(
     return command
 
 
-def extract_texture_transformations(mat):
+def extract_texture_transformations(mat) -> tuple[float, float]:
+
     try:
-        nodes = [node for node in get_all_used_nodes(mat) if isinstance(node, bpy.types.ShaderNodeMapping)]
-        n = nodes[0]
-        x,y,z = tuple(n.inputs[3].default_value)
-        return x,y
+        mapping_nodes = [
+            shader_node
+            for shader_node in get_all_used_nodes(mat)
+            if isinstance(shader_node, bpy.types.ShaderNodeMapping)
+        ]
+        mapping_node = mapping_nodes[0]
+        x, y, z = tuple(mapping_node.inputs[3].default_value)
+        return (x, y)
     except Exception as e:
         print(e)
         return (1.0, 1.0)
+
 
 def create_object_commands(
     preferences,
