@@ -3,6 +3,7 @@ import bpy
 from typing import Union, TYPE_CHECKING
 
 from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ChannelTester
+from io_mesh_roomle.material_exporter._roomle_material_csv import TextureMapping
 from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 
 # TODO: RML-6682 all texture maps get multiplied with the value provided
@@ -20,9 +21,11 @@ class metallness(PBR_ChannelTester):
             return
 
         return PBR_Channel(
-            default_value=self.def_val
+            default_value=self.def_val,
+            mapping=TextureMapping.ORM
         )
 
+    # TODO: metallic value set other that 1.0
     def check_orm(self) -> Union[PBR_Channel, None]:
         if not self.socket.is_linked:
             return
@@ -40,7 +43,8 @@ class metallness(PBR_ChannelTester):
 
         return PBR_Channel(
             map=image_node.image,
-            default_value=self.pbr_defaults.metallic
+            mapping=TextureMapping.RGBA,
+            default_value=1
         )
     
     def check_directly_attached_image(self) -> Union[PBR_Channel, None]:
@@ -53,7 +57,8 @@ class metallness(PBR_ChannelTester):
             return
 
         return PBR_Channel(
-            map=image_node.image,   
+            map=image_node.image,
+            mapping=TextureMapping.RGBA,   
             default_value=self.pbr_defaults.metallic
         )
 

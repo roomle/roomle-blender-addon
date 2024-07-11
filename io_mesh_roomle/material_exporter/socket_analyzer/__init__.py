@@ -1,7 +1,7 @@
 from __future__ import annotations
 import inspect
 import logging  
-from typing import Iterable, TYPE_CHECKING, Union
+from typing import Any, Generator, TYPE_CHECKING, Union
 from dataclasses import dataclass
 
 import bpy
@@ -16,14 +16,15 @@ log.setLevel(logging.DEBUG)
 
 
 if TYPE_CHECKING:
-    from io_mesh_roomle.material_exporter._exporter import TextureNameManager, PBR_Channel
+    from io_mesh_roomle.material_exporter.socket_analyzer.pbr_channels.pbr_sheen import PBR_SheenChannel
+    from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 
 
 class ChannelBase:
     def __init__(self, material) -> None:
         pass
 
-class CkeckError(Exception):
+class CheckError(Exception):
     pass
 
 @dataclass
@@ -42,7 +43,6 @@ class PBR_DefaultValues():
 
 
 class PBR_ChannelTester():
-    
 
     # The diffuse color has to be plain white in order to not tint the texture later in ThreeJS
     pbr_defaults: PBR_DefaultValues
@@ -56,11 +56,20 @@ class PBR_ChannelTester():
     @property
     def pbr_channel(self) -> PBR_Channel:
         return self._run_checks()
-    
+
     @property
     def principled_bsdf(self) -> bpy.types.ShaderNodeBsdfPrincipled:
         return get_principled_bsdf_node(self.material)
 
+    def image_dimensions(self,image_node) -> tuple[float,float]:
+        mapping_node = self.origin(image_node.inputs[0])
+        if mapping_node is None:
+            return (1.0,1.0)
+        w,h,_ = mapping_node.inputs[3].default_value
+        # TODO: RML-11370 how should we handle scaled textures?
+        # TODO: use `ScaleUvMatrixBy(Vector2f{30,30});``
+        # return (1/w,1/h)
+        return (1.0,1.0)
 
     def _run_checks(self):
         log.warning(f'running shader checks for {self.__class__.__name__}')
@@ -72,31 +81,33 @@ class PBR_ChannelTester():
                 method = self.__getattribute__(check)
                 pass
                 results[check] = method()
-            except CkeckError:
+            except CheckError:
                 pass
 
         return self.eliminate_none(results)
-    
-    def principled_bsdf_socket(self, slot:int) -> bpy.types.NodeSocket:
+
+    def principled_bsdf_socket(
+        self, slot: int
+    ) -> Union[bpy.types.NodeSocket, bpy.types.NodeSocketColor]:
         return self.principled_bsdf.inputs[slot]
-    
+
     def origin(self, socket: bpy.types.NodeSocket) -> Union[bpy.types.Node, None]:
         return get_socket_origin(self.material,socket)
-    
+
     def assert_socket_is_linked(self, socket:bpy.types.NodeSocket) -> bool:
         if not socket.is_linked:
-            raise CkeckError('socket is not linked')
+            raise CheckError('socket is not linked')
         return True
-    
+
     def assert_socket_is_not_linked(self, socket:bpy.types.NodeSocket) -> bool:
         if socket.is_linked:
-            raise CkeckError('socket is linked')
+            raise CheckError('socket is linked')
         return True
-        
 
     @staticmethod
     def eliminate_none(results: dict) -> PBR_Channel:
         from io_mesh_roomle.material_exporter._exporter import PBR_Channel
+
         values = []
         matched_checks = []
         try:
@@ -116,6 +127,7 @@ class PBR_ChannelTester():
             print(f'🛑 {e}')
             pass
             return PBR_Channel()
+
 
 class PBR_ShaderData:
     """
@@ -137,20 +149,19 @@ class PBR_ShaderData:
         self.metallic: PBR_Channel = pbr_channels.metallness(self.material).pbr_channel             # ✅
         self.transmission: PBR_Channel = pbr_channels.transmission(self.material).pbr_channel       # ✅
         self.ior: PBR_Channel = pbr_channels.ior(self.material).pbr_channel                         # ✅
-
-        # TODO: roomle support for emission.
-        # TODO: process ao maps (either bake inside the dap or find a way to blend it in threeJS)
-
-        self.ao = PBR_Channel()
-        self.emission = PBR_Channel()
+        self.sheen: PBR_SheenChannel = pbr_channels.sheen(self.material).pbr_channel                                              # ✅
+        # TODO: propper AO handling between gltf <-> web <-> blender
+        self.ao = PBR_Channel(default_value=0)
+        self.emission: PBR_Channel = pbr_channels.emission_color(self.material).pbr_channel                                       # ✅
+        self.emission_intensity: PBR_Channel = pbr_channels.emission_intensity(self.material).pbr_channel                         # ✅
 
     
     def socket_origin(self, socket: bpy.types.NodeSocket) -> Union[bpy.types.Node, None]:
         return get_socket_origin(self.material,socket)
     
     @property
-    def all_pbr_channels(self) -> Iterable[PBR_Channel]:
-        """iterate over all fields of `self` and find all of type PBR_Channel
+    def all_pbr_channels(self) -> Generator[PBR_Channel,Any,Any]:
+        """iterate over all fields of `self` and yield all fields of type PBR_Channel
 
         Returns:
             Iterable[PBR_Channel]: list with all Channels
@@ -159,16 +170,10 @@ class PBR_ShaderData:
         from io_mesh_roomle.material_exporter._exporter import PBR_Channel
         this_field_name = inspect.stack()[0][3]
 
-        # TODO: use for loop instead of list comprehension
-        return [
-            getattr(self, field)
-            for field in dir(self)
+        for field in dir(self):
+            if field != this_field_name and isinstance(getattr(self,field), PBR_Channel):
+                yield getattr(self, field)
 
-            # check if the field is this function to avoid infinite calls
-            if field != this_field_name
-            
-            and isinstance(getattr(self,field), PBR_Channel)
-        ]
 
 
     @staticmethod
