@@ -520,7 +520,7 @@ def create_transform_commands(
 
 
 def extract_texture_transformations(mat) -> tuple[float, float]:
-
+    # TODO: RML-11370 how should we handle scaled textures?
     try:
         mapping_nodes = [
             shader_node
@@ -599,7 +599,6 @@ def create_object_commands(
             material = ''
             if object.material_slots:
                 material_name = get_valid_name(object.material_slots[0].name)
-                # TODO: 5959 create material definition
                 material = f"SetObjSurface('{material_name}');\n"
                 x,y = extract_texture_transformations(object.material_slots[0].material)
                 if not x == y == 1.0 :
