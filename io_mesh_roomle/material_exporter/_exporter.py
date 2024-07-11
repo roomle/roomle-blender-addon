@@ -123,7 +123,7 @@ class PBR_Channel(PBR_Channel_Base):
         )
 
 
-def prec(value: Union[float, None, tuple[float]], default: float):
+def prec(value: Union[None, float], default: float):
     if value is None:
         return default
     return round(value, 2)
