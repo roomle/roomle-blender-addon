@@ -2,10 +2,11 @@ from __future__ import annotations
 import bpy
 from typing import Union, TYPE_CHECKING
 
-from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ChannelTester, CkeckError
+from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ChannelTester
 from io_mesh_roomle.material_exporter.utils.materials import get_principled_bsdf_node, get_mix_shader_sockets, get_socket_origin
 
 from io_mesh_roomle.material_exporter._exporter import PBR_Channel
+from io_mesh_roomle.material_exporter._roomle_material_csv import TextureMapping
 from io_mesh_roomle.material_exporter.utils.color import linear_to_srgb
 
 
@@ -22,7 +23,6 @@ class diffuse(PBR_ChannelTester):
                         for c in self.socket.default_value[0:3]]
         log.debug(f'🎨 {self.def_val}')
 
-
     def check_no_texture(self) -> Union[PBR_Channel, None]:
         if self.socket.is_linked:
             return
@@ -35,8 +35,12 @@ class diffuse(PBR_ChannelTester):
         n = self.origin(self.socket)
         if not isinstance(n, bpy.types.ShaderNodeTexImage):
             return
+        w,h = self.image_dimensions(n)
         return PBR_Channel(
             map=n.image,
+            with_mm=w,
+            height_mm=h,
+            mapping=TextureMapping.RGBA,
             default_value=self.pbr_defaults.diffuse
         )
 
@@ -56,6 +60,7 @@ class diffuse(PBR_ChannelTester):
 
         return PBR_Channel(
             map=n.image,
+            mapping=TextureMapping.RGBA,
             default_value=self.pbr_defaults.diffuse
         )
 
@@ -74,7 +79,7 @@ class diffuse(PBR_ChannelTester):
         if not (factor.default_value == 0 or factor.default_value == 1):
             return None
 
-        # TODO: assuming all vertex colors are whit and hav eno effect on the texture
+        # TODO: assuming all vertex colors are white and have no effect on the texture
 
         tex_node = [ori for ori in (self.origin(a), self.origin(b)) if isinstance(
             ori, bpy.types.ShaderNodeTexImage)]
@@ -83,10 +88,18 @@ class diffuse(PBR_ChannelTester):
             return None
 
         n = tex_node[0]
-        
+
+        tex_node = [ori for ori in (a, b) if self.origin(ori) == None]
+
+        if len(tex_node) != 1:
+            return None
+
+        c = tex_node[0]
+
         return PBR_Channel(
             map=n.image,
-            default_value=self.pbr_defaults.diffuse
+            mapping=TextureMapping.RGBA,
+            default_value=tuple(c.default_value)[0:3]
         )
 
     def check_indirectly_attached_color(self) -> Union[PBR_Channel, None]:
@@ -112,3 +125,39 @@ class diffuse(PBR_ChannelTester):
         return PBR_Channel(
             default_value=b.default_value  # [0:3]
         )
+
+    def check_indirectly_attached_with_vertex_colors(self) -> Union[PBR_Channel, None]:
+        #! We ignore the vertex colors for now since they are not yet supported by the frontend
+
+        self.assert_socket_is_linked(self.socket)
+
+        n = self.origin(self.socket)
+
+        if not isinstance(n, bpy.types.ShaderNodeMix):
+            return
+
+        factor, a, b = get_mix_shader_sockets(n)
+
+        if factor.is_linked:
+            return
+
+        tex_node = [
+            ori
+            for ori in (self.origin(a), self.origin(b))
+            if isinstance(ori, bpy.types.ShaderNodeTexImage)
+        ]
+
+        vertex_colors = [
+            ori
+            for ori in (self.origin(a), self.origin(b))
+            if isinstance(ori, bpy.types.ShaderNodeVertexColor)
+        ]
+
+        if len(tex_node) != 1:
+            return
+        if len(vertex_colors) != 1:
+            return
+
+        n = tex_node[0]
+
+        return PBR_Channel(map=n.image, mapping=TextureMapping.RGBA)

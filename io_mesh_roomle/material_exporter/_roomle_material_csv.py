@@ -1,6 +1,7 @@
+from enum import Enum, unique
 from pathlib import Path
 from abc import ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Union
 import json
@@ -25,7 +26,6 @@ class DataClassJSONMixin():
 class CsvLine(ABC):
     def print_line(self):
         pass
-
 
 
 class RoomleTextureImage:
@@ -54,6 +54,7 @@ class BaseColor(DataClassJSONMixin):
 
     def set(self, *args):
         try:
+            args = args if len(args) == 3 else args[0:3]
             (
                 self.r,
                 self.g,
@@ -62,66 +63,79 @@ class BaseColor(DataClassJSONMixin):
         except Exception as e:
             log.warning(e)
 
+@unique
+class TextureMapping(str,Enum):
+    # * V1 Mappings
+    RGB='RGB'
+    RGBA='RGBA'
+    XYZ='XYZ'
+    ORM='ORM'
 
+    # * V2 Mappings
+    # https://roomle.atlassian.net/wiki/spaces/DT/pages/2255650817/Material+Definition+V2
 
-@dataclass(init=False)
-class Shading(DataClassJSONMixin):
-    alpha: float = 1
-    roughness: float = 1
-    metallic: float = 0
-    basecolor: BaseColor = BaseColor()
-    transmissionIOR: float = 1.5
-    transmission: float = 0
-    doubleSided: bool = False
-    def __init__(self) -> None:
-        self.alpha: float = 1
-        self.roughness: float = 1
-        self.metallic: float = 1
-        self.basecolor: BaseColor = BaseColor()
-
-        self.transmissionIOR: float = 1.5
-        self.doubleSided:bool = False
-        self.transmission: float = 0
-
+    EMRGB='EMRGB'
+    CCRG='CCRG'
+    CCXYZ='CCXYZ'
+    SHRGBA='SHRGBA'
+    SPRGBA='SPRGBA'
+    TTRG='TTRG'
 
 
 @dataclass
-class CsvHeaders(CsvLine):
-    ordered_labels = [
-        "material_id",
-        "label_en",
-        "label_de",
-        "shading",
-        "thumbnail",
-        "tex0_tileable",
-        "tex0_image",
-        "tex0_mapping",
-        "tex0_mmwidth",
-        "tex0_mmheight",
-        "tex1_tileable",
-        "tex1_image",
-        "tex1_mapping",
-        "tex1_mmwidth",
-        "tex1_mmheight",
-        "tex2_tileable",
-        "tex2_image",
-        "tex2_mapping",
-        "tex2_mmwidth",
-        "tex2_mmheight",
-        "tag_ids_to_add",
-        "tag_ids_to_remove",
-        "description_en",
-        "active",
-        "activeFrom",
-        "activeTill",
-        "visibilityStatus",
-        "sort",
-        "properties",
-    ]
+class Shading(DataClassJSONMixin):
+    version: str = "2.0.0"
 
-    def print_line(self) -> List:
-        return self.ordered_labels
+    alpha: float = 1
+    alphaCutoff: float = 0
+    alphaMode: str = "OPAQUE"
+    basecolor: BaseColor = field(default_factory=BaseColor)
+    transmission: float = 0
+    transmissionIOR: float = 1.45
+    metallic: float = 0
+    roughness: float = 0.85
+    doubleSided: bool = False
+    occlusion: float = 1
 
+    emissiveColor: BaseColor = field(default_factory=lambda: BaseColor(0, 0, 0))
+    emissiveIntensity: float = 0.0
+    clearcoatIntensity: float = 0.0
+    clearcoatRoughness: float = 0.0
+    clearcoatNormalScale: float = 0.0
+    sheenColor: BaseColor = field(default_factory=lambda: BaseColor(0, 0, 0))
+    sheenIntensity: float = 0.0
+    sheenRoughness: float = 0.65
+    normalScale: float = 1.0
+    specularIntensity: float = 0.0
+    thicknessFactor: float = 0.0
+    attenuationColor: BaseColor = field(default_factory=lambda: BaseColor(0, 0, 0))
+    attenuationDistance: float = 0.0
+
+
+@dataclass
+class CSV_ByDicts:
+    row_dicts: list[dict] = field(default_factory=list)
+
+    @property
+    def fieldnames(self):
+        all_keys = set()
+        for single_row_dict in self.row_dicts:
+            all_keys.update(single_row_dict.keys())
+        all_keys = list(all_keys)
+        all_keys.sort()
+        return tuple(all_keys)
+
+    def add_row(self, row_dct: dict) -> None:
+        self.row_dicts.append(row_dct)
+
+    def write_csv(self, file: Path):
+        file.parent.mkdir(exist_ok=True, parents=True)
+        with file.open(mode="w", newline="") as output_csv:
+            writer = csv.DictWriter(
+                output_csv, fieldnames=self.fieldnames, quoting=csv.QUOTE_ALL
+            )
+            writer.writeheader()
+            writer.writerows(self.row_dicts)
 
 @dataclass
 class MaterialDefinition(CsvLine):
@@ -170,25 +184,3 @@ class MaterialDefinition(CsvLine):
         ]
         )
         return data
-
-
-class RoomleMaterialsCsv:
-
-    lines: List[Union[CsvHeaders, MaterialDefinition]] = []
-
-    def __init__(self) -> None:
-        self.lines=[CsvHeaders()]
-
-    def add_material_definition(self, definition: MaterialDefinition):
-        self.lines.append(definition)
-
-    def write(self, csv_path:Path):
-        assert str(csv_path).lower().endswith('.csv')
-        csv_path.parent.mkdir(exist_ok=True)
-        arr = [x.print_line() for x in self.lines]
-        with open(csv_path, 'w', encoding='utf-8') as csv_file:
-            csv_writer = csv.writer(csv_file, delimiter=',')
-            csv_writer.writerows(arr)
-
-
-
