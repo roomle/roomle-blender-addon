@@ -66,6 +66,7 @@ class PBR_ChannelTester():
         if mapping_node is None:
             return (1.0,1.0)
         w,h,_ = mapping_node.inputs[3].default_value
+        # TODO: RML-11370 how should we handle scaled textures?
         # TODO: use `ScaleUvMatrixBy(Vector2f{30,30});``
         # return (1/w,1/h)
         return (1.0,1.0)
