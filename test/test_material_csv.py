@@ -183,3 +183,4 @@ class RoomleExportAlt(TestCaseExtended):
 
     def test_no_material_export(self):
         pass
+# TODO: Add test that loads a gltf, exports it to material v2 and compares to a saved expected version
