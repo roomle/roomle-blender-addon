@@ -222,7 +222,7 @@ class BlenderMaterialForExport:
         row_handler.set_field(col.MATERIAL_ID, self.material_id)
         row_handler.set_field(col.LABEL_EN, self.label_en)
         row_handler.set_field(col.LABEL_DE, self.label_de)
-        row_handler.set_field(col.ACTIVE, True)
+        row_handler.set_field(col.ACTIVE, 1)
 
         row_handler.add_texture_field(*self.pbr.diffuse.texture_map_data_as_tuple)
         row_handler.add_texture_field(*self.pbr.normal.texture_map_data_as_tuple)
