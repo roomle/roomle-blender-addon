@@ -223,6 +223,7 @@ class BlenderMaterialForExport:
         row_handler.set_field(col.LABEL_EN, self.label_en)
         row_handler.set_field(col.LABEL_DE, self.label_de)
         row_handler.set_field(col.ACTIVE, 1)
+        row_handler.set_field(col.THUMBNAIL, self.pbr.diffuse.zip_path)
 
         row_handler.add_texture_field(*self.pbr.diffuse.texture_map_data_as_tuple)
         row_handler.add_texture_field(*self.pbr.normal.texture_map_data_as_tuple)
