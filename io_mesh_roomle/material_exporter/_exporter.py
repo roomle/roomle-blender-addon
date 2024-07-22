@@ -1,11 +1,13 @@
 from __future__ import annotations
-from typing import Iterable, List, Protocol, Tuple, Union
+from typing import Iterable, List, Optional, Protocol, Tuple, Union
 
+from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
 import io_mesh_roomle.material_exporter.utils.materials as utils_materials
 import dataclasses
 import bpy
 
 from io_mesh_roomle.material_exporter.utils import color as utils_color
+from io_mesh_roomle.material_exporter._roomle_material_csv import Shading
 from io_mesh_roomle import enums
 from io_mesh_roomle.roomle_script import get_valid_name
 
@@ -75,59 +77,89 @@ class TextureNameManager:
         return name_to_use
 
 
-@dataclasses.dataclass
-class PBR_Channel:
+@dataclasses.dataclass(kw_only=True)
+class PBR_Channel_Base:
     """The concept of map and multiplication...
     Note that the default_values in Blender get overridden by the map
     while ThreeJS mutiplies the RGB value into the texture map
     """
-    map: Union[bpy.types.Image, None] = None
+
     default_value: Union[float, Tuple, None] = None
+
+    def default_value_rounded(
+        self, precision: int = 2
+    ) -> Union[None, float, list, tuple]:
+        if self.default_value == None:
+            return self.default_value
+        if isinstance(self.default_value, (int, float)):
+            return round(self.default_value, precision)
+        if isinstance(self.default_value, (tuple, list)):
+            return tuple([round(v, precision) for v in self.default_value])
+
+
+@dataclasses.dataclass(kw_only=True)
+class PBR_Channel(PBR_Channel_Base):
+    map: Optional[bpy.types.Image] = None
+    with_mm: float = 1
+    height_mm: float = 1
+    mapping: str = ""
+    tileable: bool = True
+
+    @property
+    def zip_path(self) -> Union[None, str]:
+        if self.map:
+            return f"zip://{self.map}"
+        else:
+            return
+
+    @property
+    def texture_map_data_as_tuple(self) -> tuple:
+        return (
+            self.zip_path,
+            self.mapping,
+            self.with_mm,
+            self.height_mm,
+            self.tileable,
+        )
+
+
+def prec(value: Union[None, float], default: float):
+    if value is None:
+        return default
+    return round(value, 2)
 
 
 class BlenderMaterialForExport:
+    """handle blender material and the corresponding roomle data"""
 
-    def __init__(self,
-                 material: bpy.types.Material,
-                 component_id: str = ""
-                 ) -> None:
-        from io_mesh_roomle.material_exporter.socket_analyzer import PBR_ShaderData
-    
-        # valid name – this has to be the same as created inside the Blender addon
-        self.pbr: PBR_ShaderData
+    def __init__(self, material: bpy.types.Material, component_id: str = "") -> None:
 
         self.images: List[str] = []
         self.component_id: str = component_id
         self.blender_material_name: str = material.name
         self.material: bpy.types.Material = material
+        self.pbr: PBR_ShaderData = PBR_ShaderData(self.material)
 
     @property
-    def _component_id_prefix(self) -> str:
+    def _prefix_from_component_id(self) -> str:
         if len(self.component_id) > 0:
-            return f'{self.component_id}_'
+            return f"{self.component_id}_"
         else:
-            return ''
-        
-    @property
-    def _component_id_suffix(self) -> str:
-        if len(self.component_id) > 0:
-            return f' ({self.component_id})'
-        else:
-            return ''
-    
+            return ""
+
     @property
     def _valid_name(self):
         return get_valid_name(self.blender_material_name)
-    
+
     @property
     def material_id(self):
-        return f'{self._component_id_prefix}{self._valid_name}'
-    
+        return f"{self._prefix_from_component_id}{self._valid_name}"
+
     @property
     def label_en(self):
         # return f'{self._valid_name}{self._component_id_suffix}'
-        return f'{self._valid_name}'
-    
+        return f"{self._valid_name}"
+
     @property
     def label_de(self):
         return self.label_en
@@ -139,8 +171,63 @@ class BlenderMaterialForExport:
     @property
     def used_principled_bsdf_shader(self) -> bpy.types.ShaderNodeBsdfPrincipled:
         return utils_materials.get_principled_bsdf_node(self.material)
-    
+
     @property
     def used_tex_nodes(self) -> list[bpy.types.ShaderNodeTexImage]:
         return utils_materials.get_used_texture_nodes(self.material)
 
+    @property
+    def is_double_sided(self) -> bool:
+        return not self.material.use_backface_culling
+
+    @property
+    def blend_mode(self) -> str:
+        if self.material.blend_method in ("CLIP", "HASHED", "BLEND"):
+            return "BLEND"
+        else:
+            return "OPAQUE"
+
+    @property
+    def csv_dict(self) -> dict:
+        from io_mesh_roomle.material_exporter import MaterialCSVRow
+
+        col = enums.MATERIALS_CSV_COLS
+
+        shading = Shading()
+        shading.alpha = prec(self.pbr.alpha.default_value, 1)
+        shading.alphaMode = self.blend_mode
+        shading.doubleSided = self.is_double_sided
+        shading.roughness = prec(self.pbr.roughness.default_value, 0.5)
+        shading.metallic = prec(self.pbr.metallic.default_value, 0)
+
+        # TODO: handle the try blocks below more elegantly
+        try:
+            shading.basecolor.set(*self.pbr.diffuse.default_value)
+        except:
+            ...
+        try:
+            shading.sheenColor.set(*self.pbr.sheen.color[0:3])
+            shading.sheenIntensity = self.pbr.sheen.sigma
+        except:
+            ...
+
+        shading.transmission = prec(self.pbr.transmission.default_value, 0)
+        shading.transmissionIOR = prec(self.pbr.ior.default_value, 1.5)
+        shading.occlusion = prec(self.pbr.ao.default_value, 0)
+        shading.emissiveColor.set(*self.pbr.emission.default_value)
+        shading.emissiveIntensity = prec(self.pbr.emission_intensity.default_value, 0)
+
+        row_handler = MaterialCSVRow()
+        row_handler.set_field(col.SHADING, shading.to_json())
+        row_handler.set_field(col.MATERIAL_ID, self.material_id)
+        row_handler.set_field(col.LABEL_EN, self.label_en)
+        row_handler.set_field(col.LABEL_DE, self.label_de)
+        row_handler.set_field(col.ACTIVE, 1)
+        row_handler.set_field(col.THUMBNAIL, self.pbr.diffuse.zip_path)
+
+        row_handler.add_texture_field(*self.pbr.diffuse.texture_map_data_as_tuple)
+        row_handler.add_texture_field(*self.pbr.normal.texture_map_data_as_tuple)
+        row_handler.add_texture_field(*self.pbr.roughness.texture_map_data_as_tuple)
+        row_handler.add_texture_field(*self.pbr.emission.texture_map_data_as_tuple)
+
+        return row_handler.data_dict

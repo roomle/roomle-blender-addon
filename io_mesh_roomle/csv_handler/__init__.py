@@ -72,8 +72,10 @@ class _CSV_DictHandler(_CSV_WriterBase):
             self.add_row(line)
 
     @property
-    def rows_sorted(self):
+    def rows_sorted(self) -> list:
         """return the row data sorted by the first column"""
+        if len(self.fieldnames) == 0:
+            return []
         first_column = self.fieldnames[0]
         row_keys_to_sort: list[str] = []
         lookup_table: dict[str, dict] = {}
