@@ -75,6 +75,7 @@ def export_materials(**keywords):
 
     # copy the full scene to work on
     bpy.ops.scene.new(type='FULL_COPY')
+    bpy.context.scene.display_settings.display_device='sRGB'
 
     # we need to restore the current selection after the material export
     # some objects may get separated by material – this objects will be added later

@@ -477,7 +477,8 @@ class BlenderMaterialForExport:
 
         for node in [node for node in self.used_nodes if isinstance(node, bpy.types.ShaderNodeTexImage)]:
             name = texture_name_manager.validate_name(node.image)
-            node.image.save(filepath=str(self.out_path / 'materials' / name))
+            # node.image.save(filepath=str(self.out_path / 'materials' / name))
+            node.image.save_render(filepath=str(self.out_path / 'materials' / name))
 
 
 

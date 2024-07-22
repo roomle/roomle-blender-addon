@@ -1,0 +1,8 @@
+{
+    "target_id": "catalog_id:converted_glb",
+    "materials": "materials.zip",
+    "meshes": "meshes.zip",
+    "components": "components.zip",
+    "items": "items.csv",
+    "tags": "tags.csv"
+}

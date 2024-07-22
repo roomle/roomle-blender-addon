@@ -1,0 +1,89 @@
+Blender 3.6.2 (hash e53e55951e7a built 2023-08-16 23:43:53)
+Read prefs: "/Users/clemens/Library/Application Support/Blender/3.6/config/userpref.blend"
+Device with name Apple M1 Max supports metal minimum requirements
+superresrender updater verbose is enabled
+superresrender Updater: Read in JSON settings from file
+register
+Exception in module register(): /Users/clemens/Library/Application Support/Blender/3.6/scripts/addons/perspective_plotter/__init__.py
+found corto at /Users/clemens/Dev/git/corto/corto
+Writing userprefs: "/Users/clemens/Library/Application Support/Blender/3.6/config/userpref.blend" ok
+Info: Preferences saved
+Writing userprefs: "/Users/clemens/Library/Application Support/Blender/3.6/config/userpref.blend" ok
+Info: Preferences saved
+Writing userprefs: "/Users/clemens/Library/Application Support/Blender/3.6/config/userpref.blend" ok
+Info: Preferences saved
+Writing userprefs: "/Users/clemens/Library/Application Support/Blender/3.6/config/userpref.blend" ok
+Info: Preferences saved
+Writing userprefs: "/Users/clemens/Library/Application Support/Blender/3.6/config/userpref.blend" ok
+Info: Preferences saved
+Writing userprefs: "/Users/clemens/Library/Application Support/Blender/3.6/config/userpref.blend" ok
+Info: Preferences saved
+Writing userprefs: "/Users/clemens/Library/Application Support/Blender/3.6/config/userpref.blend" ok
+Info: Preferences saved
+Writing userprefs: "/Users/clemens/Library/Application Support/Blender/3.6/config/userpref.blend" ok
+Info: Preferences saved
+Writing userprefs: "/Users/clemens/Library/Application Support/Blender/3.6/config/userpref.blend" ok
+Info: Preferences saved
+Writing userprefs: "/Users/clemens/Library/Application Support/Blender/3.6/config/userpref.blend" ok
+Info: Preferences saved
+Writing userprefs: "/Users/clemens/Library/Application Support/Blender/3.6/config/userpref.blend" ok
+Info: Preferences saved
+Writing userprefs: "/Users/clemens/Library/Application Support/Blender/3.6/config/userpref.blend" ok
+Info: Preferences saved
+Data are loaded, start creating Blender stuff
+glTF import finished in 0.01s
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Progress:   0.00%    (  0.0001 sec |   0.0000 sec) OBJ Export path: '/Users/clemens/Dev/git/roomle-blender-addon/tmp/TestRoomleExport/shared/meshes/converted_glb_Cube.001.obj'
+Progress:   0.00%Progress:   8.33%Progress:  16.67%Progress:  25.00%Progress:  33.33%Progress:  41.67%Progress:  50.00%          (  0.0074 sec |   0.0071 sec) Finished writing geometry of 'tmp_Cube.001'.
+Progress:  50.00%Progress:  50.00%Progress:  50.00%      (  0.0077 sec |   0.0076 sec) Finished exporting geometry, now exporting materials
+Progress: 100.00%      (  0.0077 sec |   0.0076 sec) OBJ Export Finished
+Progress: 100.00%Progress: 100.00%Progress: 100.00%Progress: 100.00%
+
+list index out of range
+Progress:   0.00%    (  0.0001 sec |   0.0000 sec) OBJ Export path: '/Users/clemens/Dev/git/roomle-blender-addon/tmp/TestRoomleExport/shared/meshes/converted_glb_Torus.001.obj'
+Progress:   0.00%Progress:   8.33%Progress:  16.67%Progress:  25.00%Progress:  33.33%Progress:  41.67%Progress:  50.00%          (  0.0177 sec |   0.0175 sec) Finished writing geometry of 'tmp_Torus.001'.
+Progress:  50.00%Progress:  50.00%Progress:  50.00%      (  0.0179 sec |   0.0179 sec) Finished exporting geometry, now exporting materials
+Progress: 100.00%      (  0.0180 sec |   0.0179 sec) OBJ Export Finished
+Progress: 100.00%Progress: 100.00%Progress: 100.00%Progress: 100.00%
+
+Progress:   0.00%    (  0.0001 sec |   0.0000 sec) OBJ Export path: '/Users/clemens/Dev/git/roomle-blender-addon/tmp/TestRoomleExport/shared/meshes/converted_glb_Cube.002.obj'
+Progress:   0.00%Progress:   8.33%Progress:  16.67%Progress:  25.00%Progress:  33.33%Progress:  41.67%Progress:  50.00%          (  0.0005 sec |   0.0003 sec) Finished writing geometry of 'tmp_Cube.002'.
+Progress:  50.00%Progress:  50.00%Progress:  50.00%      (  0.0006 sec |   0.0006 sec) Finished exporting geometry, now exporting materials
+Progress: 100.00%      (  0.0007 sec |   0.0006 sec) OBJ Export Finished
+Progress: 100.00%Progress: 100.00%Progress: 100.00%Progress: 100.00%
+
+list index out of range
+Progress:   0.00%    (  0.0001 sec |   0.0000 sec) OBJ Export path: '/Users/clemens/Dev/git/roomle-blender-addon/tmp/TestRoomleExport/shared/meshes/converted_glb_Cube.003.obj'
+Progress:   0.00%Progress:   8.33%Progress:  16.67%Progress:  25.00%Progress:  33.33%Progress:  41.67%Progress:  50.00%          (  0.0022 sec |   0.0020 sec) Finished writing geometry of 'tmp_Cube.003'.
+Progress:  50.00%Progress:  50.00%Progress:  50.00%      (  0.0024 sec |   0.0023 sec) Finished exporting geometry, now exporting materials
+Progress: 100.00%      (  0.0024 sec |   0.0023 sec) OBJ Export Finished
+Progress: 100.00%Progress: 100.00%Progress: 100.00%Progress: 100.00%
+
+list index out of range
+Progress:   0.00%    (  0.0001 sec |   0.0000 sec) OBJ Export path: '/Users/clemens/Dev/git/roomle-blender-addon/tmp/TestRoomleExport/shared/meshes/converted_glb_Cube.005.obj'
+Progress:   0.00%Progress:   8.33%Progress:  16.67%Progress:  25.00%Progress:  33.33%Progress:  41.67%Progress:  50.00%          (  0.0069 sec |   0.0067 sec) Finished writing geometry of 'tmp_Cube.005'.
+Progress:  50.00%Progress:  50.00%Progress:  50.00%      (  0.0071 sec |   0.0070 sec) Finished exporting geometry, now exporting materials
+Progress: 100.00%      (  0.0071 sec |   0.0070 sec) OBJ Export Finished
+Progress: 100.00%Progress: 100.00%Progress: 100.00%Progress: 100.00%
+
+list index out of range
+Exception in module unregister(): '/Applications/Blender3.6.2-ARM-LTS.app/Contents/Resources/3.6/scripts/addons/io_scene_obj/__init__.py'
+Exception in module unregister(): '/Applications/Blender3.6.2-ARM-LTS.app/Contents/Resources/3.6/scripts/addons/io_scene_fbx/__init__.py'
+unregister
+
+Blender quit
