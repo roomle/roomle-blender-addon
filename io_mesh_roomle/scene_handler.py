@@ -10,7 +10,10 @@ class SceneHandler():
         self.existing_collections = set(bpy.data.collections)
 
     def copy_scene(self):
-        bpy.ops.scene.new(type='FULL_COPY')
+        try:
+            bpy.ops.scene.new(type='FULL_COPY')
+        except Exception as e:
+            print(e)
         return self
 
     def remove_export_scene(self, scene = None):

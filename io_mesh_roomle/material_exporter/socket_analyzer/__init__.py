@@ -65,10 +65,17 @@ class PBR_ChannelTester():
         mapping_node = self.origin(image_node.inputs[0])
         if mapping_node is None:
             return (1.0,1.0)
-        w,h,_ = mapping_node.inputs[3].default_value
+
         # TODO: RML-11370 how should we handle scaled textures?
         # TODO: use `ScaleUvMatrixBy(Vector2f{30,30});``
-        # return (1/w,1/h)
+        
+        vector_type = mapping_node.vector_type
+        if vector_type == 'POINT':
+            w,h,_ = mapping_node.inputs[3].default_value
+            return (1/w,1/h)
+        elif vector_type == 'TEXTURE':
+            w,h,_ = mapping_node.inputs[3].default_value
+            return (w,h)
         return (1.0,1.0)
 
     def _run_checks(self):

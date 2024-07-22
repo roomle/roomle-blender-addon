@@ -254,6 +254,7 @@ class ExportRoomleScript(Operator, ExportHelper):
         from mathutils import Matrix, Vector
         from . import roomle_script
 
+        print('⭐️⭐️⭐️⭐️⭐️⭐️⭐️')
         preferences = bpy.context.preferences.addons[__name__].preferences
 
         if self.filepath == '':
@@ -401,6 +402,7 @@ def menu_export(self, context):
 
 
 def register():
+
     # Logging
     # TODO: add logging handler
     # Blender
