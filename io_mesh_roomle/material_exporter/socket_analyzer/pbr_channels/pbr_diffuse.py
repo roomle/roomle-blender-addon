@@ -123,7 +123,7 @@ class diffuse(PBR_ChannelTester):
 
         # TODO: handle more node setups
         return PBR_Channel(
-            default_value=b.default_value  # [0:3]
+            default_value=[linear_to_srgb(x) for x in b.default_value]  # [0:3]
         )
 
     def check_indirectly_attached_with_vertex_colors(self) -> Union[PBR_Channel, None]:
