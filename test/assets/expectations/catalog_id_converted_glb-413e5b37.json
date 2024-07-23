@@ -1,11 +1,10 @@
 {
     "id": "catalog_id:converted_glb",
-    "parameters": [
-        {
+    "parameters": [{
             "key": "material_001",
             "type": "Material",
             "labels": {
-                "en": "Material 004 (converted_glb)"
+                "en": "Material 004"
             },
             "defaultValue": "catalog_id:converted_glb_Material_004",
             "validGroups": [
@@ -16,7 +15,7 @@
             "key": "material_002",
             "type": "Material",
             "labels": {
-                "en": "Material 001 (converted_glb)"
+                "en": "Material 001"
             },
             "defaultValue": "catalog_id:converted_glb_Material_001",
             "validGroups": [
@@ -27,7 +26,7 @@
             "key": "material_003",
             "type": "Material",
             "labels": {
-                "en": "Material 002 (converted_glb)"
+                "en": "Material 002"
             },
             "defaultValue": "catalog_id:converted_glb_Material_002",
             "validGroups": [
@@ -38,7 +37,7 @@
             "key": "material_004",
             "type": "Material",
             "labels": {
-                "en": "Material 003 (converted_glb)"
+                "en": "Material 003"
             },
             "defaultValue": "catalog_id:converted_glb_Material_003",
             "validGroups": [
