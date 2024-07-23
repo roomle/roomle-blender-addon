@@ -1,4 +1,5 @@
 
+import json
 from pathlib import Path
 from subprocess import Popen
 import zipfile
@@ -6,7 +7,7 @@ from io_mesh_roomle.enums import FILE_NAMES
 from io_mesh_roomle.material_exporter import MaterialCSVRow
 from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 from io_mesh_roomle.roomle_script import get_valid_name
-from test.utils import BLENDER, AddonExportParams, TestCaseExtended
+from test.utils import BLENDER, AddonExportParams, AssetHandling, TestCaseExtended
 
 
 def test_material_name_validation_RML_XXX():
@@ -53,15 +54,16 @@ class TestRoomleExport(TestCaseExtended):
 
 
     def test_file_tags_exist(self):
-        assert self.assert_txt(self.fld / FILE_NAMES.TAGS_CSV, 'dbca80fd44c45596f39d425738c62071')
+        assert AssetHandling.expect_text("tags-12302b60.csv") == (self.fld / FILE_NAMES.TAGS_CSV).read_text()
+
 
     def test_file_products_exist(self):
-        self.assert_txt(self.fld / FILE_NAMES.ITEMS_CSV, 'dbca80fd44c45596f39d425738c62071')
+        assert AssetHandling.expect_text("items-92106a8e.csv") == (self.fld / FILE_NAMES.ITEMS_CSV).read_text()
 
     def test_file_meta_exist(self):
         assert (self.fld / FILE_NAMES.META_JSON).exists()
         assert (self.fld / FILE_NAMES.META_JSON).is_file()
-        assert self.sorted_txt_hash(self.fld / FILE_NAMES.META_JSON) == 'efccba29e24e518c81a111d62a04fe48'
+        assert AssetHandling.expect_text("meta-eab00086.json") == (self.fld / FILE_NAMES.META_JSON).read_text()
 
     def test_file_meshes_exist(self):
         assert (self.fld / FILE_NAMES.MESHES_ZIP).exists()
@@ -136,7 +138,7 @@ class TestRoomleExport(TestCaseExtended):
         
         assert (self.tmp_path / 'materials.csv').exists()
         assert (self.tmp_path / 'Untitled.png').exists()
-        assert self.sorted_txt_hash(self.tmp_path / 'materials.csv') == '1948fce4233b3c1ffd25acb7531fc72a'
+        assert AssetHandling.expect_text('materials-23e1669f.csv') == (self.tmp_path / 'materials.csv').read_text()
 
     def test_meshes_zip_content(self):
         zip_file = self.fld / "meshes.zip"
@@ -155,8 +157,8 @@ class TestRoomleExport(TestCaseExtended):
         assert (self.tmp_path / 'components.csv').exists()
         assert (self.tmp_path / 'components.csv').is_file()
 
-        assert self.sorted_txt_hash(self.tmp_path / 'catalog_id_converted_glb.json') == '400d1e7d3f0e858a7385a7d6e0a02330'
-        assert self.sorted_txt_hash(self.tmp_path / 'components.csv') == '0afb4fa00585a7f54e1cee9e491ac0de'
+        assert json.load((self.tmp_path / 'catalog_id_converted_glb.json').open('r')) == AssetHandling.expect_json('catalog_id_converted_glb-413e5b37.json')
+        assert (self.tmp_path / 'components.csv').read_text() == AssetHandling.expect_text('components-d73f238c.csv')
         
 class RoomleExportAlt(TestCaseExtended):
     @classmethod
