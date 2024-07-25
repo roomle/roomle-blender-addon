@@ -54,7 +54,7 @@ class VertexVariant:
     #normal: Vector
 
 
-def get_valid_name(name):
+def get_valid_name(name) -> str:
     return re.sub('[^0-9a-zA-Z_]+', '_', name)
 
 
@@ -361,7 +361,7 @@ def create_extern_mesh_command(
 
     apply_rotation = addon_args.apply_rotations and rotation
     name = object.name if (scale or apply_rotation) else object.data.name
-    name = name.replace(' ','_')
+    name = get_valid_name(name)
 
     mesh = object.to_mesh(
         depsgraph=bpy.context.evaluated_depsgraph_get(),
