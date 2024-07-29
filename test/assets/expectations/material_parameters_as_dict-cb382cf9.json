@@ -2,7 +2,7 @@
     "key": "material_001",
     "type": "Material",
     "labels": {
-        "en": "material id (component_id)"
+        "en": "material id"
     },
     "defaultValue": "catalog_id:component_id_material_id",
     "validGroups": [

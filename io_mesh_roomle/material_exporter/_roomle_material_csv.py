@@ -135,6 +135,7 @@ class CSV_ByDicts:
                 output_csv, fieldnames=self.fieldnames, quoting=csv.QUOTE_ALL
             )
             writer.writeheader()
+            self.row_dicts.sort(key= lambda x: x['material_id'])
             writer.writerows(self.row_dicts)
 
 @dataclass

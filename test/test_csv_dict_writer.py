@@ -1,7 +1,7 @@
 from pathlib import Path
 from textwrap import dedent
 from io_mesh_roomle.csv_handler import _CSV_DictHandler
-from test.utils import TestCaseExtended
+from test.utils import AssetHandling, TestCaseExtended
 
 
 class TestCsvDict(TestCaseExtended):
@@ -24,8 +24,8 @@ class TestCsvDict(TestCaseExtended):
         assert isinstance(handler.fieldnames, tuple)
         handler.write(output)
 
-        assert self.sorted_txt_hash(
-            output) == '1aedfc93cb3b303c236b5da3e3b05bc6'
+        assert output.read_text() == AssetHandling.expect_text("out-e32ad02f.csv")
+
 
     def test_iterable_field(self):
         output = self.tmp_path / 'out-3.csv'
@@ -40,8 +40,8 @@ class TestCsvDict(TestCaseExtended):
         )
         handler.write(output)
 
-        assert self.sorted_txt_hash(
-            output) == '9b3058e9d0b07d46e906c2ce4bb0f6bb'
+        assert output.read_text() == AssetHandling.expect_text("out-1ffd2c51.csv")
+
     
     def test_blank_field_creation(self):
         out = self.tmp_path / 'out-fields.csv'
