@@ -106,7 +106,6 @@ class Shading(DataClassJSONMixin):
     sheenIntensity: float = 0.0
     sheenRoughness: float = 0.65
     normalScale: float = 1.0
-    # specularIntensity: float = 0.0
     thicknessFactor: float = 0.0
     attenuationColor: BaseColor = field(default_factory=lambda: BaseColor(0, 0, 0))
     attenuationDistance: float = 0.0
