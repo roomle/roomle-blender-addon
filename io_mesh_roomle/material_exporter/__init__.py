@@ -5,7 +5,7 @@
 
 import logging
 import bpy
-from PIL import Image
+
 from pathlib import Path
 from typing import Any, Generator, Iterable, Union
 from io_mesh_roomle import arguments
