@@ -14,7 +14,6 @@
 # -----------------------------------------------------------------------
 
 from __future__ import annotations
-from binhex import hexbin
 import csv
 from hashlib import md5, sha256
 import json

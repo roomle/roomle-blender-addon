@@ -52,6 +52,17 @@ class TestRoomleExport(TestCaseExtended):
         assert self.sorted_txt_hash(self.fld / 'tags.csv') == hash, f'❌ {file} -> invalid hash'
         return True
 
+    def test_roughness(self):
+        """When ORM Map is used the roughness factor should be 1.0"""
+        
+        self.convert_file(
+            self.asset_path('roughness-factor-f8c0eebe.glb'),
+            self.tmp_path / 'converted.txt'
+        )
+        with zipfile.ZipFile(self.tmp_path / 'materials.zip', 'r') as zip_ref:
+            zip_ref.extractall(self.tmp_path / './materials')
+        assert AssetHandling.expect_text('materials-b3815868.csv') == (self.tmp_path / 'materials/materials.csv').read_text()
+
 
     def test_file_tags_exist(self):
         assert AssetHandling.expect_text("tags-12302b60.csv") == (self.fld / FILE_NAMES.TAGS_CSV).read_text()

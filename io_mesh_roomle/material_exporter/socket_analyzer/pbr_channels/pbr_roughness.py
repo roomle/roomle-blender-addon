@@ -39,5 +39,5 @@ class roughness(PBR_ChannelTester):
         return PBR_Channel(
             map=image_node.image,
             mapping=TextureMapping.ORM,
-            default_value=self.def_value
+            default_value=1.0
         )
