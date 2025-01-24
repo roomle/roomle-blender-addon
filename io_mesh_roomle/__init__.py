@@ -51,7 +51,7 @@ from io_mesh_roomle.enums import COMP_CSV_COLS, FILE_NAMES, ITEMS_CSV_COLS, META
 bl_info = {
     "name": "Roomle Configurator Script",
     "author": "Andreas Atteneder",
-    "version": (3, 0, 0),
+    "version": (3, 0, 1),
     "blender": (3, 6, 2),
     "location": "File > Import-Export > Roomle",
     "description": "Export Roomle Configurator Script",
