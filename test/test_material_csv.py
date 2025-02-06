@@ -1,8 +1,12 @@
 
+import csv
 import json
+from os import unlink
 from pathlib import Path
 from subprocess import Popen
 import zipfile
+
+from matplotlib.rcsetup import all_backends
 from io_mesh_roomle.enums import FILE_NAMES 
 from io_mesh_roomle.material_exporter import MaterialCSVRow
 from io_mesh_roomle.material_exporter._exporter import PBR_Channel
@@ -18,6 +22,24 @@ def test_material_name_validation_RML_XXX():
 
 
 class TestMaterialCSV(TestCaseExtended):
+
+
+    def load_materials_csv(self) -> list[dict]:
+        self.keep_only_files(self.materials_zip)
+        self.unzip(self.materials_zip, self.tmp_path)
+        self.materials_zip.unlink()
+        self.keep_only_files(self.materials_csv)
+        return self.read_csv_to_dicts(self.materials_csv)
+
+    
+    @property
+    def materials_zip(self) -> Path:
+        return self.tmp_path / 'materials.zip'
+    
+    @property
+    def materials_csv(self) -> Path:
+        return self.tmp_path / 'materials.csv'
+
     def test_mat_csv(self):
 
 
@@ -34,6 +56,25 @@ class TestMaterialCSV(TestCaseExtended):
             '--', file, params.json
         ]).wait()
         pass
+
+    def test_mat_csv_uv_scaling(self):
+
+        params = AddonExportParams(
+            filepath=str(self.tmp_path / 'out.txt')
+        )
+
+        file = self.asset_path('uv-scaling-9e319593.glb')
+
+        Popen([
+            BLENDER,
+            '--background',
+            '--python', Path(__file__).parent / 'simple_export.py',
+            '--', file, params.json
+        ]).wait()
+        csv_data = self.load_materials_csv()[0]
+        assert csv_data.get('tex0_mmheight') == '300'
+        assert csv_data.get('tex0_mmwidth') == '100'
+
 
 class TestRoomleExport(TestCaseExtended):
     @classmethod

@@ -68,8 +68,7 @@ class PBR_ChannelTester():
         w,h,_ = mapping_node.inputs[3].default_value
         # TODO: RML-11370 how should we handle scaled textures?
         # TODO: use `ScaleUvMatrixBy(Vector2f{30,30});``
-        # return (1/w,1/h)
-        return (1.0,1.0)
+        return (round(1/w),round(1/h))
 
     def _run_checks(self):
         log.warning(f'running shader checks for {self.__class__.__name__}')

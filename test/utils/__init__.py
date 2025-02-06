@@ -1,11 +1,13 @@
+import csv
 from dataclasses import dataclass
+import zipfile
 from hashlib import md5
 import inspect
 import json
 from pathlib import Path
 import shutil
 from subprocess import Popen
-from typing import Any, Union
+from typing import Any, Iterable, Union
 
 
 import logging
@@ -46,6 +48,24 @@ class AssetHandling:
 
     assets = Path(__file__).parent.parent / 'assets'
     expectations = assets / 'expectations'
+
+    @staticmethod
+    def read_csv_to_dicts(file_path: Path):
+        with open(file_path, mode='r', encoding='utf-8') as file:
+            reader = csv.DictReader(file)  # Uses first row as field names
+            return [row for row in reader]  # Convert to a list of dictionaries
+
+    def keep_only_files(self, *files_to_keep: Path):
+        checks = tuple(str(file.resolve().absolute()) for file in files_to_keep)
+        for file in self.tmp_path.glob('*.*'):
+            if str(file.resolve().absolute()) not in checks:
+                file.unlink()
+
+    @staticmethod
+    def unzip(zip_file:Path, target: Path) -> Path:
+        with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+            zip_ref.extractall(target)
+        return target
 
     @staticmethod
     def _read_file_text(file:Path) -> str:
