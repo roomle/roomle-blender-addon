@@ -75,6 +75,24 @@ class TestMaterialCSV(TestCaseExtended):
         assert csv_data.get('tex0_mmheight') == '300'
         assert csv_data.get('tex0_mmwidth') == '100'
 
+    def test_mat_csv_uv_scaling_2(self):
+
+        params = AddonExportParams(
+            filepath=str(self.tmp_path / 'out.txt')
+        )
+
+        file = self.asset_path('all_channels-f5a318d6.glb')
+
+        Popen([
+            BLENDER,
+            '--background',
+            '--python', Path(__file__).parent / 'simple_export.py',
+            '--', file, params.json
+        ]).wait()
+        csv_data = self.load_materials_csv()[0]
+        assert csv_data.get('tex0_mmheight') == '1200'
+        assert csv_data.get('tex0_mmwidth') == '600'
+
 
 class TestRoomleExport(TestCaseExtended):
     @classmethod

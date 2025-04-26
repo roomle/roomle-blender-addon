@@ -35,9 +35,13 @@ class roughness(PBR_ChannelTester):
 
         if not isinstance(image_node, bpy.types.ShaderNodeTexImage):
             return
+        
+        w,h = self.image_dimensions(image_node)
 
         return PBR_Channel(
             map=image_node.image,
+            with_mm=w,
+            height_mm=h,
             mapping=TextureMapping.ORM,
             default_value=1.0
         )

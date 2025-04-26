@@ -62,13 +62,16 @@ class PBR_ChannelTester():
         return get_principled_bsdf_node(self.material)
 
     def image_dimensions(self,image_node) -> tuple[float,float]:
-        mapping_node = self.origin(image_node.inputs[0])
-        if mapping_node is None:
-            return (1.0,1.0)
-        w,h,_ = mapping_node.inputs[3].default_value
-        # TODO: RML-11370 how should we handle scaled textures?
-        # TODO: use `ScaleUvMatrixBy(Vector2f{30,30});``
-        return (round(1/w),round(1/h))
+        try:
+            mapping_node = self.origin(image_node.inputs[0])
+            if mapping_node is None:
+                return (1,1)
+            w,h,_ = mapping_node.inputs[3].default_value
+            # TODO: RML-11370 how should we handle scaled textures?
+            # TODO: use `ScaleUvMatrixBy(Vector2f{30,30});``
+            return (round(1/w),round(1/h))
+        except IndexError:
+            return (1,1)
 
     def _run_checks(self):
         log.warning(f'running shader checks for {self.__class__.__name__}')

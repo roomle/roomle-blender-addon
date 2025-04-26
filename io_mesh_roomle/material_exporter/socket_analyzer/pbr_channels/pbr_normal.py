@@ -25,9 +25,12 @@ class normal(PBR_ChannelTester):
 
         if not isinstance(image_texture, bpy.types.ShaderNodeTexImage):
             pass
+        w,h = self.image_dimensions(image_texture)
         try:
             return PBR_Channel(
                 map=image_texture.image,
+                with_mm=w,
+                height_mm=h,
                 mapping=TextureMapping.XYZ
             )
         except Exception as e:

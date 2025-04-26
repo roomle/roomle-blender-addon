@@ -265,6 +265,11 @@ class ExportRoomleScript(Operator, ExportHelper):
 
         scn_hndlr = scene_handler.SceneHandler(bpy.context.scene)
         scn_hndlr.copy_scene()
+        
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.select_all(action='SELECT')
+
+        bpy.ops.object.make_single_user()
         if addon_args.export_materials:
             material_exporter.export_materials(addon_args)
 

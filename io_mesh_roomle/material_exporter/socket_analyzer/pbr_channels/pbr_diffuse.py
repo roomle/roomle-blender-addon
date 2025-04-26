@@ -57,9 +57,11 @@ class diffuse(PBR_ChannelTester):
 
         if not isinstance(n, bpy.types.ShaderNodeTexImage):
             return
-
+        w,h = self.image_dimensions(n)
         return PBR_Channel(
             map=n.image,
+            with_mm=w,
+            height_mm=h,
             mapping=TextureMapping.RGBA,
             default_value=self.pbr_defaults.diffuse
         )
@@ -95,9 +97,11 @@ class diffuse(PBR_ChannelTester):
             return None
 
         c = tex_node[0]
-
+        w,h = self.image_dimensions(n)
         return PBR_Channel(
             map=n.image,
+            with_mm=w,
+            height_mm=h,
             mapping=TextureMapping.RGBA,
             default_value=tuple(c.default_value)[0:3]
         )
@@ -159,5 +163,10 @@ class diffuse(PBR_ChannelTester):
             return
 
         n = tex_node[0]
-
-        return PBR_Channel(map=n.image, mapping=TextureMapping.RGBA)
+        w,h = self.image_dimensions(n)
+        return PBR_Channel(
+            map=n.image,
+            with_mm=w,
+            height_mm=h,
+            mapping=TextureMapping.RGBA
+            )
