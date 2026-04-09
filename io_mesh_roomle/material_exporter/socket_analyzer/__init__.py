@@ -8,6 +8,7 @@ import bpy
 
 from io_mesh_roomle.material_exporter.utils.materials import (
     get_principled_bsdf_node,
+    get_principled_bsdf_input,
     get_socket_origin
     )
 
@@ -79,6 +80,9 @@ class PBR_ChannelTester():
     
     def principled_bsdf_socket(self, slot:int) -> bpy.types.NodeSocket:
         return self.principled_bsdf.inputs[slot]
+
+    def principled_bsdf_socket_by_name(self, *socket_names: str) -> bpy.types.NodeSocket:
+        return get_principled_bsdf_input(self.principled_bsdf, *socket_names)
     
     def origin(self, socket: bpy.types.NodeSocket) -> Union[bpy.types.Node, None]:
         return get_socket_origin(self.material,socket)

@@ -6,7 +6,30 @@ import json
 
 from attr import dataclass
 
-BLENDER = '/Applications/Blender3.6.2-ARM-LTS.app/Contents/MacOS/blender'
+
+def find_blender_executable() -> str:
+    candidates = []
+
+    env_path = os.environ.get('BLENDER_BIN')
+    if env_path:
+        candidates.append(env_path)
+
+    candidates.extend([
+        '/Applications/Blender.app/Contents/MacOS/Blender',
+        '/Applications/Blender.app/Contents/MacOS/blender',
+        '/Applications/Blender3.6.2-ARM-LTS.app/Contents/MacOS/blender',
+    ])
+
+    for candidate in candidates:
+        if os.path.isfile(candidate):
+            return candidate
+
+    raise FileNotFoundError(
+        'No Blender executable found. Set BLENDER_BIN or install Blender in /Applications.'
+    )
+
+
+BLENDER = find_blender_executable()
 
 
 @dataclass

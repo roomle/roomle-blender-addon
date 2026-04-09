@@ -9,15 +9,32 @@ from subprocess import check_call,DEVNULL,CalledProcessError,STDOUT
 
 log = logging.getLogger('test')
 
+
+def find_blender_executable():
+    candidates = []
+
+    env_path = os.environ.get('BLENDER_BIN')
+    if env_path:
+        candidates.append(env_path)
+
+    candidates.extend([
+        '/Applications/Blender.app/Contents/MacOS/Blender',
+        '/Applications/Blender.app/Contents/MacOS/blender',
+        '/Applications/Blender3.6.2-ARM-LTS.app/Contents/MacOS/blender',
+    ])
+
+    for candidate in candidates:
+        if os.path.isfile(candidate):
+            return candidate
+
+    raise FileNotFoundError(
+        'No Blender executable found. Set BLENDER_BIN or install Blender in /Applications.'
+    )
+
 class RoomleScriptExportTests(TestCase):
 
     BLENDER = {
-        # '2.79': '/Applications/blender-2.79.0-x86_64/blender.app/Contents/MacOS/blender',
-        # '2.80': '/Applications/blender-2.80.0-x86_64/blender.app/Contents/MacOS/blender',
-        # '3.0': '/Applications/Blender.app/Contents/MacOS/blender',
-        # '2.93': '/Applications/Blender-2.93.5.app/Contents/MacOS/blender',
-        # '3.3': '/Applications/Blender3.3.3-ARM-LTS.app/Contents/MacOS/blender',
-        '3.6': '/Applications/Blender3.6.2-ARM-LTS.app/Contents/MacOS/blender',
+        'current': find_blender_executable(),
     }
 
     scenes = [

@@ -1,6 +1,10 @@
 import bpy
 from typing import Iterable, List, Union
 
+
+def _normalize_socket_name(name: str) -> str:
+    return ''.join(ch for ch in name.lower() if ch.isalnum())
+
 def get_all_used_nodes(material:bpy.types.Material) -> Iterable:
         """find only the used nodes in material's node tree.
         staring at the output node and walking all nodes backwards
@@ -39,6 +43,24 @@ def get_principled_bsdf_node(material:bpy.types.Material) -> bpy.types.ShaderNod
     assert len(princilpled_nodes) > 0, 'no principled bsdf node found'
     assert len(princilpled_nodes) < 2, 'multiple principled bsdf nodes found'
     return princilpled_nodes[0]
+
+
+def get_principled_bsdf_input(
+    node: bpy.types.ShaderNodeBsdfPrincipled,
+    *socket_names: str,
+) -> bpy.types.NodeSocket:
+    """Return a Principled BSDF input socket by name, tolerant to Blender renames."""
+    wanted_names = {_normalize_socket_name(name) for name in socket_names}
+    for socket in node.inputs:
+        socket_names_to_match = {
+            _normalize_socket_name(socket.name),
+            _normalize_socket_name(socket.identifier),
+        }
+        if wanted_names & socket_names_to_match:
+            return socket
+
+    available = ', '.join(socket.name for socket in node.inputs)
+    raise KeyError(f'Could not find Principled BSDF input {socket_names!r}. Available inputs: {available}')
 
 
 def get_used_texture_nodes(material:bpy.types.Material) -> list[bpy.types.ShaderNodeTexImage]:

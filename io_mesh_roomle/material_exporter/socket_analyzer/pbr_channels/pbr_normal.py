@@ -9,7 +9,7 @@ from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 class normal(PBR_ChannelTester):
     def __init__(self, material: Material) -> None:
         super().__init__(material)
-        self.socket= self.principled_bsdf_socket(22)
+        self.socket = self.principled_bsdf_socket_by_name('Normal')
         
     def check_standard_normal(self) -> Union[PBR_Channel, None]:
         socket = self.socket

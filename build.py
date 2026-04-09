@@ -1,21 +1,38 @@
 '''
-build the blender plugin in ./dist folder
+builds the blender plugin in ./dist folder
+usage: `Applications/Blender.app/Contents/MacOS/Blender --python build.py`
 '''
 from genericpath import isdir
 import shutil
 import os
+import sys
 import json
+import ast
 import datetime
 from hashlib import md5
 from pathlib import Path
-from io_mesh_roomle import bl_info
 from distutils.version import StrictVersion
+
+ROOT_DIR = Path(__file__).parent.absolute()
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+
+def read_bl_info(init_file: Path) -> dict:
+    module = ast.parse(init_file.read_text(encoding='utf-8'))
+    for node in module.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == 'bl_info':
+                    return ast.literal_eval(node.value)
+    raise ValueError(f'Could not find bl_info in {init_file}')
+
+
+bl_info = read_bl_info(ROOT_DIR / 'io_mesh_roomle' / '__init__.py')
 
 PLUGIN_NAME = 'io_mesh_roomle'
 VERSION = '.'.join([str(x) for x in bl_info["version"]])
 ZIP_FILENAME = f'{PLUGIN_NAME}_{VERSION}'
-
-ROOT_DIR = Path(__file__).parent.absolute()
 
 BUILD_DIR = ROOT_DIR / 'build'
 DIST_DIR = ROOT_DIR / 'dist'

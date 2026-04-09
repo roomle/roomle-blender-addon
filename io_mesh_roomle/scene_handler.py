@@ -68,8 +68,8 @@ class SceneHandler():
 
         # Remove World
         # Scene `full copy` also duplicates the world -> we need to delete it
-        world = bpy.context.scene.world
-        if world is not None:
+        world = scene.world
+        if world is not None and world.users <= 1:
             bpy.data.worlds.remove(world)
 
         # remove collections created by scene duplication

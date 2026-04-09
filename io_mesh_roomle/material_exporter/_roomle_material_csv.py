@@ -1,6 +1,6 @@
 from pathlib import Path
 from abc import ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Union
 import json
@@ -69,7 +69,7 @@ class Shading(DataClassJSONMixin):
     alpha: float = 1
     roughness: float = 1
     metallic: float = 1
-    basecolor: BaseColor = BaseColor()
+    basecolor: BaseColor = field(default_factory=BaseColor)
     transmissionIOR: float = 1.5
     transmission: float = 0
     doubleSided: bool = False

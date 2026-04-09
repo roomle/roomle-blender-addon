@@ -19,6 +19,7 @@ import bmesh
 import os
 import re
 import subprocess
+import inspect
 
 from dataclasses import dataclass
 from decimal import Decimal
@@ -106,9 +107,11 @@ def indices_from_mesh(ob, use_mesh_modifiers=False):
     bm.to_mesh(mesh)
     bm.free()
 
-    mesh.calc_normals()
+    if hasattr(mesh, 'calc_normals'):
+        mesh.calc_normals()
     mesh.calc_loop_triangles()
-    mesh.calc_normals_split()
+    if hasattr(mesh, 'calc_normals_split'):
+        mesh.calc_normals_split()
     
     uv_layer_index = mesh.uv_layers.active_index
     uv_layer = mesh.uv_layers[uv_layer_index] if uv_layer_index>=0 else None
@@ -336,7 +339,8 @@ def create_extern_mesh_command(
     bm.from_mesh(mesh)
 
     tri_mesh = bpy.data.meshes.new(name)
-    tri_mesh.use_auto_smooth = mesh.use_auto_smooth
+    if hasattr(tri_mesh, 'use_auto_smooth') and hasattr(mesh, 'use_auto_smooth'):
+        tri_mesh.use_auto_smooth = mesh.use_auto_smooth
 
     # Finish up, write the bmesh back to the mesh
     bm.to_mesh(tri_mesh)
@@ -374,19 +378,11 @@ def create_extern_mesh_command(
     filepath = os.path.join(extern_mesh_dir,f'{script_name}_{name}')
 
     filepath += '.obj'
-    bpy.ops.export_scene.obj(
+    export_selected_obj(
         filepath=filepath,
-        check_existing=False,
-        use_selection=True,
         use_mesh_modifiers=use_mesh_modifiers,
-        use_normals=args['export_normals'],
-        global_scale=1000,
-        use_uvs=True,
-        use_blen_objects=False,
-        use_materials=False,
-        axis_forward='Y',
-        axis_up='Z',
-        )
+        export_normals=args['export_normals'],
+    )
 
     dim, center = get_object_bounding_box(tmp)
 
@@ -595,6 +591,50 @@ def create_objects_commands(preferences,objects, object_list, extern_mesh_dir, g
             command += create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, **args)
     return command.rstrip()
 
+
+def get_visible_objects(context: bpy.types.Context):
+    view_layer = context.view_layer
+    return [obj for obj in view_layer.objects if obj.visible_get(view_layer=view_layer)]
+
+
+def export_selected_obj(filepath: str, use_mesh_modifiers: bool, export_normals: bool) -> None:
+    if hasattr(bpy.ops.wm, 'obj_export'):
+        operator = bpy.ops.wm.obj_export
+        properties = inspect.signature(operator).parameters
+        kwargs = {
+            'filepath': filepath,
+            'check_existing': False,
+            'global_scale': 1000,
+            'export_selected_objects': True,
+            'export_uv': True,
+            'export_normals': export_normals,
+            'export_materials': False,
+            'forward_axis': 'Y',
+            'up_axis': 'Z',
+        }
+        if 'apply_modifiers' in properties:
+            kwargs['apply_modifiers'] = use_mesh_modifiers
+        if 'export_object_groups' in properties:
+            kwargs['export_object_groups'] = False
+        if 'export_material_groups' in properties:
+            kwargs['export_material_groups'] = False
+        operator(**kwargs)
+        return
+
+    bpy.ops.export_scene.obj(
+        filepath=filepath,
+        check_existing=False,
+        use_selection=True,
+        use_mesh_modifiers=use_mesh_modifiers,
+        use_normals=export_normals,
+        global_scale=1000,
+        use_uvs=True,
+        use_blen_objects=False,
+        use_materials=False,
+        axis_forward='Y',
+        axis_up='Z',
+    )
+
 def write_roomle_script( operator, preferences, context, filepath, global_matrix, **args ):
     """
     Write a roomle script file from faces,
@@ -614,7 +654,7 @@ def write_roomle_script( operator, preferences, context, filepath, global_matrix
             if not obj.parent:
                 root_objects.append(obj)
         
-        object_list = bpy.context.selected_objects if args['use_selection'] else bpy.context.visible_objects
+        object_list = bpy.context.selected_objects if args['use_selection'] else get_visible_objects(bpy.context)
 
         extern_mesh_dir = os.path.splitext(filepath)[0]
 

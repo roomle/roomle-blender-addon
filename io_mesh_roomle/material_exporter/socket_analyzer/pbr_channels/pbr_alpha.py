@@ -11,7 +11,7 @@ class alpha(PBR_ChannelTester):
     # TODO: image alpha?
     def __init__(self, material: bpy.types.Material) -> None:
         super().__init__(material)
-        self.socket = self.principled_bsdf_socket(21)
+        self.socket = self.principled_bsdf_socket_by_name('Alpha')
         self.def_val = self.socket.default_value
 
     def check_no_texture(self) -> Union[PBR_Channel, None]:

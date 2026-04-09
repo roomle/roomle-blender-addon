@@ -9,7 +9,7 @@ from io_mesh_roomle.material_exporter._exporter import PBR_Channel
 class roughness(PBR_ChannelTester):
     def __init__(self, material: Material) -> None:
         super().__init__(material)
-        self.socket = self.principled_bsdf_socket(9)
+        self.socket = self.principled_bsdf_socket_by_name('Roughness')
         self.def_value = self.socket.default_value
 
     def check_no_texture(self) -> Union[PBR_Channel, None]:
