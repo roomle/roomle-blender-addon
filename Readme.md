@@ -1,3 +1,8 @@
+**Important:**
+
+This version is based on intermediate, probably unfinished changes by one of the former employees. We couldn't find out if those changes are complete and operational. We are discarding them in favor of compatibility changes that are based on the v2.2.0, which is widely in use and we are certain it works with expected results.
+
+
 # Roomle Blender Addon
 
 Addon, that allows you to export your scene into the Roomle Configurator Script format, accompanied by [external mesh files](#external-meshes).
