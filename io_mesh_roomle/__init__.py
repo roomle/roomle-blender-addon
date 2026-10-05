@@ -40,7 +40,7 @@ else:
     from . import roomle_script
     from . import optimize_operator
 
-import os,sys,subprocess
+import os,sys,subprocess,traceback
 import bpy
 
 from bpy.props import (
@@ -153,16 +153,26 @@ class ExportRoomleScript( Operator, ExportHelper ):
             default=False,
             )
 
+    global_scale: FloatProperty(
+        name="Scale",
+        description="Multiplier from Blender units to Roomle millimeters. 1000 for scenes modelled in meters, 1 for scenes modelled in millimeters",
+        default=1000.0,
+        min=0.0001,
+        soft_max=1000.0,
+        )
+
     mesh_export_options = [
         ("AUTO", "Automatic", "Automatically make big meshes efficient, external files", 1),
-        ("EXTERNAL", "Force Extern", "Include meshes as text command", 2),
-        ("INTERNAL", "Force Intern", "Export meshes as external files", 3),
+        ("EXTERNAL", "Force Extern", "Export meshes as external files", 2),
+        ("INTERNAL", "Force Intern", "Include meshes as text command", 3),
     ]
 
 
     use_corto: BoolProperty(
         name="Use Corto",
-        description="Create corto files if possible",
+        description="Compress external meshes into Corto (.crt) files, which replace the OBJ files in the mesh folder. "
+                    "Requires the corto executable: set its location in Preferences > Add-ons > Roomle Configurator Script. "
+                    "Without it, OBJ files are exported",
         default=True,
         )
 
@@ -200,6 +210,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
         icon_adv = 'ERROR'
         layout = self.layout
         layout.prop(self, 'catalog_id')
+        layout.prop(self, 'global_scale')
         layout.prop(self, 'use_selection')
         layout.prop(self, 'export_normals')
         layout.prop(self, 'export_materials')
@@ -218,48 +229,64 @@ class ExportRoomleScript( Operator, ExportHelper ):
             box.prop(self, 'normal_float_precision')
 
     def execute(self, context):
+        # Scripts (e.g. Blender MCP running code from a timer) can call the operator without a window,
+        # but the material export needs one to switch to the copied export scene.
+        if context.window is None and context.window_manager.windows:
+            with context.temp_override(window=context.window_manager.windows[0]):
+                return self.export_roomle_script(bpy.context)
+        return self.export_roomle_script(context)
+
+    def export_roomle_script(self, context):
         from mathutils import Matrix, Vector
         from . import roomle_script
 
-        
-        preferences = bpy.context.preferences.addons[__name__].preferences
+
+        preferences = context.preferences.addons[__name__].preferences
 
         if self.filepath == '':
             raise Exception('no filepath provided')
-        
+
         keywords = self.as_keywords(ignore=("axis_forward",
                                             "axis_up",
-                                            "global_scale",
                                             "check_existing",
                                             "filter_glob",
                                             "use_scene_unit",
                                             "use_mesh_modifiers",
                                             "advanced"
                                             ))
+        # collected during the export, reported to the user at the end
+        warnings = []
+        keywords['warnings'] = warnings
 
-        if keywords['export_materials']:
-            scene_handler = SceneHandler(bpy.context.scene)
-            scene_handler.copy_scene()
-            export_materials(**keywords)
-
-
-        global_scale = 1000
-        
         mat_axis = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4()
-        mat_global_scale = Matrix.Scale(global_scale, 4)
+        mat_global_scale = Matrix.Scale(self.global_scale, 4)
         mat_flip = Matrix.Scale(-1,4,Vector((1,0,0)))
 
         global_matrix = mat_axis @ mat_global_scale @ mat_flip
 
+        scene_handler = None
         try:
-            roomle_script.write_roomle_script( self, preferences, bpy.context, global_matrix=global_matrix, **keywords)
-        except Exception as e:
-            self.report({'ERROR'}, str(e))
-            return {'CANCELLED'}
+            if keywords['export_materials']:
+                scene_handler = SceneHandler(context.scene)
+                scene_handler.copy_scene()
+                export_materials(**keywords)
 
-        if keywords['export_materials']:
-            scene_handler.remove_export_scene()
-            
+            roomle_script.write_roomle_script( self, preferences, context, global_matrix=global_matrix, **keywords)
+        except Exception as e:
+            # printed for scripts and agents reading the console, reported for the user in the UI
+            traceback.print_exc()
+            message = f'Roomle export failed: {e}'
+            print(message)
+            self.report({'ERROR'}, message)
+            return {'CANCELLED'}
+        finally:
+            if scene_handler:
+                scene_handler.remove_export_scene()
+
+        for warning in dict.fromkeys(warnings):
+            print(f'Roomle export warning: {warning}')
+            self.report({'WARNING'}, warning)
+
         return {'FINISHED'}
 
 

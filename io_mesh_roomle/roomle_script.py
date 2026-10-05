@@ -382,25 +382,18 @@ def create_extern_mesh_command(
         filepath=filepath,
         use_mesh_modifiers=use_mesh_modifiers,
         export_normals=args['export_normals'],
+        global_scale=args['global_scale'],
     )
 
+    # scale and rotation are already applied by transform_apply above
     dim, center = get_object_bounding_box(tmp)
 
     bpy.data.objects.remove(tmp) # remove temporary object
     bpy.data.meshes.remove(tri_mesh)
 
-    if scale:
-        dim.x *= scale.x
-        dim.y *= scale.y
-        dim.z *= scale.z
-
-        center.x *= scale.x
-        center.y *= scale.y
-        center.z *= scale.z
-
     # Convert to Roomle Script space
-    dim *= 1000
-    center *= 1000
+    dim *= args['global_scale']
+    center *= args['global_scale']
     center.y *= -1
     bb_origin = center - (dim*0.5)
     dim_str = ( floatFormat(dim.x,1), floatFormat(dim.y,1), floatFormat(dim.z,1) )
@@ -414,18 +407,29 @@ def create_extern_mesh_command(
         *center_str
         )
 
-    if args["use_corto"] and preferences.corto_exe and os.path.isfile(preferences.corto_exe):
-        try:
-            corto_process = subprocess.Popen( [preferences.corto_exe, '-v 12 -n 9 -u 10 -N delta', filepath])
-            if corto_process.wait()!=0:
-                raise Exception('corto error')
-        except Exception as e:
-            print(e)
-            pass
+    if args["use_corto"]:
+        warnings = args['warnings']
+        if not (preferences.corto_exe and os.path.isfile(preferences.corto_exe)):
+            warnings.append(
+                'Corto executable not found, external meshes were exported as OBJ. '
+                'Set its location in the add-on preferences.'
+            )
         else:
-            os.remove(filepath)
-        print(preferences.corto_exe)
-    
+            try:
+                # Earlier versions passed '-v 12 -n 9 -u 10 -N delta' as one argument, which corto reads as -v 12
+                # with defaults for the rest (-n 10 -u 12 -N border). Only -v 12 is passed to keep that output.
+                corto_process = subprocess.run(
+                    [preferences.corto_exe, '-v', '12', filepath],
+                    capture_output=True,
+                    text=True,
+                )
+                if corto_process.returncode != 0:
+                    raise Exception((corto_process.stderr or corto_process.stdout).strip())
+            except Exception as e:
+                warnings.append(f'Corto failed for {os.path.basename(filepath)}, kept the OBJ file: {e}')
+            else:
+                os.remove(filepath)
+
     return script
 
 def create_transform_commands(
@@ -586,10 +590,15 @@ def create_objects_commands(preferences,objects, object_list, extern_mesh_dir, g
         from . import bl_info
         command += '/* Roomle script (Roomle Blender addon version {}) */\n'.format('.'.join( [str(x) for x in bl_info['version']] ))
 
+    object_commands = ''
     for object in objects:
         if object:
-            command += create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, **args)
-    return command.rstrip()
+            object_commands += create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, **args)
+
+    # nothing exported - the header alone is not a valid export
+    if not object_commands.strip():
+        return ''
+    return (command + object_commands).rstrip()
 
 
 def get_visible_objects(context: bpy.types.Context):
@@ -597,14 +606,14 @@ def get_visible_objects(context: bpy.types.Context):
     return [obj for obj in view_layer.objects if obj.visible_get(view_layer=view_layer)]
 
 
-def export_selected_obj(filepath: str, use_mesh_modifiers: bool, export_normals: bool) -> None:
+def export_selected_obj(filepath: str, use_mesh_modifiers: bool, export_normals: bool, global_scale: float) -> None:
     if hasattr(bpy.ops.wm, 'obj_export'):
         operator = bpy.ops.wm.obj_export
         properties = inspect.signature(operator).parameters
         kwargs = {
             'filepath': filepath,
             'check_existing': False,
-            'global_scale': 1000,
+            'global_scale': global_scale,
             'export_selected_objects': True,
             'export_uv': True,
             'export_normals': export_normals,
@@ -627,7 +636,7 @@ def export_selected_obj(filepath: str, use_mesh_modifiers: bool, export_normals:
         use_selection=True,
         use_mesh_modifiers=use_mesh_modifiers,
         use_normals=export_normals,
-        global_scale=1000,
+        global_scale=global_scale,
         use_uvs=True,
         use_blen_objects=False,
         use_materials=False,
@@ -645,27 +654,21 @@ def write_roomle_script( operator, preferences, context, filepath, global_matrix
     faces
        iterable of tuple of 3 vertex, vertex is tuple of 3 coordinates as float
     """
-    try:
+    # exceptions are not caught here, the operator reports them to the user
+    scene = bpy.context.scene
 
-        scene = bpy.context.scene
+    root_objects = []
+    for obj in scene.objects:
+        if not obj.parent:
+            root_objects.append(obj)
 
-        root_objects = []
-        for obj in scene.objects:
-            if not obj.parent:
-                root_objects.append(obj)
-        
-        object_list = bpy.context.selected_objects if args['use_selection'] else get_visible_objects(bpy.context)
+    object_list = bpy.context.selected_objects if args['use_selection'] else get_visible_objects(bpy.context)
 
-        extern_mesh_dir = os.path.splitext(filepath)[0]
+    extern_mesh_dir = os.path.splitext(filepath)[0]
 
-        script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,**args)
-        if not bool(script):
-            raise Exception('Empty export! Make sure you have meshes selected.')
-        else:
-            with open(filepath, 'w') as data:
-                data.write(script)
-    except Exception as e:
-        import traceback
-        print('Exception',e)
-        x = traceback.format_exc()
-        print(x)
+    script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,**args)
+    if not bool(script):
+        raise Exception('Empty export! Make sure you have meshes selected.')
+    else:
+        with open(filepath, 'w') as data:
+            data.write(script)

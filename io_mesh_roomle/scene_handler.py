@@ -6,22 +6,30 @@ log = logging.getLogger(__file__)
 class SceneHandler():
     def __init__(self, scene: bpy.types.Scene) -> None:
         self.original_scene = scene
+        self.export_scene = None
         # store existing collections so we can delete duplicates after export
         self.existing_collections = set(bpy.data.collections)
 
     def copy_scene(self):
         bpy.ops.scene.new(type='FULL_COPY')
+        if bpy.context.scene == self.original_scene:
+            raise Exception('Could not switch to the copied export scene.')
+        self.export_scene = bpy.context.scene
         return self
 
     def remove_export_scene(self, scene = None):
         """Delete a scene and all its objects."""
         # Sort out the scene object.
         if scene is None:
-            # Not specified: it's the current scene.
-            scene = bpy.context.scene
+            # Not specified: it's the scene created by copy_scene.
+            scene = self.export_scene
         else:
             if isinstance(scene, str):
                 scene = bpy.data.scenes[scene]
+
+        # never delete the data of the scene we started from
+        if scene is None or scene == self.original_scene:
+            return
 
         # collect all data blocks that need
         # to be removed in sets, where the key
@@ -78,6 +86,7 @@ class SceneHandler():
 
         # Remove scene.
         bpy.data.scenes.remove(scene, do_unlink=True)
+        self.export_scene = None
 
         # open the scene were we started from
         bpy.context.window.scene = self.original_scene

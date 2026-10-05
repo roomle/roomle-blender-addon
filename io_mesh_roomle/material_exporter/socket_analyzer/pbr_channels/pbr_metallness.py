@@ -20,7 +20,7 @@ class metallness(PBR_ChannelTester):
             return
 
         return PBR_Channel(
-            default_value=self.pbr_defaults.metallic
+            default_value=self.def_val
         )
 
     def check_orm(self) -> Union[PBR_Channel, None]:

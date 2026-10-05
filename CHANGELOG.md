@@ -5,7 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- "Scale" export option, which was fixed to 1000 before. The default stays 1000; set it to 1 for scenes modelled in millimeters
+- Export errors and warnings (e.g. missing or failing corto) are reported in the UI and printed to the console
+### Fixed
+- Bounding box of external meshes of scaled objects was scaled twice
+- Export errors were swallowed: the operator reported success, but no script was written
+- Empty export wrote a script with only the header comment instead of reporting an error
+- Material export failed without a window context (e.g. when run by Blender MCP from a timer)
+- Failed material export left the copied export scene behind
+- Unlinked Metallic socket was exported as 1.0 instead of its value
+- Swapped tooltips of the "Force Extern" and "Force Intern" mesh export methods
 ### Known issues
+- Corto runs with `-v 12` and its defaults for the rest (`-n 10 -u 12 -N border`). Earlier versions intended `-v 12 -n 9 -u 10 -N delta`, but passed it as a single argument, so only `-v 12` was ever applied. The output is kept unchanged until the settings of the Roomle backend are confirmed.
 - Multiple instances of the same Mesh combined with apply rotation or custom scale can create wrong scale/rotations
 - Normal export with applied rotations is untested (esp. internal meshes)
 - Normal export in combination with no UVs creates invalid AddMesh commands

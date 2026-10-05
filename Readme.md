@@ -34,6 +34,7 @@ search menu.
 
 On the lower left side of the file dialog, you can find some parameters for the export.
 - [Catalog ID](#Catalog-ID)
+- [Scale](#Scale)
 - [Only Selected Objects](#Only-Selected-Objects)
 - [Export Normals](#Export-Normals)
 - [Apply Rotations](#Apply-Rotations)
@@ -44,6 +45,10 @@ On the lower left side of the file dialog, you can find some parameters for the 
 ### Catalog ID
 
 Materials and external meshes are referenced by an identifier in Roomle Script, which consists of a Catalog ID and an mesh/material ID, separated by a colon (`:`). The catalog ID is provided by Roomle to you. If you happen to know it and provide it in this input field, all references will already have the correct catalog ID in the output script.
+
+### Scale
+
+Roomle Script uses millimeters. The scale multiplies all Blender coordinates on export: the script commands, the bounding boxes and the external mesh files. By default it is 1000, so a scene modelled in meters is exported in millimeters. If your scene is already modelled in millimeters, set it to 1 instead of downscaling the scene before the export.
 
 ### Only Selected Objects
 
