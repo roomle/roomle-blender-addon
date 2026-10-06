@@ -124,6 +124,13 @@ class ExportRoomleScript( Operator, ExportHelper ):
         default='catalog_id',
     )
 
+    use_file_name_prefix: BoolProperty(
+        name="File Name Prefix",
+        description="Start the mesh ids and mesh file names with the file name: <file name>_<object>. "
+                    "Turn it off to use the object names only",
+        default=True,
+    )
+
     use_selection: BoolProperty(
             name="Only Selected Objects",
             description="Export only selected objects on visible layers",
@@ -186,7 +193,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
 
     folder_layout: EnumProperty(
         items=[
-            ("UPLOAD", "Upload", "Meshes as <file name>/<file name>_<object>.crt (or .obj) and materials as CSV for the import into Rubens Admin", 1),
+            ("UPLOAD", "Upload", "Meshes as <file name>/<mesh id>.crt (or .obj) and materials as CSV for the import into Rubens Admin", 1),
             ("RLCS", "RLCS catalog", "Meshes as <file name>/meshes/<mesh id>/crt_50.crt and materials as <file name>/materials/<material id>/data.json, to copy into a catalog folder of the Rubens Local Content Server", 2),
         ],
         name="Folder layout",
@@ -221,6 +228,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
         icon_adv = 'ERROR'
         layout = self.layout
         layout.prop(self, 'catalog_id')
+        layout.prop(self, 'use_file_name_prefix')
         layout.prop(self, 'global_scale')
         layout.prop(self, 'use_selection')
         layout.prop(self, 'export_normals')

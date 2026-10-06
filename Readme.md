@@ -34,6 +34,7 @@ search menu.
 
 On the lower left side of the file dialog, you can find some parameters for the export.
 - [Catalog ID](#Catalog-ID)
+- [File Name Prefix](#File-Name-Prefix)
 - [Scale](#Scale)
 - [Only Selected Objects](#Only-Selected-Objects)
 - [Export Normals](#Export-Normals)
@@ -47,6 +48,10 @@ On the lower left side of the file dialog, you can find some parameters for the 
 ### Catalog ID
 
 Materials and external meshes are referenced by an identifier in Roomle Script, which consists of a Catalog ID and an mesh/material ID, separated by a colon (`:`). The catalog ID is provided by Roomle to you. If you happen to know it and provide it in this input field, all references will already have the correct catalog ID in the output script.
+
+### File Name Prefix
+
+By default, the mesh ids and the mesh file names start with the file name of the exported script: exporting `sofas.txt` creates the mesh id `<catalog id>:sofas_<object>`. Turn this option off to use the object names only (`<catalog id>:<object>`). Then the object names have to be unique within the catalog, also across exports.
 
 ### Scale
 
@@ -74,7 +79,7 @@ External meshes are compressed into Corto (`.crt`) files, which replace the OBJ 
 
 ### Folder layout
 
-- **Upload** (default): meshes are exported as `<file name>/<file name>_<object>.crt` (or `.obj`) and materials as a CSV, ready to zip and upload to Rubens Admin.
+- **Upload** (default): meshes are exported as `<file name>/<mesh id>.crt` (or `.obj`) and materials as a CSV, ready to zip and upload to Rubens Admin.
 - **RLCS catalog**: meshes are exported as `<file name>/meshes/<mesh id>/crt_50.crt` and materials (with "Export Materials") as `<file name>/materials/<material id>/data.json` with their textures. Copy the `meshes` and `materials` folders into a catalog folder of your content (`content/<catalog id>/`), so the Rubens Local Content Server loads them. Set the Catalog ID to the name of that catalog folder. The Rubens Local Content Server only loads corto files, so this layout needs [corto](#Use-Corto).
 
   Material textures are written as they are (PNG or JPEG), named by their mapping: `RGB`, `RGBA` (base color with transparency), `XYZ` (normal map) and `ORM`. Roomle uses UV coordinates in millimeters, so one texture repetition per UV unit (1 mm) shows the texture like Blender does; the scale of a Mapping node in front of a texture is converted into its size. Location and rotation of a Mapping node are not exported.

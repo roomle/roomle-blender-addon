@@ -352,7 +352,7 @@ def create_extern_mesh_command(
     bm.free()
 
     script_name = os.path.basename(extern_mesh_dir)
-    mesh_name = f'{script_name}_{name}'
+    mesh_name = f'{script_name}_{name}' if args['use_file_name_prefix'] else name
 
     if args['folder_layout'] == 'RLCS':
         # <file name>/meshes/<mesh id>/crt_50.crt as served by the Rubens Local Content Server

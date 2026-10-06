@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - "Folder layout" export option: "RLCS catalog" exports meshes as `<file name>/meshes/<mesh id>/crt_50.crt` and materials as `<file name>/materials/<material id>/data.json` with their textures, ready to copy into a catalog folder of the Rubens Local Content Server
 - Warning for mesh ids ending with a Blender number suffix like `.001`
+- "File Name Prefix" export option: on (default) keeps the mesh ids `<file name>_<object>`, off uses the object names only
 ### Changed
 - "Force Extern" is the default mesh export method, all meshes are exported as separate files
 - corto is searched on the PATH and in common install folders on export, when the location in the add-on preferences is empty or doesn't exist
