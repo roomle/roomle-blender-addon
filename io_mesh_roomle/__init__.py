@@ -92,7 +92,7 @@ def check_for_exe( name ):
             print('found {} at {}'.format(name,path))
             return os.path.join(path,name)
 
-    return '{} not found!'.format(name)
+    return ''
 
 # Preferences
 class ExportRoomleScriptPreferences(bpy.types.AddonPreferences):
@@ -100,6 +100,7 @@ class ExportRoomleScriptPreferences(bpy.types.AddonPreferences):
 
    corto_exe: bpy.props.StringProperty(
       name="Location of corto executable",
+      description="Absolute path of the corto executable. If empty or not found, corto is searched on export",
       subtype="FILE_PATH",
       default=check_for_exe('corto')
    )
@@ -107,7 +108,7 @@ class ExportRoomleScriptPreferences(bpy.types.AddonPreferences):
    def draw(self, context):
       layout = self.layout
       layout.prop(self, 'corto_exe')
-      layout.label(text="Pluging will try to auto-find corto, if no path found, or you would like to use a different path, set it here.")
+      layout.label(text="If empty or not found, corto is searched on the PATH and in ~/.local/bin, /opt/homebrew/bin and /usr/local/bin.")
 
 class ExportRoomleScript( Operator, ExportHelper ):
     """Save a Roomle Script from the active object"""
@@ -171,8 +172,8 @@ class ExportRoomleScript( Operator, ExportHelper ):
     use_corto: BoolProperty(
         name="Use Corto",
         description="Compress external meshes into Corto (.crt) files, which replace the OBJ files in the mesh folder. "
-                    "Requires the corto executable: set its location in Preferences > Add-ons > Roomle Configurator Script. "
-                    "Without it, OBJ files are exported",
+                    "Requires the corto executable: set its location in Preferences > Add-ons > Roomle Configurator Script, "
+                    "otherwise it is searched on the PATH. Without it, OBJ files are exported",
         default=True,
         )
 
@@ -180,7 +181,17 @@ class ExportRoomleScript( Operator, ExportHelper ):
         items=mesh_export_options,
         name="Mesh export method",
         description="Meshes are converted into external files or script commands",
-        default="AUTO",
+        default="EXTERNAL",
+        )
+
+    folder_layout: EnumProperty(
+        items=[
+            ("UPLOAD", "Upload", "Meshes as <file name>/<file name>_<object>.crt (or .obj) and materials as CSV for the import into Rubens Admin", 1),
+            ("RLCS", "RLCS catalog", "Meshes as <file name>/meshes/<mesh id>/crt_50.crt and materials as <file name>/materials/<material id>/data.json, to copy into a catalog folder of the Rubens Local Content Server", 2),
+        ],
+        name="Folder layout",
+        description="Folder structure of the exported meshes and materials",
+        default="UPLOAD",
         )
 
     uv_float_precision: IntProperty(
@@ -216,6 +227,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
         layout.prop(self, 'export_materials')
         layout.prop(self, 'apply_rotations')
         layout.prop(self, 'use_corto')
+        layout.prop(self, 'folder_layout')
         # TODO: remove warning once it's tested and stable
         if self.apply_rotations:
             layout.label(text='Apply rotation is experimental',icon=icon_exp)
@@ -257,6 +269,10 @@ class ExportRoomleScript( Operator, ExportHelper ):
         # collected during the export, reported to the user at the end
         warnings = []
         keywords['warnings'] = warnings
+        keywords['corto_exe'] = roomle_script.get_corto_exe(preferences) if self.use_corto else None
+
+        if self.folder_layout == 'RLCS' and self.catalog_id in ('', 'catalog_id'):
+            warnings.append('Set the Catalog ID to the name of the catalog folder: the Rubens Local Content Server finds meshes and materials by their catalog.')
 
         mat_axis = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4()
         mat_global_scale = Matrix.Scale(self.global_scale, 4)

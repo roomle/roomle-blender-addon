@@ -38,6 +38,8 @@ On the lower left side of the file dialog, you can find some parameters for the 
 - [Only Selected Objects](#Only-Selected-Objects)
 - [Export Normals](#Export-Normals)
 - [Apply Rotations](#Apply-Rotations)
+- [Use Corto](#Use-Corto)
+- [Folder layout](#Folder-layout)
 - [Advanced settings](#Advanced-settings)
 
 ![Export options](doc/images/05_export-options.png)
@@ -66,6 +68,17 @@ When this option is checked, rotations on objects will be applied into the geome
 
 Only un-check this option if you plan to rotate the meshes in your script later on anyways.
 
+### Use Corto
+
+External meshes are compressed into Corto (`.crt`) files, which replace the OBJ files. This needs the `corto` executable, which is not part of the add-on: build it from [Roomle's corto repository](https://github.com/roomle/corto) and set its location in "Edit" > "Preferences" > "Add-ons" > "Roomle Configurator Script". If no location is set or the file doesn't exist, corto is searched on the PATH and in `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`. Without corto, OBJ files are exported and a warning is shown.
+
+### Folder layout
+
+- **Upload** (default): meshes are exported as `<file name>/<file name>_<object>.crt` (or `.obj`) and materials as a CSV, ready to zip and upload to Rubens Admin.
+- **RLCS catalog**: meshes are exported as `<file name>/meshes/<mesh id>/crt_50.crt` and materials (with "Export Materials") as `<file name>/materials/<material id>/data.json` with their textures. Copy the `meshes` and `materials` folders into a catalog folder of your content (`content/<catalog id>/`), so the Rubens Local Content Server loads them. Set the Catalog ID to the name of that catalog folder. The Rubens Local Content Server only loads corto files, so this layout needs [corto](#Use-Corto).
+
+  Material textures are written as they are (PNG or JPEG), named by their mapping: `RGB`, `RGBA` (base color with transparency), `XYZ` (normal map) and `ORM`. Roomle uses UV coordinates in millimeters, so one texture repetition per UV unit (1 mm) shows the texture like Blender does; the scale of a Mapping node in front of a texture is converted into its size. Location and rotation of a Mapping node are not exported.
+
 ### Advanced settings
 
 WARNING! Do not play with these settings if you are not 100% sure how they work.
@@ -74,8 +87,8 @@ Checking the *Advanced Settings* will unveil some more options.
 
 #### Mesh export method
 
-By default smaller meshes are exported as in-line `AddMesh` commands  while bigger meshes are exported in separte files (see [External meshes](#external-meshes) for detailed information).
-By changing this option to "Force intern" or "Force extern" you can override this decision.
+By default all meshes are exported as separate files ("Force extern", see [External meshes](#external-meshes) for detailed information).
+"Automatic" exports smaller meshes as in-line `AddMesh` commands and bigger meshes as separate files, "Force intern" exports all meshes as `AddMesh` commands.
 Warning: intern meshes create huge script files and become very slow to load at run-time.
 
 ## Roomle Script Output

@@ -5,6 +5,9 @@ from typing import Iterable, List, Union, TYPE_CHECKING
 
 from io_mesh_roomle.material_exporter._exporter import BlenderMaterialForExport, TextureNameManager
 from io_mesh_roomle.material_exporter._roomle_material_csv import MaterialDefinition, RoomleMaterialsCsv
+from io_mesh_roomle.material_exporter.utils.color import get_valid_name
+from io_mesh_roomle.roomle_script import get_used_material_slot
+from io_mesh_roomle.scene_handler import EXPORT_NAME_PROPERTY, get_export_name
 
 log = logging.getLogger('legacy csv')
 log.setLevel(logging.DEBUG)
@@ -20,7 +23,16 @@ def split_object_by_materials(obj: bpy.types.Object) -> set[bpy.types.Object]:
     bpy.ops.mesh.separate(type='MATERIAL')
     bpy.ops.object.editmode_toggle()
 
-    return set(bpy.context.selected_objects)
+    parts = set(bpy.context.selected_objects)
+    if len(parts) > 1:
+        # the parts inherit the name of the object, the material keeps their mesh ids apart
+        object_name, mesh_name = get_export_name(obj), get_export_name(obj.data)
+        for part in parts:
+            material = get_used_material_slot(part).material
+            suffix = '_' + get_valid_name(material.name) if material else ''
+            part[EXPORT_NAME_PROPERTY] = object_name + suffix
+            part.data[EXPORT_NAME_PROPERTY] = mesh_name + suffix
+    return parts
 
 
 def pbr_2_material_definition(data: BlenderMaterialForExport) -> MaterialDefinition:
@@ -80,9 +92,11 @@ def pbr_2_material_definition(data: BlenderMaterialForExport) -> MaterialDefinit
 
 def get_mesh_objects_for_export(use_selection: bool = False) -> set[bpy.types.Object]:
     data = set()
-    obj_list = bpy.context.selected_objects if use_selection else bpy.context.scene.objects
+    view_layer = bpy.context.view_layer
+    obj_list = bpy.context.selected_objects if use_selection else view_layer.objects
     for obj in obj_list:
-        if obj.type == 'MESH':
+        # same objects as the script export: objects in excluded or hidden collections can't be selected for splitting
+        if obj.type == 'MESH' and obj.visible_get(view_layer=view_layer):
             data.add(obj)
     return data
 
@@ -141,19 +155,25 @@ def export_materials(**keywords):
 
     for m in material_exports:
         m.pbr = PBR_ShaderData(m.material)
-        pass
-        for channel in m.pbr.all_pbr_channels:
-            channel.map = texture_name_manager.validate_name(channel.map)
-        for tex in m.used_tex_nodes:
-            name = texture_name_manager.validate_name(tex.image)
-            tex.image.save(filepath=str(out_path / 'materials' / name))
 
+    if keywords['folder_layout'] == 'RLCS':
+        from io_mesh_roomle.material_exporter._rlcs import write_rlcs_materials
+        # <file name>/materials/<material id>/data.json, next to <file name>/meshes
+        materials_dir = Path(keywords['filepath']).with_suffix('') / 'materials'
+        write_rlcs_materials(material_exports, materials_dir, keywords['catalog_id'], keywords['warnings'])
+    else:
+        for m in material_exports:
+            for channel in m.pbr.all_pbr_channels:
+                channel.map = texture_name_manager.validate_name(channel.map)
+            for tex in m.used_tex_nodes:
+                name = texture_name_manager.validate_name(tex.image)
+                tex.image.save(filepath=str(out_path / 'materials' / name))
 
-    for mat in material_exports:
-        csv_exporter.add_material_definition(
-            pbr_2_material_definition(mat)
-        )
-    csv_exporter.write(out_path / 'materials/materials.csv')
+        for mat in material_exports:
+            csv_exporter.add_material_definition(
+                pbr_2_material_definition(mat)
+            )
+        csv_exporter.write(out_path / 'materials/materials.csv')
 
     # ==================================================
 

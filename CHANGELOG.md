@@ -5,6 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- "Folder layout" export option: "RLCS catalog" exports meshes as `<file name>/meshes/<mesh id>/crt_50.crt` and materials as `<file name>/materials/<material id>/data.json` with their textures, ready to copy into a catalog folder of the Rubens Local Content Server
+- Warning for mesh ids ending with a Blender number suffix like `.001`
+### Changed
+- "Force Extern" is the default mesh export method, all meshes are exported as separate files
+- corto is searched on the PATH and in common install folders on export, when the location in the add-on preferences is empty or doesn't exist
+### Fixed
+- A corto location saved as "corto not found!" kept corto disabled after installing it
+- Material export failed when objects were in excluded collections
+- "Export Materials" exported mesh ids with the `.001` suffixes of its scene copy; the mesh ids are the same with and without it now
+- Parts of objects split by material get the material name in their mesh id and their own material in `SetObjSurface`
 ### Known issues
 - Corto runs with `-v 12` and its defaults for the rest (`-n 10 -u 12 -N border`). Earlier versions intended `-v 12 -n 9 -u 10 -N delta`, but passed it as a single argument, so only `-v 12` was ever applied. The output is kept unchanged until the settings of the Roomle backend are confirmed.
 - Multiple instances of the same Mesh combined with apply rotation or custom scale can create wrong scale/rotations

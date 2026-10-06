@@ -18,6 +18,7 @@ import bmesh
 
 import os
 import re
+import shutil
 import subprocess
 import inspect
 
@@ -31,6 +32,10 @@ from mathutils import Vector
 from bpy_extras.io_utils import (
         axis_conversion,
         )
+
+from .scene_handler import get_export_name
+
+RLCS_MESH_FILE_NAME = 'crt_50.crt'
 
 @dataclass
 class VertexVariant:
@@ -201,7 +206,7 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
     
     debug = args['debug']
 
-    command = '/* Object:{} Mesh:{} */\n'.format(object.name,object.data.name)
+    command = '/* Object:{} Mesh:{} */\n'.format(get_export_name(object),get_export_name(object.data))
     command += 'AddMesh('
     export_normals = args['export_normals']
     apply_rotation = args['apply_rotations'] and rotation
@@ -328,7 +333,7 @@ def create_extern_mesh_command(
     '''
 
     apply_rotation = args['apply_rotations'] and rotation
-    name = object.name if (scale or apply_rotation) else object.data.name
+    name = get_export_name(object) if (scale or apply_rotation) else get_export_name(object.data)
 
     mesh = object.to_mesh(
         depsgraph=bpy.context.evaluated_depsgraph_get(),
@@ -346,11 +351,22 @@ def create_extern_mesh_command(
     bm.to_mesh(tri_mesh)
     bm.free()
 
-    if not os.path.isdir(extern_mesh_dir):
-        os.makedirs(extern_mesh_dir)
-
     script_name = os.path.basename(extern_mesh_dir)
-    
+    mesh_name = f'{script_name}_{name}'
+
+    if args['folder_layout'] == 'RLCS':
+        # <file name>/meshes/<mesh id>/crt_50.crt as served by the Rubens Local Content Server
+        mesh_dir = os.path.join(extern_mesh_dir, 'meshes', mesh_name)
+        crt_filepath = os.path.join(mesh_dir, RLCS_MESH_FILE_NAME)
+    else:
+        mesh_dir = extern_mesh_dir
+        crt_filepath = os.path.join(mesh_dir, mesh_name + '.crt')
+
+    os.makedirs(mesh_dir, exist_ok=True)
+    # a corto file of a previous export must not survive a failed compression
+    if os.path.isfile(crt_filepath):
+        os.remove(crt_filepath)
+
     scene = bpy.context.scene
     
     bpy.ops.object.select_all(action='DESELECT')
@@ -375,9 +391,7 @@ def create_extern_mesh_command(
     # Apply transform (necessary to have correct boundings box)
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
-    filepath = os.path.join(extern_mesh_dir,f'{script_name}_{name}')
-
-    filepath += '.obj'
+    filepath = os.path.join(mesh_dir, mesh_name + '.obj')
     export_selected_obj(
         filepath=filepath,
         use_mesh_modifiers=use_mesh_modifiers,
@@ -399,38 +413,77 @@ def create_extern_mesh_command(
     dim_str = ( floatFormat(dim.x,1), floatFormat(dim.y,1), floatFormat(dim.z,1) )
     center_str = ( floatFormat(bb_origin.x,1), floatFormat(bb_origin.y,1), floatFormat(bb_origin.z,1) )
 
-    script = 'AddExternalMesh(\'{}:{}_{}\',Vector3f{{{},{},{}}},Vector3f{{{},{},{}}});\n'.format(
+    script = 'AddExternalMesh(\'{}:{}\',Vector3f{{{},{},{}}},Vector3f{{{},{},{}}});\n'.format(
         args['catalog_id'],
-        script_name,
-        name,
+        mesh_name,
         *dim_str,
         *center_str
         )
 
-    if args["use_corto"]:
-        warnings = args['warnings']
-        if not (preferences.corto_exe and os.path.isfile(preferences.corto_exe)):
-            warnings.append(
-                'Corto executable not found, external meshes were exported as OBJ. '
-                'Set its location in the add-on preferences.'
+    warnings = args['warnings']
+    if re.search(r'\.\d{3}$', name):
+        warnings.append(f'Mesh id {mesh_name} ends with a Blender number suffix: give the object and its mesh a meaningful name.')
+
+    corto_exe = args['corto_exe']
+    if args["use_corto"] and not corto_exe:
+        warnings.append(
+            'Corto executable not found, external meshes were exported as OBJ. '
+            'Set its location in the add-on preferences.'
+        )
+    elif args["use_corto"]:
+        try:
+            # Earlier versions passed '-v 12 -n 9 -u 10 -N delta' as one argument, which corto reads as -v 12
+            # with defaults for the rest (-n 10 -u 12 -N border). Only -v 12 is passed to keep that output.
+            corto_process = subprocess.run(
+                [corto_exe, '-v', '12', '-o', crt_filepath, filepath],
+                capture_output=True,
+                text=True,
             )
+            if corto_process.returncode != 0:
+                raise Exception((corto_process.stderr or corto_process.stdout).strip())
+        except Exception as e:
+            warnings.append(f'Corto failed for {os.path.basename(filepath)}, kept the OBJ file: {e}')
         else:
-            try:
-                # Earlier versions passed '-v 12 -n 9 -u 10 -N delta' as one argument, which corto reads as -v 12
-                # with defaults for the rest (-n 10 -u 12 -N border). Only -v 12 is passed to keep that output.
-                corto_process = subprocess.run(
-                    [preferences.corto_exe, '-v', '12', filepath],
-                    capture_output=True,
-                    text=True,
-                )
-                if corto_process.returncode != 0:
-                    raise Exception((corto_process.stderr or corto_process.stdout).strip())
-            except Exception as e:
-                warnings.append(f'Corto failed for {os.path.basename(filepath)}, kept the OBJ file: {e}')
-            else:
-                os.remove(filepath)
+            os.remove(filepath)
+
+    if args['folder_layout'] == 'RLCS' and not os.path.isfile(crt_filepath):
+        warnings.append(
+            'The Rubens Local Content Server only serves corto files: meshes without corto compression '
+            'were exported as OBJ files.'
+        )
 
     return script
+
+
+def get_used_material_slot(object):
+    '''
+    the material slot used by all faces, e.g. of the parts split by material in the material export,
+    otherwise the first slot
+    '''
+    indices = {polygon.material_index for polygon in object.data.polygons}
+    if len(indices) == 1:
+        index = indices.pop()
+        if index < len(object.material_slots):
+            return object.material_slots[index]
+    return object.material_slots[0]
+
+
+def get_corto_exe(preferences):
+    '''
+    corto executable from the add-on preferences, otherwise searched on the PATH and in common install folders,
+    because Blender started from the Dock or Finder doesn't get the PATH of the shell
+    '''
+    path = bpy.path.abspath(preferences.corto_exe) if preferences.corto_exe else ''
+    if os.path.isfile(path):
+        return path
+    path = shutil.which('corto')
+    if path:
+        return path
+    for folder in ('~/.local/bin', '/opt/homebrew/bin', '/usr/local/bin'):
+        path = os.path.join(os.path.expanduser(folder), 'corto')
+        if os.path.isfile(path):
+            return path
+    return None
 
 def create_transform_commands(
     object,
@@ -532,7 +585,7 @@ def create_object_commands(
             # Material
             material = ''
             if object.material_slots:
-                material_name = getValidName(object.material_slots[0].name)
+                material_name = getValidName(get_used_material_slot(object).name)
                 # TODO: 5959 create material definition
                 material = "SetObjSurface('{}:{}');\n".format( args['catalog_id'], material_name )
 
@@ -556,7 +609,7 @@ def create_object_commands(
     empty = empty and not hasChildren
 
     if hasChildren:
-        command += "BeginObjGroup('{}');\n".format(getValidName(object.name))
+        command += "BeginObjGroup('{}');\n".format(getValidName(get_export_name(object)))
 
     command += mesh
     command += material
