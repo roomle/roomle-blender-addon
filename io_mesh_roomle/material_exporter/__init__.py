@@ -14,6 +14,10 @@ log.setLevel(logging.DEBUG)
 
 
 def split_object_by_materials(obj: bpy.types.Object) -> set[bpy.types.Object]:
+    # the edit mode round trip changes custom normals, so only objects using several materials are split
+    if len({polygon.material_index for polygon in obj.data.polygons}) < 2:
+        return {obj}
+
     bpy.ops.object.select_all(action='DESELECT')
     obj.select_set(True)
     # obj.name = get_valid_name(obj.name)

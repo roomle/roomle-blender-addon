@@ -280,6 +280,11 @@ class ExportRoomleScript( Operator, ExportHelper ):
 
         global_matrix = mat_axis @ mat_global_scale @ mat_flip
 
+        # the export selects temporary objects, the selection of the user is restored afterwards
+        original_scene, view_layer_name = context.scene, context.view_layer.name
+        selected_object_names = {obj.name for obj in context.selected_objects}
+        active_object_name = context.view_layer.objects.active.name if context.view_layer.objects.active else None
+
         scene_handler = None
         try:
             if keywords['export_materials']:
@@ -298,6 +303,13 @@ class ExportRoomleScript( Operator, ExportHelper ):
         finally:
             if scene_handler:
                 scene_handler.remove_export_scene()
+            # looked up again, the export scene of the material export changes the context
+            view_layer = original_scene.view_layers[view_layer_name]
+            for obj in view_layer.objects:
+                # entries of removed temporary objects stay empty until the view layer is synced
+                if obj is not None:
+                    obj.select_set(obj.name in selected_object_names, view_layer=view_layer)
+            view_layer.objects.active = view_layer.objects.get(active_object_name) if active_object_name else None
 
         for warning in dict.fromkeys(warnings):
             print(f'Roomle export warning: {warning}')
