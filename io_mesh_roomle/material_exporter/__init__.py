@@ -162,8 +162,8 @@ def export_materials(**keywords):
 
     if keywords['folder_layout'] == 'RLCS':
         from io_mesh_roomle.material_exporter._rlcs import write_rlcs_materials
-        # <file name>/materials/<material id>/data.json, next to <file name>/meshes
-        materials_dir = Path(keywords['filepath']).with_suffix('') / 'materials'
+        # materials/<material id>/data.json next to the file saved in the catalog folder
+        materials_dir = Path(keywords['filepath']).parent / 'materials'
         write_rlcs_materials(material_exports, materials_dir, keywords['catalog_id'], keywords['warnings'])
     else:
         for m in material_exports:

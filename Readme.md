@@ -33,23 +33,36 @@ search menu.
 ![Export](doc/images/04_export.png)
 
 On the lower left side of the file dialog, you can find some parameters for the export.
+- [Output Format](#Output-Format)
 - [Catalog ID](#Catalog-ID)
-- [File Name Prefix](#File-Name-Prefix)
+- [File Name as Prefix](#File-Name-as-Prefix)
 - [Scale](#Scale)
 - [Only Selected Objects](#Only-Selected-Objects)
 - [Export Normals](#Export-Normals)
+- [Export Materials](#Export-Materials)
 - [Apply Rotations](#Apply-Rotations)
-- [Use Corto](#Use-Corto)
-- [Folder layout](#Folder-layout)
 - [Advanced settings](#Advanced-settings)
 
 ![Export options](doc/images/05_export-options.png)
+
+### Output Format
+
+- **OBJ** (default): external meshes are exported as Wavefront OBJ files: `<file name>/<mesh id>.obj`. Zip and upload them to Rubens Admin.
+- **Corto**: the same, but compressed into Corto files with the same names: `<file name>/<mesh id>.crt`.
+- **RLCS**: Corto meshes for the Rubens Local Content Server. Save the file into the catalog folder of your content, `content/<catalog id>/<file name>.txt`, and the meshes are written next to it as `meshes/<mesh id>/crt_50.crt`, the folder structure the Rubens Local Content Server serves them from. The name of that folder is the catalog id of the meshes and materials. A folder outside of `content/` gives a warning; a folder name that isn't a valid catalog id (letters, digits, `_` and `-`) stops the export with an error.
+- **RLCS with materials**: like RLCS, and the materials of the meshes are written next to the file as `materials/<material id>/data.json` with their textures.
+
+The Corto and RLCS formats need the `corto` executable, which is not part of the add-on: build it from [Roomle's corto repository](https://github.com/roomle/corto) and set its location in "Edit" > "Preferences" > "Add-ons" > "Roomle Configurator Script". If no location is set or the file doesn't exist, corto is searched on the PATH and in `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`. Without corto, OBJ files are exported and a warning is shown.
+
+RLCS material textures are written as they are (PNG or JPEG), named by their mapping: `RGB`, `RGBA` (base color with transparency), `XYZ` (normal map) and `ORM`. Roomle uses UV coordinates in millimeters, so one texture repetition per UV unit (1 mm) shows the texture like Blender does; the scale of a Mapping node in front of a texture is converted into its size. Location and rotation of a Mapping node are not exported.
 
 ### Catalog ID
 
 Materials and external meshes are referenced by an identifier in Roomle Script, which consists of a Catalog ID and an mesh/material ID, separated by a colon (`:`). The catalog ID is provided by Roomle to you. If you happen to know it and provide it in this input field, all references will already have the correct catalog ID in the output script.
 
-### File Name Prefix
+The Catalog ID field is shown for the OBJ and Corto formats. The RLCS formats take the catalog ID from the name of the folder the file is saved in and show it instead.
+
+### File Name as Prefix
 
 By default, the mesh ids and the mesh file names start with the file name of the exported script: exporting `sofas.txt` creates the mesh id `<catalog id>:sofas_<object>`. Turn this option off to use the object names only (`<catalog id>:<object>`). Then the object names have to be unique within the catalog, also across exports.
 
@@ -67,22 +80,15 @@ By default the mesh normals are not export, but (smooth) normals are calculated 
 
 Note: Shading something flat (via `Shade Flat` operator) in the Blender viewport has no effect yet on the output script. Please break edge connections whenever you want a hard shaded edge. The easiest way to do this is the [Edge Split](https://docs.blender.org/manual/en/latest/modeling/modifiers/generate/edge_split.html)  modifier.
 
+### Export Materials
+
+For the OBJ and Corto formats: exports the materials of the meshes as a CSV for the import into Rubens Admin, with their textures, into a `materials` folder next to the file. The RLCS formats choose the material export by the format instead.
+
 ### Apply Rotations
 
 When this option is checked, rotations on objects will be applied into the geometry. This is the preferred way, since this calculation would otherwise be done at run-time (slower).
 
 Only un-check this option if you plan to rotate the meshes in your script later on anyways.
-
-### Use Corto
-
-External meshes are compressed into Corto (`.crt`) files, which replace the OBJ files. This needs the `corto` executable, which is not part of the add-on: build it from [Roomle's corto repository](https://github.com/roomle/corto) and set its location in "Edit" > "Preferences" > "Add-ons" > "Roomle Configurator Script". If no location is set or the file doesn't exist, corto is searched on the PATH and in `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`. Without corto, OBJ files are exported and a warning is shown.
-
-### Folder layout
-
-- **Upload** (default): meshes are exported as `<file name>/<mesh id>.crt` (or `.obj`) and materials as a CSV, ready to zip and upload to Rubens Admin.
-- **RLCS catalog**: meshes are exported as `<file name>/meshes/<mesh id>/crt_50.crt` and materials (with "Export Materials") as `<file name>/materials/<material id>/data.json` with their textures. Copy the `meshes` and `materials` folders into a catalog folder of your content (`content/<catalog id>/`), so the Rubens Local Content Server loads them. Set the Catalog ID to the name of that catalog folder. The Rubens Local Content Server only loads corto files, so this layout needs [corto](#Use-Corto).
-
-  Material textures are written as they are (PNG or JPEG), named by their mapping: `RGB`, `RGBA` (base color with transparency), `XYZ` (normal map) and `ORM`. Roomle uses UV coordinates in millimeters, so one texture repetition per UV unit (1 mm) shows the texture like Blender does; the scale of a Mapping node in front of a texture is converted into its size. Location and rotation of a Mapping node are not exported.
 
 ### Advanced settings
 

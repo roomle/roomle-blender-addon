@@ -355,8 +355,9 @@ def create_extern_mesh_command(
     mesh_name = f'{script_name}_{name}' if args['use_file_name_prefix'] else name
 
     if args['folder_layout'] == 'RLCS':
-        # <file name>/meshes/<mesh id>/crt_50.crt as served by the Rubens Local Content Server
-        mesh_dir = os.path.join(extern_mesh_dir, 'meshes', mesh_name)
+        # the file is saved in the catalog folder, the meshes are written next to it
+        # as meshes/<mesh id>/crt_50.crt like the Rubens Local Content Server serves them
+        mesh_dir = os.path.join(os.path.dirname(extern_mesh_dir), 'meshes', mesh_name)
         crt_filepath = os.path.join(mesh_dir, RLCS_MESH_FILE_NAME)
     else:
         mesh_dir = extern_mesh_dir

@@ -6,10 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- "Folder layout" export option: "RLCS catalog" exports meshes as `<file name>/meshes/<mesh id>/crt_50.crt` and materials as `<file name>/materials/<material id>/data.json` with their textures, ready to copy into a catalog folder of the Rubens Local Content Server
+- "Output Format" export option: OBJ (default), Corto, RLCS and RLCS with materials. For the RLCS formats the file is saved into the catalog folder `content/<catalog id>/` and the meshes are written next to it as `meshes/<mesh id>/crt_50.crt`, the materials as `materials/<material id>/data.json` with their textures, like the Rubens Local Content Server serves them. The catalog id is the name of that folder
 - Warning for mesh ids ending with a Blender number suffix like `.001`
-- "File Name Prefix" export option: on (default) keeps the mesh ids `<file name>_<object>`, off uses the object names only
+- "File Name as Prefix" export option: on (default) keeps the mesh ids `<file name>_<object>`, off uses the object names only
 ### Changed
+- The "Use Corto" checkbox is replaced by the Corto output format; scripts calling the export with `use_corto=True` still get Corto files
+- "Export Materials" is shown for the OBJ and Corto formats only, the RLCS formats choose the materials by the format
+- Output Format is the first export option; the Catalog ID field is shown for the OBJ and Corto formats only
 - "Force Extern" is the default mesh export method, all meshes are exported as separate files
 - corto is searched on the PATH and in common install folders on export, when the location in the add-on preferences is empty or doesn't exist
 ### Fixed

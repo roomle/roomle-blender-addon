@@ -40,7 +40,7 @@ else:
     from . import roomle_script
     from . import optimize_operator
 
-import os,sys,subprocess,traceback
+import os,re,sys,subprocess,traceback
 import bpy
 
 from bpy.props import (
@@ -120,15 +120,32 @@ class ExportRoomleScript( Operator, ExportHelper ):
 
     catalog_id: StringProperty(
         name="Catalog ID",
-        description="Catalog name. Used as prefix for mesh and material IDs",
+        description="Catalog of the mesh and material IDs in the script. The RLCS formats use the name of the folder the file is saved in instead",
         default='catalog_id',
     )
 
     use_file_name_prefix: BoolProperty(
-        name="File Name Prefix",
+        name="File Name as Prefix",
         description="Start the mesh ids and mesh file names with the file name: <file name>_<object>. "
                     "Turn it off to use the object names only",
         default=True,
+    )
+
+    output_format: EnumProperty(
+        items=[
+            ("OBJ", "OBJ", "External meshes as Wavefront OBJ files: <file name>/<mesh id>.obj", 1),
+            ("CORTO", "Corto", "External meshes as Corto files with the same names: <file name>/<mesh id>.crt. "
+                "Requires the corto executable: set its location in Preferences > Add-ons > Roomle Configurator Script, "
+                "otherwise it is searched on the PATH. Without it, OBJ files are exported", 2),
+            ("RLCS", "RLCS", "Corto meshes for the Rubens Local Content Server: save the file into the catalog folder "
+                "content/<catalog id>/, its name is the catalog id and the meshes are written next to it as "
+                "meshes/<mesh id>/crt_50.crt", 3),
+            ("RLCS_MATERIALS", "RLCS with materials", "Like RLCS, and the materials are written next to the file as "
+                "materials/<material id>/data.json with their textures", 4),
+        ],
+        name="Output Format",
+        description="File format and folder structure of the external meshes",
+        default="OBJ",
     )
 
     use_selection: BoolProperty(
@@ -176,12 +193,11 @@ class ExportRoomleScript( Operator, ExportHelper ):
     ]
 
 
+    # replaced by output_format, kept for scripts calling the operator with use_corto=True
     use_corto: BoolProperty(
         name="Use Corto",
-        description="Compress external meshes into Corto (.crt) files, which replace the OBJ files in the mesh folder. "
-                    "Requires the corto executable: set its location in Preferences > Add-ons > Roomle Configurator Script, "
-                    "otherwise it is searched on the PATH. Without it, OBJ files are exported",
-        default=True,
+        default=False,
+        options={'HIDDEN', 'SKIP_SAVE'},
         )
 
     mesh_export_option: EnumProperty(
@@ -189,16 +205,6 @@ class ExportRoomleScript( Operator, ExportHelper ):
         name="Mesh export method",
         description="Meshes are converted into external files or script commands",
         default="EXTERNAL",
-        )
-
-    folder_layout: EnumProperty(
-        items=[
-            ("UPLOAD", "Upload", "Meshes as <file name>/<mesh id>.crt (or .obj) and materials as CSV for the import into Rubens Admin", 1),
-            ("RLCS", "RLCS catalog", "Meshes as <file name>/meshes/<mesh id>/crt_50.crt and materials as <file name>/materials/<material id>/data.json, to copy into a catalog folder of the Rubens Local Content Server", 2),
-        ],
-        name="Folder layout",
-        description="Folder structure of the exported meshes and materials",
-        default="UPLOAD",
         )
 
     uv_float_precision: IntProperty(
@@ -227,15 +233,24 @@ class ExportRoomleScript( Operator, ExportHelper ):
         icon_exp = 'EXPERIMENTAL'
         icon_adv = 'ERROR'
         layout = self.layout
-        layout.prop(self, 'catalog_id')
-        layout.prop(self, 'use_file_name_prefix')
+        layout.prop(self, 'output_format')
+        if self.output_format in ('RLCS', 'RLCS_MATERIALS'):
+            # the catalog is the folder the file is saved in: content/<catalog id>/
+            catalog_folder = os.path.basename(os.path.dirname(self.filepath)) if self.filepath else ''
+            layout.label(text=f'Catalog ID: {catalog_folder or "name of the folder"} (folder of the file)', icon='FILE_FOLDER')
+        else:
+            layout.prop(self, 'catalog_id')
+        row = layout.row()
+        # only external meshes have ids
+        row.enabled = self.mesh_export_option != 'INTERNAL'
+        row.prop(self, 'use_file_name_prefix')
         layout.prop(self, 'global_scale')
         layout.prop(self, 'use_selection')
         layout.prop(self, 'export_normals')
-        layout.prop(self, 'export_materials')
+        if self.output_format in ('OBJ', 'CORTO'):
+            # the RLCS formats choose the materials by the format
+            layout.prop(self, 'export_materials')
         layout.prop(self, 'apply_rotations')
-        layout.prop(self, 'use_corto')
-        layout.prop(self, 'folder_layout')
         # TODO: remove warning once it's tested and stable
         if self.apply_rotations:
             layout.label(text='Apply rotation is experimental',icon=icon_exp)
@@ -277,10 +292,33 @@ class ExportRoomleScript( Operator, ExportHelper ):
         # collected during the export, reported to the user at the end
         warnings = []
         keywords['warnings'] = warnings
-        keywords['corto_exe'] = roomle_script.get_corto_exe(preferences) if self.use_corto else None
 
-        if self.folder_layout == 'RLCS' and self.catalog_id in ('', 'catalog_id'):
-            warnings.append('Set the Catalog ID to the name of the catalog folder: the Rubens Local Content Server finds meshes and materials by their catalog.')
+        # the export steps read these options derived from the output format
+        output_format = 'CORTO' if self.use_corto and self.output_format == 'OBJ' else self.output_format
+        rlcs = output_format in ('RLCS', 'RLCS_MATERIALS')
+        keywords['use_corto'] = output_format != 'OBJ'
+        keywords['folder_layout'] = 'RLCS' if rlcs else 'UPLOAD'
+        keywords['export_materials'] = output_format == 'RLCS_MATERIALS' or (not rlcs and self.export_materials)
+        keywords['corto_exe'] = roomle_script.get_corto_exe(preferences) if keywords['use_corto'] else None
+
+        if rlcs:
+            # the catalog is the folder the file is saved in: content/<catalog id>/
+            catalog_folder_path = os.path.dirname(os.path.abspath(self.filepath))
+            catalog_id = os.path.basename(catalog_folder_path)
+            if not re.fullmatch(r'[A-Za-z0-9_-]+', catalog_id):
+                message = (f'Roomle export failed: save the file into a catalog folder content/<catalog id>/, '
+                           f'the folder name "{catalog_id}" is not a valid catalog id.')
+                print(message)
+                self.report({'ERROR'}, message)
+                return {'CANCELLED'}
+            if os.path.basename(os.path.dirname(catalog_folder_path)) != 'content':
+                warnings.append(f'The file is not saved in a catalog folder content/<catalog id>/, '
+                                f'the folder name {catalog_id} is used as catalog id.')
+            # values remembered from an earlier export are ignored, only a Catalog ID passed by a script is reported
+            if self.properties.is_property_set('catalog_id', ghost=False) and self.catalog_id != catalog_id:
+                warnings.append(f'The Catalog ID {self.catalog_id} is not used by the RLCS formats, '
+                                f'the catalog is the folder name {catalog_id}.')
+            keywords['catalog_id'] = catalog_id
 
         mat_axis = axis_conversion(to_forward='-Y',to_up='Z',).to_4x4()
         mat_global_scale = Matrix.Scale(self.global_scale, 4)
