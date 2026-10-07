@@ -22,14 +22,14 @@ from .material_exporter import export_materials
 bl_info = {
     "name": "Roomle Configurator Script",
     "author": "Andreas Atteneder",
-    "version": (3, 1, 0),
+    "version": (3, 2, 0),
     "blender": (5, 1, 0),
     "location": "File > Import-Export > Roomle",
     "description": "Export Roomle Configurator Script",
     "support": 'COMMUNITY',
     "category": "Import-Export",
     "tracker_url": "https://servicedesk.roomle.com",
-    "warning": "Beta version",
+    "warning": "Alpha build 3.2.0-alpha.0",
 }
 
 if "bpy" in locals():
