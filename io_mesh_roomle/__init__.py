@@ -13,6 +13,14 @@
 #  from Roomle.
 # -----------------------------------------------------------------------
 
+import sys
+
+# Installing the add-on again without restarting Blender reloads only this file, its submodules would keep the
+# code of the previous version. They are removed, so the imports below load the new code.
+if "bpy" in locals():
+    for module_name in [name for name in sys.modules if name.startswith(__name__ + '.')]:
+        del sys.modules[module_name]
+
 import logging
 from pathlib import Path
 from re import DEBUG
@@ -32,15 +40,10 @@ bl_info = {
     "warning": "Alpha build 3.2.0-alpha.0",
 }
 
-if "bpy" in locals():
-    import importlib
-    importlib.reload(roomle_script)
-    importlib.reload(optimize_operator)
-else:
-    from . import roomle_script
-    from . import optimize_operator
+from . import roomle_script
+from . import optimize_operator
 
-import os,re,sys,subprocess,traceback
+import os,re,subprocess,traceback
 import bpy
 
 from bpy.props import (
