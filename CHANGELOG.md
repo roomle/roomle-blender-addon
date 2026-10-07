@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Normal export in combination with no UVs creates invalid AddMesh commands
 - Normals are alway smooth shaded. Blender's "Shade Flat" command (flat shading in viewport) has no effect.
 
+## [3.2.0-alpha.1] - 2026-10-06
+### Fixed
+- Installing the add-on again without restarting Blender kept parts of the previous version, e.g. the RLCS materials were written into an extra `<file name>/materials` folder
+
 ## [3.2.0-alpha.0] - 2026-10-06
 ### Added
 - "Output Format" export option: OBJ (default), Corto, RLCS and RLCS with materials. For the RLCS formats the file is saved into the catalog folder `content/<catalog id>/` and the meshes are written next to it as `meshes/<mesh id>/crt_50.crt`, the materials as `materials/<material id>/data.json` with their textures, like the Rubens Local Content Server serves them. The catalog id is the name of that folder

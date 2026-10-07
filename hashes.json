@@ -22,5 +22,9 @@
     "3.2.0-alpha.0": {
         "hash": "c8e5781cedbe6876340d568ad0d6f881",
         "buildTime": "2026-10-06 13:41:22"
+    },
+    "3.2.0-alpha.1": {
+        "hash": "dc2ee6e6370e92739a9a1fb2951daa4a",
+        "buildTime": "2026-10-06 13:50:03"
     }
 }

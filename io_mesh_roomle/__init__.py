@@ -37,7 +37,7 @@ bl_info = {
     "support": 'COMMUNITY',
     "category": "Import-Export",
     "tracker_url": "https://servicedesk.roomle.com",
-    "warning": "Alpha build 3.2.0-alpha.0",
+    "warning": "Alpha build 3.2.0-alpha.1",
 }
 
 from . import roomle_script
