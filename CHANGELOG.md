@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- "Also Export OBJ" option of the RLCS formats: the OBJ file of each mesh stays next to its corto file as `meshes/<mesh id>/crt_50.obj`, for the meshes compile of the Roomle VS Code extension, which uploads it instead of the corto file
+### Changed
+- The RLCS formats delete the `crt_50.crt` and `crt_50.obj` files of a mesh before writing it, so no OBJ of an earlier export stays next to a newer corto file. A mesh without corto compression is written as `crt_50.obj` instead of `<mesh id>.obj`
 ### Known issues
 - Splitting objects with several materials in "Export Materials" can change their custom normals
 - Corto runs with `-v 12` and its defaults for the rest (`-n 10 -u 12 -N border`). Earlier versions intended `-v 12 -n 9 -u 10 -N delta`, but passed it as a single argument, so only `-v 12` was ever applied. The output is kept unchanged until the settings of the Roomle backend are confirmed.
