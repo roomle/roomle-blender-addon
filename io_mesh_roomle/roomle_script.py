@@ -35,6 +35,8 @@ from bpy_extras.io_utils import (
 
 from .scene_handler import get_export_name
 
+# corto settings of the Roomle backend (RAPI): 12 bits for positions, 9 for normals, 10 for UVs, normals stored as deltas
+CORTO_ARGUMENTS = ['-v', '12', '-n', '9', '-u', '10', '-N', 'delta']
 RLCS_MESH_FILE_NAME = 'crt_50.crt'
 # the OBJ of a mesh next to its corto file, which the meshes compile of the VS Code extension uploads instead
 RLCS_OBJ_FILE_NAME = 'crt_50.obj'
@@ -438,10 +440,10 @@ def create_extern_mesh_command(
         )
     elif args["use_corto"]:
         try:
-            # Earlier versions passed '-v 12 -n 9 -u 10 -N delta' as one argument, which corto reads as -v 12
-            # with defaults for the rest (-n 10 -u 12 -N border). Only -v 12 is passed to keep that output.
+            # the settings the Roomle backend (RAPI) converts meshes with, so local meshes look like uploaded ones;
+            # earlier versions passed them as one argument, which corto read as -v 12 with defaults for the rest
             corto_process = subprocess.run(
-                [corto_exe, '-v', '12', '-o', crt_filepath, filepath],
+                [corto_exe, '-o', crt_filepath, *CORTO_ARGUMENTS, filepath],
                 capture_output=True,
                 text=True,
             )

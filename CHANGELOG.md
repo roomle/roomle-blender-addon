@@ -11,11 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The RLCS formats delete the `crt_50.crt` and `crt_50.obj` files of a mesh before writing it, so no OBJ of an earlier export stays next to a newer corto file. A mesh without corto compression is written as `crt_50.obj` instead of `<mesh id>.obj`
 ### Known issues
 - Splitting objects with several materials in "Export Materials" can change their custom normals
-- Corto runs with `-v 12` and its defaults for the rest (`-n 10 -u 12 -N border`). Earlier versions intended `-v 12 -n 9 -u 10 -N delta`, but passed it as a single argument, so only `-v 12` was ever applied. The output is kept unchanged until the settings of the Roomle backend are confirmed.
 - Multiple instances of the same Mesh combined with apply rotation or custom scale can create wrong scale/rotations
 - Normal export with applied rotations is untested (esp. internal meshes)
 - Normal export in combination with no UVs creates invalid AddMesh commands
 - Normals are alway smooth shaded. Blender's "Shade Flat" command (flat shading in viewport) has no effect.
+### Fixed
+- Corto runs with the settings of the Roomle backend, `-v 12 -n 9 -u 10 -N delta`, so local meshes look like uploaded ones. Earlier versions passed them as a single argument, so corto ran with `-v 12` and its defaults for the rest (`-n 10 -u 12 -N border`), which recomputed the normals from the quantized positions (chewed reflections on smooth and chrome parts)
 
 ## [3.2.0-alpha.1] - 2026-10-06
 ### Fixed
