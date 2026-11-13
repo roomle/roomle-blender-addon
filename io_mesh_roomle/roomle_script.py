@@ -36,6 +36,8 @@ from bpy_extras.io_utils import (
 from .scene_handler import get_export_name
 
 RLCS_MESH_FILE_NAME = 'crt_50.crt'
+# the OBJ of a mesh next to its corto file, which the meshes compile of the VS Code extension uploads instead
+RLCS_OBJ_FILE_NAME = 'crt_50.obj'
 
 @dataclass
 class VertexVariant:
@@ -359,14 +361,18 @@ def create_extern_mesh_command(
         # as meshes/<mesh id>/crt_50.crt like the Rubens Local Content Server serves them
         mesh_dir = os.path.join(os.path.dirname(extern_mesh_dir), 'meshes', mesh_name)
         crt_filepath = os.path.join(mesh_dir, RLCS_MESH_FILE_NAME)
+        filepath = os.path.join(mesh_dir, RLCS_OBJ_FILE_NAME)
     else:
         mesh_dir = extern_mesh_dir
         crt_filepath = os.path.join(mesh_dir, mesh_name + '.crt')
+        filepath = os.path.join(mesh_dir, mesh_name + '.obj')
 
     os.makedirs(mesh_dir, exist_ok=True)
-    # a corto file of a previous export must not survive a failed compression
-    if os.path.isfile(crt_filepath):
-        os.remove(crt_filepath)
+    # the mesh files of a previous export must not survive: a corto file a failed compression didn't replace, or an
+    # OBJ that would be uploaded instead of the current corto file
+    for previous_filepath in (crt_filepath, filepath):
+        if os.path.isfile(previous_filepath):
+            os.remove(previous_filepath)
 
     scene = bpy.context.scene
     
@@ -392,7 +398,6 @@ def create_extern_mesh_command(
     # Apply transform (necessary to have correct boundings box)
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
-    filepath = os.path.join(mesh_dir, mesh_name + '.obj')
     export_selected_obj(
         filepath=filepath,
         use_mesh_modifiers=use_mesh_modifiers,
@@ -443,14 +448,16 @@ def create_extern_mesh_command(
             if corto_process.returncode != 0:
                 raise Exception((corto_process.stderr or corto_process.stdout).strip())
         except Exception as e:
-            warnings.append(f'Corto failed for {os.path.basename(filepath)}, kept the OBJ file: {e}')
+            warnings.append(f'Corto failed for {mesh_name}, kept the OBJ file: {e}')
         else:
-            os.remove(filepath)
+            # "Also Export OBJ" keeps it next to the corto file
+            if not args['rlcs_obj']:
+                os.remove(filepath)
 
     if args['folder_layout'] == 'RLCS' and not os.path.isfile(crt_filepath):
         warnings.append(
             'The Rubens Local Content Server only serves corto files: meshes without corto compression '
-            'were exported as OBJ files.'
+            f'were exported as {RLCS_OBJ_FILE_NAME} only.'
         )
 
     return script

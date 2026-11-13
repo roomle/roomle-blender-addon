@@ -151,6 +151,14 @@ class ExportRoomleScript( Operator, ExportHelper ):
         default="OBJ",
     )
 
+    rlcs_obj: BoolProperty(
+        name="Also Export OBJ",
+        description="RLCS formats: also write each mesh as meshes/<mesh id>/crt_50.obj next to its corto file. "
+                    "The meshes compile of the Roomle VS Code extension uploads the OBJ files instead of the corto "
+                    "files; the Rubens Local Content Server serves only the corto files",
+        default=False,
+    )
+
     use_selection: BoolProperty(
             name="Only Selected Objects",
             description="Export only selected objects on visible layers",
@@ -241,6 +249,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
             # the catalog is the folder the file is saved in: content/<catalog id>/
             catalog_folder = os.path.basename(os.path.dirname(self.filepath)) if self.filepath else ''
             layout.label(text=f'Catalog ID: {catalog_folder or "name of the folder"} (folder of the file)', icon='FILE_FOLDER')
+            layout.prop(self, 'rlcs_obj')
         else:
             layout.prop(self, 'catalog_id')
         row = layout.row()
@@ -301,6 +310,7 @@ class ExportRoomleScript( Operator, ExportHelper ):
         rlcs = output_format in ('RLCS', 'RLCS_MATERIALS')
         keywords['use_corto'] = output_format != 'OBJ'
         keywords['folder_layout'] = 'RLCS' if rlcs else 'UPLOAD'
+        keywords['rlcs_obj'] = rlcs and self.rlcs_obj
         keywords['export_materials'] = output_format == 'RLCS_MATERIALS' or (not rlcs and self.export_materials)
         keywords['corto_exe'] = roomle_script.get_corto_exe(preferences) if keywords['use_corto'] else None
 
