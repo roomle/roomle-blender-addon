@@ -6,10 +6,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Known issues
+- Splitting objects with several materials in "Export Materials" can change their custom normals
+- Corto runs with `-v 12` and its defaults for the rest (`-n 10 -u 12 -N border`). Earlier versions intended `-v 12 -n 9 -u 10 -N delta`, but passed it as a single argument, so only `-v 12` was ever applied. The output is kept unchanged until the settings of the Roomle backend are confirmed.
 - Multiple instances of the same Mesh combined with apply rotation or custom scale can create wrong scale/rotations
 - Normal export with applied rotations is untested (esp. internal meshes)
 - Normal export in combination with no UVs creates invalid AddMesh commands
 - Normals are alway smooth shaded. Blender's "Shade Flat" command (flat shading in viewport) has no effect.
+
+## [3.2.0-alpha.1] - 2026-10-06
+### Fixed
+- Installing the add-on again without restarting Blender kept parts of the previous version, e.g. the RLCS materials were written into an extra `<file name>/materials` folder
+
+## [3.2.0-alpha.0] - 2026-10-06
+### Added
+- "Output Format" export option: OBJ (default), Corto, RLCS and RLCS with materials. For the RLCS formats the file is saved into the catalog folder `content/<catalog id>/` and the meshes are written next to it as `meshes/<mesh id>/crt_50.crt`, the materials as `materials/<material id>/data.json` with their textures, like the Rubens Local Content Server serves them. The catalog id is the name of that folder
+- Warning for mesh ids ending with a Blender number suffix like `.001`
+- "File Name as Prefix" export option: on (default) keeps the mesh ids `<file name>_<object>`, off uses the object names only
+### Changed
+- The "Use Corto" checkbox is replaced by the Corto output format; scripts calling the export with `use_corto=True` still get Corto files
+- "Export Materials" is shown for the OBJ and Corto formats only, the RLCS formats choose the materials by the format
+- Output Format is the first export option; the Catalog ID field is shown for the OBJ and Corto formats only
+- "Force Extern" is the default mesh export method, all meshes are exported as separate files
+- corto is searched on the PATH and in common install folders on export, when the location in the add-on preferences is empty or doesn't exist
+### Fixed
+- A corto location saved as "corto not found!" kept corto disabled after installing it
+- Material export failed when objects were in excluded collections
+- "Export Materials" exported mesh ids with the `.001` suffixes of its scene copy; the mesh ids are the same with and without it now
+- Parts of objects split by material get the material name in their mesh id and their own material in `SetObjSurface`
+- "Export Materials" changed the custom normals of objects with one material (wrong shading); only objects using several materials are split now
+- The export cleared the selection, so a second export of the selected objects failed
+
+## [3.1.0] - 2026-10-05
+### Added
+- "Scale" export option, which was fixed to 1000 before. The default stays 1000; set it to 1 for scenes modelled in millimeters
+- Export errors and warnings (e.g. missing or failing corto) are reported in the UI and printed to the console
+### Changed
+- The "Use Corto" tooltip explains that a corto executable is needed and where to set it
+### Fixed
+- Bounding box of external meshes of scaled objects was scaled twice
+- Export errors were swallowed: the operator reported success, but no script was written
+- Empty export wrote a script with only the header comment instead of reporting an error
+- Material export failed without a window context (e.g. when run by Blender MCP from a timer)
+- Failed material export left the copied export scene behind
+- Unlinked Metallic socket was exported as 1.0 instead of its value
+- Swapped tooltips of the "Force Extern" and "Force Intern" mesh export methods
 
 ## [3.0.0] - 2026-04-21
 ### BREAKING CHANGE

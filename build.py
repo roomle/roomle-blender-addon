@@ -1,6 +1,7 @@
 '''
 builds the blender plugin in ./dist folder
 usage: `Applications/Blender.app/Contents/MacOS/Blender --python build.py`
+pre-release: `Applications/Blender.app/Contents/MacOS/Blender --python build.py -- alpha.0` builds e.g. 3.2.0-alpha.0
 '''
 from genericpath import isdir
 import shutil
@@ -11,7 +12,6 @@ import ast
 import datetime
 from hashlib import md5
 from pathlib import Path
-from distutils.version import StrictVersion
 
 ROOT_DIR = Path(__file__).parent.absolute()
 if str(ROOT_DIR) not in sys.path:
@@ -31,7 +31,9 @@ def read_bl_info(init_file: Path) -> dict:
 bl_info = read_bl_info(ROOT_DIR / 'io_mesh_roomle' / '__init__.py')
 
 PLUGIN_NAME = 'io_mesh_roomle'
-VERSION = '.'.join([str(x) for x in bl_info["version"]])
+# bl_info only takes numbers, a pre-release label is passed after `--`
+PRERELEASE = sys.argv[sys.argv.index('--') + 1] if '--' in sys.argv[:-1] else ''
+VERSION = '.'.join([str(x) for x in bl_info["version"]]) + (f'-{PRERELEASE}' if PRERELEASE else '')
 ZIP_FILENAME = f'{PLUGIN_NAME}_{VERSION}'
 
 BUILD_DIR = ROOT_DIR / 'build'
@@ -148,6 +150,13 @@ def hash_contents(src_dir: Path):
     return combined_hash
 
 
+def version_key(version: str):
+    '''sorts semantic versions, a pre-release before its release: 3.2.0-alpha.0 < 3.2.0'''
+    release, _, prerelease = version.partition('-')
+    prerelease_parts = tuple((0, int(part), '') if part.isdigit() else (1, 0, part) for part in prerelease.split('.')) if prerelease else ()
+    return tuple(int(number) for number in release.split('.')), not prerelease, prerelease_parts
+
+
 def update_markdown():
     """write the verion links to `dist/index.md`"""
 
@@ -164,11 +173,13 @@ def update_markdown():
         version_number = zip.stem.split('_')[-1]
         version_name_table[version_number] = zip.name
 
-    versions_sorted = reversed(sorted(version_name_table.keys(), key=StrictVersion))
+    versions_sorted = sorted(version_name_table.keys(), key=version_key, reverse=True)
+    # pre-releases are listed, but the latest is the newest release
+    latest = next((version for version in versions_sorted if '-' not in version), None)
 
-    for i, version_number in enumerate(versions_sorted):
+    for version_number in versions_sorted:
         file = version_name_table[version_number]
-        if i == 0:
+        if version_number == latest:
             header += f'- **[{version_number}]({file}) (latest)**\n'
         else:
             header += f'- [{version_number}]({file})\n'

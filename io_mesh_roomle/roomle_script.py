@@ -18,6 +18,7 @@ import bmesh
 
 import os
 import re
+import shutil
 import subprocess
 import inspect
 
@@ -31,6 +32,10 @@ from mathutils import Vector
 from bpy_extras.io_utils import (
         axis_conversion,
         )
+
+from .scene_handler import get_export_name
+
+RLCS_MESH_FILE_NAME = 'crt_50.crt'
 
 @dataclass
 class VertexVariant:
@@ -201,7 +206,7 @@ def create_mesh_command( object, global_matrix, use_mesh_modifiers = True, scale
     
     debug = args['debug']
 
-    command = '/* Object:{} Mesh:{} */\n'.format(object.name,object.data.name)
+    command = '/* Object:{} Mesh:{} */\n'.format(get_export_name(object),get_export_name(object.data))
     command += 'AddMesh('
     export_normals = args['export_normals']
     apply_rotation = args['apply_rotations'] and rotation
@@ -328,7 +333,7 @@ def create_extern_mesh_command(
     '''
 
     apply_rotation = args['apply_rotations'] and rotation
-    name = object.name if (scale or apply_rotation) else object.data.name
+    name = get_export_name(object) if (scale or apply_rotation) else get_export_name(object.data)
 
     mesh = object.to_mesh(
         depsgraph=bpy.context.evaluated_depsgraph_get(),
@@ -346,11 +351,23 @@ def create_extern_mesh_command(
     bm.to_mesh(tri_mesh)
     bm.free()
 
-    if not os.path.isdir(extern_mesh_dir):
-        os.makedirs(extern_mesh_dir)
-
     script_name = os.path.basename(extern_mesh_dir)
-    
+    mesh_name = f'{script_name}_{name}' if args['use_file_name_prefix'] else name
+
+    if args['folder_layout'] == 'RLCS':
+        # the file is saved in the catalog folder, the meshes are written next to it
+        # as meshes/<mesh id>/crt_50.crt like the Rubens Local Content Server serves them
+        mesh_dir = os.path.join(os.path.dirname(extern_mesh_dir), 'meshes', mesh_name)
+        crt_filepath = os.path.join(mesh_dir, RLCS_MESH_FILE_NAME)
+    else:
+        mesh_dir = extern_mesh_dir
+        crt_filepath = os.path.join(mesh_dir, mesh_name + '.crt')
+
+    os.makedirs(mesh_dir, exist_ok=True)
+    # a corto file of a previous export must not survive a failed compression
+    if os.path.isfile(crt_filepath):
+        os.remove(crt_filepath)
+
     scene = bpy.context.scene
     
     bpy.ops.object.select_all(action='DESELECT')
@@ -375,58 +392,99 @@ def create_extern_mesh_command(
     # Apply transform (necessary to have correct boundings box)
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
-    filepath = os.path.join(extern_mesh_dir,f'{script_name}_{name}')
-
-    filepath += '.obj'
+    filepath = os.path.join(mesh_dir, mesh_name + '.obj')
     export_selected_obj(
         filepath=filepath,
         use_mesh_modifiers=use_mesh_modifiers,
         export_normals=args['export_normals'],
+        global_scale=args['global_scale'],
     )
 
+    # scale and rotation are already applied by transform_apply above
     dim, center = get_object_bounding_box(tmp)
 
     bpy.data.objects.remove(tmp) # remove temporary object
     bpy.data.meshes.remove(tri_mesh)
 
-    if scale:
-        dim.x *= scale.x
-        dim.y *= scale.y
-        dim.z *= scale.z
-
-        center.x *= scale.x
-        center.y *= scale.y
-        center.z *= scale.z
-
     # Convert to Roomle Script space
-    dim *= 1000
-    center *= 1000
+    dim *= args['global_scale']
+    center *= args['global_scale']
     center.y *= -1
     bb_origin = center - (dim*0.5)
     dim_str = ( floatFormat(dim.x,1), floatFormat(dim.y,1), floatFormat(dim.z,1) )
     center_str = ( floatFormat(bb_origin.x,1), floatFormat(bb_origin.y,1), floatFormat(bb_origin.z,1) )
 
-    script = 'AddExternalMesh(\'{}:{}_{}\',Vector3f{{{},{},{}}},Vector3f{{{},{},{}}});\n'.format(
+    script = 'AddExternalMesh(\'{}:{}\',Vector3f{{{},{},{}}},Vector3f{{{},{},{}}});\n'.format(
         args['catalog_id'],
-        script_name,
-        name,
+        mesh_name,
         *dim_str,
         *center_str
         )
 
-    if args["use_corto"] and preferences.corto_exe and os.path.isfile(preferences.corto_exe):
+    warnings = args['warnings']
+    if re.search(r'\.\d{3}$', name):
+        warnings.append(f'Mesh id {mesh_name} ends with a Blender number suffix: give the object and its mesh a meaningful name.')
+
+    corto_exe = args['corto_exe']
+    if args["use_corto"] and not corto_exe:
+        warnings.append(
+            'Corto executable not found, external meshes were exported as OBJ. '
+            'Set its location in the add-on preferences.'
+        )
+    elif args["use_corto"]:
         try:
-            corto_process = subprocess.Popen( [preferences.corto_exe, '-v 12 -n 9 -u 10 -N delta', filepath])
-            if corto_process.wait()!=0:
-                raise Exception('corto error')
+            # Earlier versions passed '-v 12 -n 9 -u 10 -N delta' as one argument, which corto reads as -v 12
+            # with defaults for the rest (-n 10 -u 12 -N border). Only -v 12 is passed to keep that output.
+            corto_process = subprocess.run(
+                [corto_exe, '-v', '12', '-o', crt_filepath, filepath],
+                capture_output=True,
+                text=True,
+            )
+            if corto_process.returncode != 0:
+                raise Exception((corto_process.stderr or corto_process.stdout).strip())
         except Exception as e:
-            print(e)
-            pass
+            warnings.append(f'Corto failed for {os.path.basename(filepath)}, kept the OBJ file: {e}')
         else:
             os.remove(filepath)
-        print(preferences.corto_exe)
-    
+
+    if args['folder_layout'] == 'RLCS' and not os.path.isfile(crt_filepath):
+        warnings.append(
+            'The Rubens Local Content Server only serves corto files: meshes without corto compression '
+            'were exported as OBJ files.'
+        )
+
     return script
+
+
+def get_used_material_slot(object):
+    '''
+    the material slot used by all faces, e.g. of the parts split by material in the material export,
+    otherwise the first slot
+    '''
+    indices = {polygon.material_index for polygon in object.data.polygons}
+    if len(indices) == 1:
+        index = indices.pop()
+        if index < len(object.material_slots):
+            return object.material_slots[index]
+    return object.material_slots[0]
+
+
+def get_corto_exe(preferences):
+    '''
+    corto executable from the add-on preferences, otherwise searched on the PATH and in common install folders,
+    because Blender started from the Dock or Finder doesn't get the PATH of the shell
+    '''
+    path = bpy.path.abspath(preferences.corto_exe) if preferences.corto_exe else ''
+    if os.path.isfile(path):
+        return path
+    path = shutil.which('corto')
+    if path:
+        return path
+    for folder in ('~/.local/bin', '/opt/homebrew/bin', '/usr/local/bin'):
+        path = os.path.join(os.path.expanduser(folder), 'corto')
+        if os.path.isfile(path):
+            return path
+    return None
 
 def create_transform_commands(
     object,
@@ -528,7 +586,7 @@ def create_object_commands(
             # Material
             material = ''
             if object.material_slots:
-                material_name = getValidName(object.material_slots[0].name)
+                material_name = getValidName(get_used_material_slot(object).name)
                 # TODO: 5959 create material definition
                 material = "SetObjSurface('{}:{}');\n".format( args['catalog_id'], material_name )
 
@@ -552,7 +610,7 @@ def create_object_commands(
     empty = empty and not hasChildren
 
     if hasChildren:
-        command += "BeginObjGroup('{}');\n".format(getValidName(object.name))
+        command += "BeginObjGroup('{}');\n".format(getValidName(get_export_name(object)))
 
     command += mesh
     command += material
@@ -586,10 +644,15 @@ def create_objects_commands(preferences,objects, object_list, extern_mesh_dir, g
         from . import bl_info
         command += '/* Roomle script (Roomle Blender addon version {}) */\n'.format('.'.join( [str(x) for x in bl_info['version']] ))
 
+    object_commands = ''
     for object in objects:
         if object:
-            command += create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, **args)
-    return command.rstrip()
+            object_commands += create_object_commands(preferences,object, object_list, extern_mesh_dir, global_matrix, **args)
+
+    # nothing exported - the header alone is not a valid export
+    if not object_commands.strip():
+        return ''
+    return (command + object_commands).rstrip()
 
 
 def get_visible_objects(context: bpy.types.Context):
@@ -597,14 +660,14 @@ def get_visible_objects(context: bpy.types.Context):
     return [obj for obj in view_layer.objects if obj.visible_get(view_layer=view_layer)]
 
 
-def export_selected_obj(filepath: str, use_mesh_modifiers: bool, export_normals: bool) -> None:
+def export_selected_obj(filepath: str, use_mesh_modifiers: bool, export_normals: bool, global_scale: float) -> None:
     if hasattr(bpy.ops.wm, 'obj_export'):
         operator = bpy.ops.wm.obj_export
         properties = inspect.signature(operator).parameters
         kwargs = {
             'filepath': filepath,
             'check_existing': False,
-            'global_scale': 1000,
+            'global_scale': global_scale,
             'export_selected_objects': True,
             'export_uv': True,
             'export_normals': export_normals,
@@ -627,7 +690,7 @@ def export_selected_obj(filepath: str, use_mesh_modifiers: bool, export_normals:
         use_selection=True,
         use_mesh_modifiers=use_mesh_modifiers,
         use_normals=export_normals,
-        global_scale=1000,
+        global_scale=global_scale,
         use_uvs=True,
         use_blen_objects=False,
         use_materials=False,
@@ -645,27 +708,21 @@ def write_roomle_script( operator, preferences, context, filepath, global_matrix
     faces
        iterable of tuple of 3 vertex, vertex is tuple of 3 coordinates as float
     """
-    try:
+    # exceptions are not caught here, the operator reports them to the user
+    scene = bpy.context.scene
 
-        scene = bpy.context.scene
+    root_objects = []
+    for obj in scene.objects:
+        if not obj.parent:
+            root_objects.append(obj)
 
-        root_objects = []
-        for obj in scene.objects:
-            if not obj.parent:
-                root_objects.append(obj)
-        
-        object_list = bpy.context.selected_objects if args['use_selection'] else get_visible_objects(bpy.context)
+    object_list = bpy.context.selected_objects if args['use_selection'] else get_visible_objects(bpy.context)
 
-        extern_mesh_dir = os.path.splitext(filepath)[0]
+    extern_mesh_dir = os.path.splitext(filepath)[0]
 
-        script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,**args)
-        if not bool(script):
-            raise Exception('Empty export! Make sure you have meshes selected.')
-        else:
-            with open(filepath, 'w') as data:
-                data.write(script)
-    except Exception as e:
-        import traceback
-        print('Exception',e)
-        x = traceback.format_exc()
-        print(x)
+    script = create_objects_commands(preferences,root_objects,object_list,extern_mesh_dir,global_matrix,**args)
+    if not bool(script):
+        raise Exception('Empty export! Make sure you have meshes selected.')
+    else:
+        with open(filepath, 'w') as data:
+            data.write(script)
