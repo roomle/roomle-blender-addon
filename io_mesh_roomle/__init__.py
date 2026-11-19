@@ -97,6 +97,27 @@ def check_for_exe( name ):
 
     return ''
 
+
+# Blender has no green tick: the green color tag icon (a green collection in the Outliner) marks a good catalog folder
+RLCS_FOLDER_OK_ICON = 'COLLECTION_COLOR_04'
+
+
+def rlcs_catalog_folder(filepath):
+    '''
+    The catalog of the RLCS formats is the folder the file is saved in, content/<catalog id>/.
+    Returns the catalog id and the state of the folder, which the export options show and the export acts on:
+    'ok' in content/<catalog id>/, 'outside' a valid catalog id outside of content/ (the export warns),
+    'invalid' a folder name that isn't a catalog id (the export stops).
+    '''
+    catalog_folder_path = os.path.dirname(os.path.abspath(filepath))
+    catalog_id = os.path.basename(catalog_folder_path)
+    if not re.fullmatch(r'[A-Za-z0-9_-]+', catalog_id):
+        return catalog_id, 'invalid'
+    if os.path.basename(os.path.dirname(catalog_folder_path)) != 'content':
+        return catalog_id, 'outside'
+    return catalog_id, 'ok'
+
+
 # Preferences
 class ExportRoomleScriptPreferences(bpy.types.AddonPreferences):
    bl_idname = __name__
@@ -249,9 +270,23 @@ class ExportRoomleScript( Operator, ExportHelper ):
         layout = self.layout
         layout.prop(self, 'output_format')
         if self.output_format in ('RLCS', 'RLCS_MATERIALS'):
-            # the catalog is the folder the file is saved in: content/<catalog id>/
-            catalog_folder = os.path.basename(os.path.dirname(self.filepath)) if self.filepath else ''
-            layout.label(text=f'Catalog ID: {catalog_folder or "name of the folder"} (folder of the file)', icon='FILE_FOLDER')
+            # the catalog is the folder the file is saved in: content/<catalog id>/; the box shows what the export
+            # will do with it
+            box = layout.box()
+            if os.path.dirname(self.filepath):
+                catalog_id, folder_state = rlcs_catalog_folder(self.filepath)
+                if folder_state == 'ok':
+                    box.label(text=f'content/{catalog_id}/', icon=RLCS_FOLDER_OK_ICON)
+                    box.label(text=f'Catalog ID: {catalog_id}')
+                elif folder_state == 'outside':
+                    box.label(text='Not in a content folder', icon='ERROR')
+                    box.label(text=f'Catalog ID: {catalog_id}')
+                else:
+                    box.alert = True
+                    box.label(text=f'Not a catalog id: {catalog_id}', icon='CANCEL')
+                    box.label(text='Save into content/<catalog id>/')
+            else:
+                box.label(text='Catalog ID: name of the folder (folder of the file)', icon='FILE_FOLDER')
             layout.prop(self, 'rlcs_obj')
         else:
             layout.prop(self, 'catalog_id')
@@ -319,15 +354,14 @@ class ExportRoomleScript( Operator, ExportHelper ):
 
         if rlcs:
             # the catalog is the folder the file is saved in: content/<catalog id>/
-            catalog_folder_path = os.path.dirname(os.path.abspath(self.filepath))
-            catalog_id = os.path.basename(catalog_folder_path)
-            if not re.fullmatch(r'[A-Za-z0-9_-]+', catalog_id):
+            catalog_id, folder_state = rlcs_catalog_folder(self.filepath)
+            if folder_state == 'invalid':
                 message = (f'Roomle export failed: save the file into a catalog folder content/<catalog id>/, '
                            f'the folder name "{catalog_id}" is not a valid catalog id.')
                 print(message)
                 self.report({'ERROR'}, message)
                 return {'CANCELLED'}
-            if os.path.basename(os.path.dirname(catalog_folder_path)) != 'content':
+            if folder_state == 'outside':
                 warnings.append(f'The file is not saved in a catalog folder content/<catalog id>/, '
                                 f'the folder name {catalog_id} is used as catalog id.')
             # values remembered from an earlier export are ignored, only a Catalog ID passed by a script is reported
