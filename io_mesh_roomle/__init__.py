@@ -29,15 +29,15 @@ from .material_exporter import export_materials
 
 bl_info = {
     "name": "Roomle Configurator Script",
-    "author": "Andreas Atteneder",
-    "version": (3, 2, 0),
+    "author": "Roomle GmbH",
+    "version": (3, 3, 0),
     "blender": (5, 1, 0),
     "location": "File > Import-Export > Roomle",
     "description": "Export Roomle Configurator Script",
     "support": 'COMMUNITY',
     "category": "Import-Export",
     "tracker_url": "https://servicedesk.roomle.com",
-    "warning": "Alpha build 3.2.0-alpha.1",
+    "warning": "Beta version",
 }
 
 from . import roomle_script

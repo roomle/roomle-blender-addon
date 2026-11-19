@@ -5,16 +5,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Added
-- "Also Export OBJ" option of the RLCS formats: the OBJ file of each mesh stays next to its corto file as `meshes/<mesh id>/crt_50.obj`, for the meshes compile of the Roomle VS Code extension, which uploads it instead of the corto file
-### Changed
-- The RLCS formats delete the `crt_50.crt` and `crt_50.obj` files of a mesh before writing it, so no OBJ of an earlier export stays next to a newer corto file. A mesh without corto compression is written as `crt_50.obj` instead of `<mesh id>.obj`
 ### Known issues
 - Splitting objects with several materials in "Export Materials" can change their custom normals
 - Multiple instances of the same Mesh combined with apply rotation or custom scale can create wrong scale/rotations
 - Normal export with applied rotations is untested (esp. internal meshes)
 - Normal export in combination with no UVs creates invalid AddMesh commands
 - Normals are alway smooth shaded. Blender's "Shade Flat" command (flat shading in viewport) has no effect.
+
+## [3.3.0] - 2026-11-19
+### Added
+- "Also Export OBJ" option of the RLCS formats: the OBJ file of each mesh stays next to its corto file as `meshes/<mesh id>/crt_50.obj`, for the meshes compile of the Roomle VS Code extension, which uploads it instead of the corto file
+- The export options of the RLCS formats show the folder the file is saved in: a green icon in `content/<catalog id>/`, a warning sign for a folder outside of `content/`, a red message for a folder name that isn't a catalog id
+### Changed
+- The RLCS formats delete the `crt_50.crt` and `crt_50.obj` files of a mesh before writing it, so no OBJ of an earlier export stays next to a newer corto file. A mesh without corto compression is written as `crt_50.obj` instead of `<mesh id>.obj`
+- The Output Format descriptions say what each format is for: OBJ and Corto for direct upload into Rubens Admin, the RLCS formats for local development with the Rubens Local Content Server
+- The maintainer is Roomle GmbH
 ### Fixed
 - Corto runs with the settings of the Roomle backend, `-v 12 -n 9 -u 10 -N delta`, so local meshes look like uploaded ones. Earlier versions passed them as a single argument, so corto ran with `-v 12` and its defaults for the rest (`-n 10 -u 12 -N border`), which recomputed the normals from the quantized positions (chewed reflections on smooth and chrome parts)
 
