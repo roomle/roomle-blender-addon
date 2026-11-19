@@ -136,14 +136,17 @@ class ExportRoomleScript( Operator, ExportHelper ):
 
     output_format: EnumProperty(
         items=[
-            ("OBJ", "OBJ", "External meshes as Wavefront OBJ files: <file name>/<mesh id>.obj", 1),
-            ("CORTO", "Corto", "External meshes as Corto files with the same names: <file name>/<mesh id>.crt. "
+            ("OBJ", "OBJ", "For direct upload into Rubens Admin. External meshes as Wavefront OBJ files: "
+                "<file name>/<mesh id>.obj", 1),
+            ("CORTO", "Corto", "For direct upload into Rubens Admin. External meshes as Corto files with the same names: "
+                "<file name>/<mesh id>.crt. "
                 "Requires the corto executable: set its location in Preferences > Add-ons > Roomle Configurator Script, "
                 "otherwise it is searched on the PATH. Without it, OBJ files are exported", 2),
-            ("RLCS", "RLCS", "Corto meshes for the Rubens Local Content Server: save the file into the catalog folder "
+            ("RLCS", "RLCS", "For local development with the Rubens Local Content Server. Save the file into the catalog folder "
                 "content/<catalog id>/, its name is the catalog id and the meshes are written next to it as "
                 "meshes/<mesh id>/crt_50.crt", 3),
-            ("RLCS_MATERIALS", "RLCS with materials", "Like RLCS, and the materials are written next to the file as "
+            ("RLCS_MATERIALS", "RLCS with materials", "For local development with the Rubens Local Content Server. "
+                "Like RLCS, and the materials are written next to the file as "
                 "materials/<material id>/data.json with their textures", 4),
         ],
         name="Output Format",
